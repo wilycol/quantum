@@ -14,6 +14,7 @@ import { createSimulator } from '../core/manualTrading/simulator';
 import { coach, nextAdvice, feedback } from '../core/manualTrading/coach';
 import { getSignal } from '../core/manualTrading/strategy';
 import { State, Trade, Advice, TradeFeedback } from '../core/manualTrading/types';
+import { useEnvironment } from '../hooks/useEnvironment';
 
 const TradingManualView: React.FC = () => {
   const [state, setState] = useState<State>({
@@ -31,6 +32,7 @@ const TradingManualView: React.FC = () => {
   const [quantity, setQuantity] = useState(100);
   const [selectedSide, setSelectedSide] = useState<'buy' | 'sell'>('buy');
   const [lastFeedback, setLastFeedback] = useState<TradeFeedback | null>(null);
+  const { mode: envMode, paper, enableAI } = useEnvironment();
   const [mode, setMode] = useState<'Demo' | 'Hybrid' | 'Live'>('Demo');
   
   const simulatorRef = useRef<any>(null);
@@ -149,6 +151,23 @@ const TradingManualView: React.FC = () => {
           }`}>
             {mode}
           </span>
+          
+          {/* Estado del Sistema */}
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-gray-600">•</span>
+            <span className="text-gray-600">Paper:</span>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              paper ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}>
+              {paper ? 'ON' : 'OFF'}
+            </span>
+            <span className="text-gray-600">•</span>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              enableAI ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'
+            }`}>
+              AI: {enableAI ? 'Active' : 'Mock'}
+            </span>
+          </div>
         </div>
       </div>
 

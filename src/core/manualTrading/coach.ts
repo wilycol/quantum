@@ -1,5 +1,14 @@
 import { Advice, TradeFeedback } from './types';
 
+// Verificar si la IA está habilitada
+const isAIEnabled = (): boolean => {
+  try {
+    return import.meta.env.VITE_ENABLE_AI === '1' || process.env.ENABLE_AI === '1';
+  } catch {
+    return false;
+  }
+};
+
 class TradingCoach {
   private adviceIndex: number = 0;
   private countdown: number = 10;
@@ -55,10 +64,27 @@ class TradingCoach {
    * Obtiene el siguiente consejo del coach
    */
   nextAdvice(): Advice {
+    // Si la IA no está habilitada, usar consejos mock
+    if (!isAIEnabled()) {
+      const message = this.adviceMessages[this.adviceIndex % this.adviceMessages.length];
+      this.adviceIndex++;
+      
+      // Simular diferentes tipos de consejos
+      const sides: ('buy' | 'sell' | 'hold')[] = ['buy', 'sell', 'hold'];
+      const randomSide = sides[Math.floor(Math.random() * sides.length)];
+      
+      return {
+        message,
+        countdown: this.countdown,
+        side: randomSide
+      };
+    }
+    
+    // Aquí se podría integrar con una IA real
+    // Por ahora, usar consejos mock como fallback
     const message = this.adviceMessages[this.adviceIndex % this.adviceMessages.length];
     this.adviceIndex++;
     
-    // Simular diferentes tipos de consejos
     const sides: ('buy' | 'sell' | 'hold')[] = ['buy', 'sell', 'hold'];
     const randomSide = sides[Math.floor(Math.random() * sides.length)];
     
