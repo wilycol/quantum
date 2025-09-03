@@ -16,7 +16,7 @@ import { getSignal } from '../core/manualTrading/strategy';
 import { State, Trade, Advice, TradeFeedback } from '../core/manualTrading/types';
 import { useEnvironment } from '../hooks/useEnvironment';
 
-const TradingManualView: React.FC = () => {
+export default function TradingManualView() {
   const [state, setState] = useState<State>({
     closes: [100],
     lastPrice: 100,
@@ -426,6 +426,4 @@ const TradingManualView: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default TradingManualView;
+}
