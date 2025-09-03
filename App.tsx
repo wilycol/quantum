@@ -14,6 +14,7 @@ import NewsView from './components/NewsView';
 import SupportView from './components/SupportView';
 import NotificationsView from './components/NotificationsView';
 import HistoryView from './components/HistoryView';
+import TradingManualView from './components/TradingManualView';
 import { useSettings } from './contexts/SettingsContext';
 import { MainView, AppNotification } from './types';
 
@@ -54,7 +55,7 @@ const NotificationToaster: React.FC<{ notification: AppNotification | null }> = 
 const App: React.FC = () => {
   const { settings } = useSettings();
   const [appState, setAppState] = useState<AppState>('splash');
-  const [currentView, setCurrentView] = useState<MainView>('quantum_core');
+  const [currentView, setCurrentView] = useState<MainView>('manual_trading');
   const [lastNotification, setLastNotification] = useState<AppNotification | null>(null);
 
   useEffect(() => {
@@ -85,6 +86,7 @@ const App: React.FC = () => {
               <Header view={currentView} setView={setCurrentView} />
               <main className={`flex-1 overflow-y-auto ${needsPadding ? 'p-2 sm:p-4 lg:p-6' : ''}`}>
                 {currentView === 'quantum_core' && <QuantumCoreView />}
+                {currentView === 'manual_trading' && <TradingManualView />}
                 {currentView === 'simulator' && <SimulatorView />}
                 {currentView === 'desk' && <QuantumDeskView />}
                 {currentView === 'portfolio' && <PortfolioView />}

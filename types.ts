@@ -1,5 +1,5 @@
 
-export type MainView = 'quantum_core' | 'desk' | 'simulator' | 'portfolio' | 'settings' | 'news' | 'support' | 'notifications' | 'history';
+export type MainView = 'quantum_core' | 'manual_trading' | 'desk' | 'simulator' | 'portfolio' | 'settings' | 'news' | 'support' | 'notifications' | 'history';
 
 export interface WalletData {
   balance: number;
