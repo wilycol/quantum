@@ -220,21 +220,27 @@ const PortfolioView: React.FC = () => {
                                 <WalletIcon className="w-8 h-8 text-brand-gold" />
                             </div>
                             <div className="h-48">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={MOCK_PORTFOLIO_EVOLUTION} margin={{ top: 5, right: 20, left: -10, bottom: 0 }}>
-                                        <defs>
-                                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.8} />
-                                                <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" vertical={false} />
-                                        <XAxis dataKey="time" stroke="#9a9a9a" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#9a9a9a" fontSize={12} tickFormatter={(val) => `$${Number(val / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1a2a45', border: '1px solid #D4AF37', borderRadius: '0.5rem' }} formatter={(value: number) => formatCurrency(value)} />
-                                        <Area type="monotone" dataKey="value" stroke="#D4AF37" fillOpacity={1} fill="url(#colorValue)" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
+                                {Array.isArray(MOCK_PORTFOLIO_EVOLUTION) && MOCK_PORTFOLIO_EVOLUTION.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={MOCK_PORTFOLIO_EVOLUTION} margin={{ top: 5, right: 20, left: -10, bottom: 0 }}>
+                                            <defs>
+                                                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.8} />
+                                                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" vertical={false} />
+                                            <XAxis dataKey="time" stroke="#9a9a9a" fontSize={12} tickLine={false} axisLine={false} />
+                                            <YAxis stroke="#9a9a9a" fontSize={12} tickFormatter={(val) => `$${Number(val / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} />
+                                            <Tooltip contentStyle={{ backgroundColor: '#1a2a45', border: '1px solid #D4AF37', borderRadius: '0.5rem' }} formatter={(value: number) => formatCurrency(value)} />
+                                            <Area type="monotone" dataKey="value" stroke="#D4AF37" fillOpacity={1} fill="url(#colorValue)" />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div style={{ padding: 16, color: '#888', textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        No hay datos para mostrar todavía.
+                                    </div>
+                                )}
                             </div>
                         </Card>
                         <PositionsTable title="Posiciones Actuales" assets={activeAssets} />
@@ -244,17 +250,23 @@ const PortfolioView: React.FC = () => {
                         <Card className="bg-brand-navy border border-gray-700/50">
                             <h3 className="text-lg font-bold text-white mb-2">Distribución de Activos</h3>
                             <div className="h-52">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={distributionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3}>
-                                            {distributionData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[entry.name as keyof typeof DISTRIBUTION_COLORS] || '#8884d8'} stroke="#1a2a45" />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip contentStyle={{ backgroundColor: '#1a2a45', border: '1px solid #D4AF37', borderRadius: '0.5rem' }} formatter={(value: number) => formatCurrency(value)} />
-                                        <Legend iconType="circle" />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                                {Array.isArray(distributionData) && distributionData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={distributionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3}>
+                                                {distributionData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[entry.name as keyof typeof DISTRIBUTION_COLORS] || '#8884d8'} stroke="#1a2a45" />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip contentStyle={{ backgroundColor: '#1a2a45', border: '1px solid #D4AF37', borderRadius: '0.5rem' }} formatter={(value: number) => formatCurrency(value)} />
+                                            <Legend iconType="circle" />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div style={{ padding: 16, color: '#888', textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        No hay datos para mostrar todavía.
+                                    </div>
+                                )}
                             </div>
                         </Card>
                         <Card className="bg-brand-navy border border-gray-700/50">

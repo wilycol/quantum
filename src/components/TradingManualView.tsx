@@ -177,31 +177,37 @@ export default function TradingManualView() {
           {/* Gráfico */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold mb-4">Precio en Tiempo Real</h2>
-            <ResponsiveContainer width="100%" height={400}>
-              <ComposedChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="time" />
-                <YAxis domain={['dataMin - 1', 'dataMax + 1']} />
-                <Tooltip 
-                  formatter={(value: any) => [formatPrice(value), 'Precio']}
-                  labelFormatter={(label) => `Tick ${label}`}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke="#3b82f6" 
-                  fill="#3b82f6" 
-                  fillOpacity={0.1}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="rsi" 
-                  stroke="#ef4444" 
-                  strokeWidth={2}
-                  yAxisId={1}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+            {Array.isArray(chartData) && chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={400}>
+                <ComposedChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" />
+                  <YAxis domain={['dataMin - 1', 'dataMax + 1']} />
+                  <Tooltip 
+                    formatter={(value: any) => [formatPrice(value), 'Precio']}
+                    labelFormatter={(label) => `Tick ${label}`}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="price" 
+                    stroke="#3b82f6" 
+                    fill="#3b82f6" 
+                    fillOpacity={0.1}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="rsi" 
+                    stroke="#ef4444" 
+                    strokeWidth={2}
+                    yAxisId={1}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ padding: 16, color: '#888', textAlign: 'center', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                No hay datos para mostrar todavía.
+              </div>
+            )}
           </div>
 
           {/* Controles de Trading */}
