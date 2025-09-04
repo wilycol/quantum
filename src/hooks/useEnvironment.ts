@@ -1,31 +1,23 @@
-interface EnvironmentConfig {
-  appName: string;
-  enableAI: boolean;
-  paper: boolean;
-  mode: string;
-  symbol: string;
-  timeframe: string;
+export function useEnvironment() {
+  const get = (key: string, def: string = '') =>
+    (import.meta as any)?.env?.[`VITE_${key}`] ??
+    (import.meta as any)?.env?.[key] ??
+    (typeof process !== 'undefined' ? (process as any).env?.[key] : undefined) ??
+    def;
+
+  return {
+    APP_NAME: get('APP_NAME', 'QuantumTrade'),
+    ENABLE_AI: get('ENABLE_AI', '0'),
+    PAPER: get('PAPER', '1'),
+    MODE: get('MODE', 'demo'),
+    SYMBOL: get('SYMBOL', 'BTC/USDT'),
+    TIMEFRAME: get('TIMEFRAME', '1m'),
+    // Compatibilidad con nombres anteriores
+    appName: get('APP_NAME', 'QuantumTrade'),
+    enableAI: get('ENABLE_AI', '0') === '1',
+    paper: get('PAPER', '1') === '1',
+    mode: get('MODE', 'demo').toUpperCase(),
+    symbol: get('SYMBOL', 'BTC/USDT'),
+    timeframe: get('TIMEFRAME', '1m'),
+  };
 }
-
-export const useEnvironment = (): EnvironmentConfig => {
-  // Obtener variables de entorno de manera segura
-  const getEnvVar = (key: string, defaultValue: string = ''): string => {
-    try {
-      return import.meta.env[`VITE_${key}`] || process.env[key] || defaultValue;
-    } catch {
-      return defaultValue;
-    }
-  };
-
-  // Configuración por defecto
-  const config: EnvironmentConfig = {
-    appName: getEnvVar('APP_NAME', 'QuantumTrade'),
-    enableAI: getEnvVar('ENABLE_AI', '0') === '1',
-    paper: getEnvVar('PAPER', '1') === '1',
-    mode: getEnvVar('MODE', 'demo').toUpperCase(),
-    symbol: getEnvVar('SYMBOL', 'BTC/USDT'),
-    timeframe: getEnvVar('TIMEFRAME', '1m'),
-  };
-
-  return config;
-};

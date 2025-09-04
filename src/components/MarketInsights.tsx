@@ -2,7 +2,7 @@
 import React, { useState, useCallback } from 'react';
 import Card from './ui/Card';
 import { fetchMarketInsights } from '../services/geminiService';
-import { GroundingSource } from '../../types';
+import { GroundingSource } from '../types';
 
 const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>

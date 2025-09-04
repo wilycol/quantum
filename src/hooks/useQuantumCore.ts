@@ -19,19 +19,32 @@ interface QuantumCoreState {
   rsi: number | null;
   side: 'buy' | 'sell' | 'hold';
   trades: Trade[];
-  start: () => void;
+  progress: {
+    snapshot?: {
+      trades: any[];
+      metrics: any;
+      confidenceHistory: any[];
+    };
+    elapsedMs?: number;
+    steps?: number;
+  } | number;
+  status: 'idle' | 'running' | 'stopped';
+  start: (params?: any) => void;
   stop: () => void;
   reset: () => void;
+  emergencyStop: () => void;
   placeTrade: (params: { side: 'BUY' | 'SELL'; qty: number; price?: number; symbol?: string }) => void;
 }
 
-function useQuantumCore(): QuantumCoreState {
+function useQuantumCore(params?: { symbol?: string }): QuantumCoreState {
   const [running, setRunning] = useState<boolean>(false);
   const [price, setPrice] = useState<number>(100);
   const [closes, setCloses] = useState<number[]>([100]);
   const [rsi, setRsi] = useState<number | null>(null);
   const [side, setSide] = useState<'buy' | 'sell' | 'hold'>('hold');
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [progress, setProgress] = useState<number>(0);
+  const [status, setStatus] = useState<'idle' | 'running' | 'stopped'>('idle');
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const tradeIdCounter = useRef<number>(0);
@@ -73,9 +86,19 @@ function useQuantumCore(): QuantumCoreState {
   }, [closes]);
 
   // Iniciar simulación
-  const start = useCallback(() => {
+  const start = useCallback((params?: any) => {
     if (!running) {
       setRunning(true);
+      setStatus('running');
+      setProgress({
+        snapshot: {
+          trades: [],
+          metrics: {},
+          confidenceHistory: []
+        },
+        elapsedMs: 0,
+        steps: 0
+      });
       intervalRef.current = setInterval(tick, 1000);
     }
   }, [running, tick]);
@@ -84,6 +107,7 @@ function useQuantumCore(): QuantumCoreState {
   const stop = useCallback(() => {
     if (running) {
       setRunning(false);
+      setStatus('stopped');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -99,8 +123,16 @@ function useQuantumCore(): QuantumCoreState {
     setRsi(null);
     setSide('hold');
     setTrades([]);
+    setProgress(0);
+    setStatus('idle');
     tradeIdCounter.current = 0;
   }, [stop]);
+
+  // Parada de emergencia
+  const emergencyStop = useCallback(() => {
+    stop();
+    reset();
+  }, [stop, reset]);
 
   // Colocar trade
   const placeTrade = useCallback((params: { 
@@ -142,9 +174,12 @@ function useQuantumCore(): QuantumCoreState {
     rsi,
     side,
     trades,
+    progress,
+    status,
     start,
     stop,
     reset,
+    emergencyStop,
     placeTrade
   };
 }

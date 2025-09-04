@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Rectangle, Area, Legend, Line, ReferenceLine, ReferenceArea } from 'recharts';
 import { MOCK_WALLET_DATA, MOCK_CANDLESTICK_DATA, MOCK_AI_DECISIONS } from '../constants';
-import { WalletData, Candle, AIDecision, DemoTrade } from '../../types';
+import { WalletData, Candle, AIDecision, DemoTrade } from '../types';
 import { getTradeAdvice } from '../services/geminiService';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -304,7 +304,18 @@ const QuantumDeskView: React.FC = () => {
     const handleDemoTrade = (action: 'BUY' | 'SELL', price?: number) => {
         if (!isDemoSessionActive) return;
         const entryPrice = price || demoChartData[demoChartData.length - 1].close;
-        const newTrade: DemoTrade = { id: Date.now(), price: entryPrice, time: Date.now(), action };
+        const newTrade: DemoTrade = { 
+            id: Date.now().toString(), 
+            timestamp: Date.now(),
+            instrument: activeAsset.symbol,
+            type: action,
+            size: tradeSize,
+            price: entryPrice, 
+            time: Date.now(), 
+            action,
+            pl: 0,
+            reasoning: 'Manual trade'
+        };
         let feedback = 'Operación manual registrada.';
 
         if (aiSuggestionRef.current && aiSuggestionRef.current.action) {

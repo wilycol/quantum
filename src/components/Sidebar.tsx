@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
-import { MainView } from '../../types';
+import { MainView } from '../types';
 
 
 // --- Lucide-inspired SVG Icons ---

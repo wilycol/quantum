@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
-import { translations, TranslationKey } from '../../i18n/translations';
-import { NotificationConfig, AppNotification, NotificationType, MainView, GitHubConfig, AIStrategyConfig } from '../../types';
-import { DEFAULT_AI_STRATEGY_CONFIG } from '../../constants';
+import { translations, TranslationKey } from '../i18n/translations';
+import { NotificationConfig, AppNotification, NotificationType, MainView, GitHubConfig, AIStrategyConfig } from '../types';
+import { DEFAULT_AI_STRATEGY_CONFIG } from '../constants';
 
 // Define the shape of your settings
 export interface GlobalSettings {
@@ -123,12 +123,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Notification dispatch function
     const dispatchNotification = useCallback((payload: { type: NotificationType; title: string; message: string; linkTo?: MainView }) => {
         const newNotification: AppNotification = {
-            id: Date.now().toString(),
+            id: Date.now(),
             type: payload.type,
             title: payload.title,
             message: payload.message,
             linkTo: payload.linkTo,
-            timestamp: new Date(),
+            timestamp: Date.now(),
             isRead: false,
         };
         setSettings(prev => ({

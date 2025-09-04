@@ -60,7 +60,7 @@ export async function submitSupportQuestion(question: string) {
 
 type NewsArticle = { id?: number|string; title: string; source?: string; url?: string };
 
-export async function getNewsAnalysis(articles: NewsArticle[]) {
+export async function getNewsAnalysis(titleOrArticles: string | Array<{title:string; summary?:string}>, summary?: string) {
   const ENABLE_AI = (import.meta.env?.VITE_ENABLE_AI ?? import.meta.env?.ENABLE_AI ?? '0') === '1';
   const HAS_KEY = !!(import.meta.env?.VITE_GEMINI_API_KEY ?? import.meta.env?.GEMINI_API_KEY);
 
@@ -69,17 +69,28 @@ export async function getNewsAnalysis(articles: NewsArticle[]) {
 
   if (!ENABLE_AI || !HAS_KEY) {
     await delay();
-    const count = articles?.length ?? 0;
-    const sample = (articles?.[0]?.title ?? 'no titles').slice(0, 60);
-    return {
-      summary: `AI offline (mock): ${count} artículos. Ej: "${sample}"`,
-      sentiment: count % 3 === 0 ? 'neutral' : (count % 2 === 0 ? 'bullish' : 'bearish'),
-      highlights: [
-        'Volumen de noticias estable',
-        'Catalizadores a corto plazo limitados',
-        'Usa PAPER=1 para testear reacciones a titulares'
-      ],
-    };
+    
+    // Detectar si es string (title) o array (articles)
+    if (typeof titleOrArticles === 'string') {
+      const title = titleOrArticles.slice(0, 60);
+      return {
+        summary: `AI offline (mock): análisis de "${title}"`,
+        sentiment: Math.random() > 0.5 ? 'bullish' : 'bearish',
+        highlights: ['Análisis básico', 'Revisar contexto completo'],
+      };
+    } else {
+      const count = titleOrArticles?.length ?? 0;
+      const sample = (titleOrArticles?.[0]?.title ?? 'no titles').slice(0, 60);
+      return {
+        summary: `AI offline (mock): ${count} artículos. Ej: "${sample}"`,
+        sentiment: count % 3 === 0 ? 'neutral' : (count % 2 === 0 ? 'bullish' : 'bearish'),
+        highlights: [
+          'Volumen de noticias estable',
+          'Catalizadores a corto plazo limitados',
+          'Usa PAPER=1 para testear reacciones a titulares'
+        ],
+      };
+    }
   }
 
   // TODO: integración real (placeholder)
@@ -91,8 +102,23 @@ export async function getNewsAnalysis(articles: NewsArticle[]) {
   };
 }
 
-export async function getSupportChatResponse(question: string) {
+export async function getSupportChatResponse(question: string, _faqs?: any): Promise<{answer:string}> {
   // Alias a submitSupportQuestion para mantener compatibilidad con SupportView
   const res = await submitSupportQuestion(question);
   return res; // { answer: string }
+}
+
+export async function getWeeklyAnalysis(trades?: any[]) {
+  const ENABLE_AI = (import.meta.env?.VITE_ENABLE_AI ?? import.meta.env?.ENABLE_AI ?? '0') === '1';
+  const HAS_KEY = !!(import.meta.env?.VITE_GEMINI_API_KEY ?? import.meta.env?.GEMINI_API_KEY);
+
+  const delay = (ms = 200) => new Promise(res => setTimeout(res, ms));
+
+  if (!ENABLE_AI || !HAS_KEY) {
+    await delay();
+    return { summary: 'AI offline (mock): análisis semanal básico.', insights: ['Mercado estable', 'Volatilidad moderada'] };
+  }
+
+  await delay();
+  return { summary: 'AI (placeholder): análisis semanal completo.', insights: ['Tendencia alcista', 'Soporte fuerte'] };
 }
