@@ -26,6 +26,7 @@ export default function TradingManualView() {
   
   const [currentAdvice, setCurrentAdvice] = useState<Advice>({ message: '', countdown: 10 });
   const [countdown, setCountdown] = useState(10);
+  const [nextIn, setNextIn] = useState(3);
   const [quantity, setQuantity] = useState(100);
   const [selectedSide, setSelectedSide] = useState<'buy' | 'sell'>('buy');
   const [lastFeedback, setLastFeedback] = useState<TradeFeedback | null>(null);
@@ -79,6 +80,12 @@ export default function TradingManualView() {
     };
   }, []);
 
+  // Timer del coach para evitar re-render brusco
+  useEffect(() => {
+    const id = setInterval(() => setNextIn(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const handleTrade = () => {
     if (!simulatorRef.current) return;
 
@@ -108,6 +115,21 @@ export default function TradingManualView() {
 
   const formatPrice = (price: number) => `$${price.toFixed(2)}`;
   const formatQuantity = (qty: number) => qty.toLocaleString();
+
+  // Mensajes cortos del coach
+  const getCoachMessage = () => {
+    const messages = [
+      "Volatilidad alta, espera mejor entrada",
+      "Tendencia lateral: tamaño chico",
+      "RSI sobrecomprado, considera vender",
+      "Soporte fuerte, oportunidad de compra",
+      "Resistencia cercana, toma ganancias",
+      "Mercado consolidando, mantén posición",
+      "Breakout confirmado, sigue la tendencia",
+      "Volumen bajo, evita trades grandes"
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
+  };
 
   const getSignalColor = (side: string) => {
     switch (side) {
@@ -243,6 +265,30 @@ export default function TradingManualView() {
                 {state?.isActive ? 'Activo' : 'Inactivo'}
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="panel side-card">
+          <h2 className="text-xl font-semibold mb-4">IA Coach</h2>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm muted">Próximo consejo:</span>
+              <span className="text-lg font-semibold text-blue-600">
+                {nextIn}s
+              </span>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm text-gray-700">
+                {getCoachMessage()}
+              </p>
+            </div>
+            {lastFeedback && (
+              <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                <p className="text-sm text-green-800">
+                  <strong>Feedback:</strong> {lastFeedback.message}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
