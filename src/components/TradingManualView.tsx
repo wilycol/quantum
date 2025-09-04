@@ -158,46 +158,9 @@ export default function TradingManualView() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Manual Trading - Módulo 3
-        </h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">Modo:</span>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            mode === 'Demo' ? 'bg-blue-100 text-blue-800' :
-            mode === 'Hybrid' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-green-100 text-green-800'
-          }`}>
-            {mode}
-          </span>
-          
-          {/* Estado del Sistema */}
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-gray-600">•</span>
-            <span className="text-gray-600">Paper:</span>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              paper ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-            }`}>
-              {paper ? 'ON' : 'OFF'}
-            </span>
-            <span className="text-gray-600">•</span>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              enableAI ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'
-            }`}>
-              AI: {enableAI ? 'Active' : 'Mock'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Panel Principal - Gráfico y Controles */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Gráfico */}
-          <div className="bg-white rounded-lg shadow-md p-6" ref={ref} style={{minHeight: 360}}>
+    <div style={{padding:16}}>
+      <div className="q-grid">
+        <div className="panel chart-card" ref={ref}>
             <h2 className="text-xl font-semibold mb-4">Precio en Tiempo Real</h2>
             
             {/* Encabezado / badges */}
@@ -234,37 +197,77 @@ export default function TradingManualView() {
                 </ComposedChart>
               </ResponsiveContainer>
             )}
-          </div>
+        </div>
 
-          {/* Controles de Trading */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Controles de Trading</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="panel side-card">
+          <h2 className="text-xl font-semibold mb-4">Estado del Mercado</h2>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm muted">Precio Actual:</span>
+              <span className="text-lg font-semibold">
+                {formatPrice(num(state?.lastPrice))}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm muted">RSI:</span>
+              <span className="text-lg font-semibold">
+                {state?.rsi ? num(state.rsi).toFixed(2) : 'N/A'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm muted">Señal:</span>
+              <div className={`mt-1 px-3 py-2 rounded-lg text-center font-medium ${getSignalBgColor(state?.side ?? 'hold')}`}>
+                <span className={getSignalColor(state?.side ?? 'hold')}>
+                  {(state?.side ?? 'hold').toUpperCase()}
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm muted">PnL:</span>
+              <span className={`text-lg font-semibold ${
+                num(state?.pnl) >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {formatPrice(num(state?.pnl))}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm muted">Estado:</span>
+              <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                state?.isActive
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                <div className={`w-2 h-2 rounded-full mr-2 ${
+                  state?.isActive ? 'bg-green-500' : 'bg-red-500'
+                }`}></div>
+                {state?.isActive ? 'Activo' : 'Inactivo'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{height:16}} />
+      <div className="panel side-card">
+        <h2 className="text-xl font-semibold mb-4">Controles de Trading</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Selección de Side */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2">
                   Dirección
                 </label>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setSelectedSide('buy')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      selectedSide === 'buy' 
-                        ? 'bg-green-600 text-white' 
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+                    className={`btn ${selectedSide === 'buy' ? '' : 'ghost'}`}
                   >
-                    COMPRAR
+                    BUY
                   </button>
                   <button
                     onClick={() => setSelectedSide('sell')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      selectedSide === 'sell' 
-                        ? 'bg-red-600 text-white' 
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+                    className={`btn ${selectedSide === 'sell' ? '' : 'ghost'}`}
                   >
-                    VENDER
+                    SELL
                   </button>
                 </div>
               </div>
@@ -288,172 +291,63 @@ export default function TradingManualView() {
               <div className="flex items-end">
                 <button
                   onClick={handleTrade}
-                  className="w-full px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                  className="btn w-full"
                 >
                   Trade Now
                 </button>
               </div>
             </div>
-          </div>
+      </div>
 
-          {/* Historial de Trades */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Historial de Trades</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tiempo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Side
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cantidad
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Precio
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Fee
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {ensureArray(state?.trades).slice().reverse().map((trade: any) => (
-                    <tr key={trade?.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {trade?.time?.toLocaleTimeString() ?? 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          trade?.side === 'buy' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {(trade?.side ?? 'N/A').toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatQuantity(num(trade?.qty))}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(num(trade?.price))}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(num(trade?.fee))}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(num(trade?.total))}
-                      </td>
-                    </tr>
-                  ))}
-                  {ensureArray(state?.trades).length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                        No hay trades aún
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* Panel Lateral - IA Coach */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Estado del Mercado */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Estado del Mercado</h2>
-            <div className="space-y-4">
-              <div>
-                <span className="text-sm text-gray-600">Precio Actual:</span>
-                <div className="text-2xl font-bold text-gray-900">
-                  {formatPrice(num(state?.lastPrice))}
-                </div>
-              </div>
-              
-              <div>
-                <span className="text-sm text-gray-600">RSI:</span>
-                <div className="text-lg font-semibold text-gray-900">
-                  {state?.rsi ? num(state.rsi).toFixed(2) : 'N/A'}
-                </div>
-              </div>
-              
-              <div>
-                <span className="text-sm text-gray-600">Señal Sugerida:</span>
-                <div className={`mt-1 px-3 py-2 rounded-lg text-center font-medium ${getSignalBgColor(state?.side ?? 'hold')}`}>
-                  <span className={getSignalColor(state?.side ?? 'hold')}>
-                    {(state?.side ?? 'hold').toUpperCase()}
-                  </span>
-                </div>
-              </div>
-              
-              <div>
-                <span className="text-sm text-gray-600">PnL Total:</span>
-                <div className={`text-lg font-semibold ${
-                  num(state?.pnl) >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {formatPrice(num(state?.pnl))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* IA Coach */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">IA Coach</h2>
-            <div className="space-y-4">
-              {/* Consejo Actual */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-medium text-blue-900 mb-2">Consejo Actual:</h3>
-                <p className="text-blue-800 text-sm mb-3">
-                  {currentAdvice.message}
-                </p>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {countdown}s
-                  </div>
-                  <div className="text-xs text-blue-500">Próximo consejo</div>
-                </div>
-              </div>
-
-              {/* Feedback del último trade */}
-              {lastFeedback && (
-                <div className={`p-4 rounded-lg ${
-                  lastFeedback.correctness === 'correct' 
-                    ? 'bg-green-50 border border-green-200' 
-                    : 'bg-red-50 border border-red-200'
-                }`}>
-                  <h3 className="font-medium text-gray-900 mb-2">Feedback:</h3>
-                  <p className={`text-sm ${
-                    lastFeedback.correctness === 'correct' ? 'text-green-800' : 'text-red-800'
-                  }`}>
-                    {lastFeedback.message}
-                  </p>
-                </div>
+      <div style={{height:16}} />
+      <div className="panel side-card">
+        <h2 className="text-xl font-semibold mb-4">Historial de Trades</h2>
+        <div className="overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr>
+                <th className="text-left">Hora</th>
+                <th className="text-left">Side</th>
+                <th className="text-left">Cantidad</th>
+                <th className="text-left">Precio</th>
+                <th className="text-left">PnL</th>
+                <th className="text-left">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ensureArray(state?.trades).slice().reverse().map((trade: any) => (
+                <tr key={trade?.id}>
+                  <td>{trade?.time?.toLocaleTimeString() ?? 'N/A'}</td>
+                  <td>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      trade?.side === 'buy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {trade?.side?.toUpperCase() ?? 'N/A'}
+                    </span>
+                  </td>
+                  <td>{trade?.qty ?? 'N/A'}</td>
+                  <td>{formatPrice(num(trade?.price))}</td>
+                  <td className={num(trade?.pnl) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatPrice(num(trade?.pnl))}
+                  </td>
+                  <td>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      trade?.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {trade?.status ?? 'N/A'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {ensureArray(state?.trades).length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center muted">
+                    No hay trades aún
+                  </td>
+                </tr>
               )}
-
-              {/* Estado del simulador */}
-              <div className="text-center">
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  state?.isActive 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  <div className={`w-2 h-2 rounded-full mr-2 ${
-                    state?.isActive ? 'bg-green-500' : 'bg-red-500'
-                  }`}></div>
-                  {state?.isActive ? 'Activo' : 'Inactivo'}
-                </div>
-              </div>
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
