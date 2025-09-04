@@ -20,28 +20,39 @@ export function useCandles() {
   const { dataMode, viteSymbol, viteTimeframe } = useEnvironment();
 
   useEffect(() => {
+    const getInitialCandles = async (mode: string, symbol: string, timeframe: string) => {
+      if (mode === 'mock') {
+        // Datos mock
+        return generateMockCandles(symbol, timeframe);
+      } else {
+        // Datos live (placeholder para futura implementación)
+        // const liveData = await fetchLiveCandles(symbol, timeframe);
+        // return liveData;
+        
+        // Por ahora, usar mock incluso en modo live
+        return generateMockCandles(symbol, timeframe);
+      }
+    };
+
     const fetchCandles = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        if (dataMode === 'mock') {
-          // Datos mock
-          const mockData = generateMockCandles(viteSymbol, viteTimeframe);
-          setData(mockData);
-        } else {
-          // Datos live (placeholder para futura implementación)
-          // const liveData = await fetchLiveCandles(viteSymbol, viteTimeframe);
-          // setData(liveData);
-          
-          // Por ahora, usar mock incluso en modo live
-          const mockData = generateMockCandles(viteSymbol, viteTimeframe);
-          setData(mockData);
-        }
+        // después de resolver datos iniciales:
+        getInitialCandles(dataMode, viteSymbol, viteTimeframe)
+          .then(c => { 
+            console.info('[DATA MODE]', dataMode, '• candles:', c.length); 
+            setData(c); 
+          })
+          .catch(e => { 
+            console.warn('[DATA ERROR]', e); 
+            setError(e as Error); 
+          })
+          .finally(() => setLoading(false));
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Error desconocido'));
         setData([]);
-      } finally {
         setLoading(false);
       }
     };
