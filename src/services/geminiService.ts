@@ -90,3 +90,9 @@ export async function getNewsAnalysis(articles: NewsArticle[]) {
     highlights: ['Sin señal fuerte', 'Monitorear próximos eventos'],
   };
 }
+
+export async function getSupportChatResponse(question: string) {
+  // Alias a submitSupportQuestion para mantener compatibilidad con SupportView
+  const res = await submitSupportQuestion(question);
+  return res; // { answer: string }
+}
