@@ -25,7 +25,7 @@ interface QuantumCoreState {
   placeTrade: (params: { side: 'BUY' | 'SELL'; qty: number; price?: number; symbol?: string }) => void;
 }
 
-export default function useQuantumCore(): QuantumCoreState {
+function useQuantumCore(): QuantumCoreState {
   const [running, setRunning] = useState<boolean>(false);
   const [price, setPrice] = useState<number>(100);
   const [closes, setCloses] = useState<number[]>([100]);
@@ -148,3 +148,6 @@ export default function useQuantumCore(): QuantumCoreState {
     placeTrade
   };
 }
+
+export default useQuantumCore;
+export { useQuantumCore };
