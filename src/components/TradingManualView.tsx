@@ -15,8 +15,11 @@ import { coach, nextAdvice, feedback } from '../core/manualTrading/coach';
 import { getSignal } from '../core/manualTrading/strategy';
 import { State, Trade, Advice, TradeFeedback } from '../core/manualTrading/types';
 import { useEnvironment } from '../hooks/useEnvironment';
+import { ensureArray, toNumber } from '../lib/safe';
+import { useContainerReady } from '../hooks/useContainerReady';
 
 export default function TradingManualView() {
+  const { ref, ready } = useContainerReady();
   const [state, setState] = useState<State>({
     closes: [100],
     lastPrice: 100,
@@ -87,12 +90,12 @@ export default function TradingManualView() {
 
     const trade = simulatorRef.current.applyTrade({
       side: selectedSide,
-      qty: quantity,
-      price: state.lastPrice
+      qty: toNumber(quantity),
+      price: toNumber(state?.lastPrice)
     });
 
     // Calcular feedback
-    const signal = getSignal(state.closes);
+    const signal = getSignal(ensureArray(state?.closes));
     const isCorrect = signal === selectedSide;
     
     // Calcular timing (simplificado)
@@ -128,11 +131,12 @@ export default function TradingManualView() {
     }
   };
 
-  // Preparar datos para el gráfico
-  const chartData = state.closes.map((close, index) => ({
+  // Preparar datos para el gráfico (blindados)
+  const rawCloses = state?.closes ?? [];
+  const chartData = ensureArray(rawCloses).map((close, index) => ({
     time: index,
-    price: close,
-    rsi: state.rsi
+    price: toNumber(close),
+    rsi: toNumber(state?.rsi, 50)
   }));
 
   return (
@@ -175,9 +179,9 @@ export default function TradingManualView() {
         {/* Panel Principal - Gráfico y Controles */}
         <div className="lg:col-span-3 space-y-6">
           {/* Gráfico */}
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-lg shadow-md p-6" ref={ref} style={{minHeight: 320}}>
             <h2 className="text-xl font-semibold mb-4">Precio en Tiempo Real</h2>
-            {Array.isArray(chartData) && chartData.length > 0 ? (
+            {ready && chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={400}>
                 <ComposedChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -205,7 +209,7 @@ export default function TradingManualView() {
               </ResponsiveContainer>
             ) : (
               <div style={{ padding: 16, color: '#888', textAlign: 'center', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                No hay datos para mostrar todavía.
+                {ready ? 'No hay datos para mostrar todavía.' : 'Inicializando gráfico…'}
               </div>
             )}
           </div>
@@ -298,35 +302,35 @@ export default function TradingManualView() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {state.trades.slice().reverse().map((trade) => (
-                    <tr key={trade.id}>
+                  {ensureArray(state?.trades).slice().reverse().map((trade: any) => (
+                    <tr key={trade?.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {trade.time.toLocaleTimeString()}
+                        {trade?.time?.toLocaleTimeString() ?? 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          trade.side === 'buy' 
+                          trade?.side === 'buy' 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {trade.side.toUpperCase()}
+                          {(trade?.side ?? 'N/A').toUpperCase()}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatQuantity(trade.qty)}
+                        {formatQuantity(toNumber(trade?.qty))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(trade.price)}
+                        {formatPrice(toNumber(trade?.price))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(trade.fee)}
+                        {formatPrice(toNumber(trade?.fee))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(trade.total)}
+                        {formatPrice(toNumber(trade?.total))}
                       </td>
                     </tr>
                   ))}
-                  {state.trades.length === 0 && (
+                  {ensureArray(state?.trades).length === 0 && (
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                         No hay trades aún
@@ -348,22 +352,22 @@ export default function TradingManualView() {
               <div>
                 <span className="text-sm text-gray-600">Precio Actual:</span>
                 <div className="text-2xl font-bold text-gray-900">
-                  {formatPrice(state.lastPrice)}
+                  {formatPrice(toNumber(state?.lastPrice))}
                 </div>
               </div>
               
               <div>
                 <span className="text-sm text-gray-600">RSI:</span>
                 <div className="text-lg font-semibold text-gray-900">
-                  {state.rsi ? state.rsi.toFixed(2) : 'N/A'}
+                  {state?.rsi ? toNumber(state.rsi).toFixed(2) : 'N/A'}
                 </div>
               </div>
               
               <div>
                 <span className="text-sm text-gray-600">Señal Sugerida:</span>
-                <div className={`mt-1 px-3 py-2 rounded-lg text-center font-medium ${getSignalBgColor(state.side)}`}>
-                  <span className={getSignalColor(state.side)}>
-                    {state.side.toUpperCase()}
+                <div className={`mt-1 px-3 py-2 rounded-lg text-center font-medium ${getSignalBgColor(state?.side ?? 'hold')}`}>
+                  <span className={getSignalColor(state?.side ?? 'hold')}>
+                    {(state?.side ?? 'hold').toUpperCase()}
                   </span>
                 </div>
               </div>
@@ -371,9 +375,9 @@ export default function TradingManualView() {
               <div>
                 <span className="text-sm text-gray-600">PnL Total:</span>
                 <div className={`text-lg font-semibold ${
-                  state.pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                  toNumber(state?.pnl) >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {formatPrice(state.pnl)}
+                  {formatPrice(toNumber(state?.pnl))}
                 </div>
               </div>
             </div>
@@ -416,14 +420,14 @@ export default function TradingManualView() {
               {/* Estado del simulador */}
               <div className="text-center">
                 <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  state.isActive 
+                  state?.isActive 
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-red-100 text-red-800'
                 }`}>
                   <div className={`w-2 h-2 rounded-full mr-2 ${
-                    state.isActive ? 'bg-green-500' : 'bg-red-500'
+                    state?.isActive ? 'bg-green-500' : 'bg-red-500'
                   }`}></div>
-                  {state.isActive ? 'Activo' : 'Inactivo'}
+                  {state?.isActive ? 'Activo' : 'Inactivo'}
                 </div>
               </div>
             </div>
