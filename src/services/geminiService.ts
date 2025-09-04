@@ -57,3 +57,36 @@ export async function submitSupportQuestion(question: string) {
   await delay();
   return { answer: 'AI (placeholder): estamos procesando tu consulta.' };
 }
+
+type NewsArticle = { id?: number|string; title: string; source?: string; url?: string };
+
+export async function getNewsAnalysis(articles: NewsArticle[]) {
+  const ENABLE_AI = (import.meta.env?.VITE_ENABLE_AI ?? import.meta.env?.ENABLE_AI ?? '0') === '1';
+  const HAS_KEY = !!(import.meta.env?.VITE_GEMINI_API_KEY ?? import.meta.env?.GEMINI_API_KEY);
+
+  // mock delay
+  const delay = (ms = 200) => new Promise(res => setTimeout(res, ms));
+
+  if (!ENABLE_AI || !HAS_KEY) {
+    await delay();
+    const count = articles?.length ?? 0;
+    const sample = (articles?.[0]?.title ?? 'no titles').slice(0, 60);
+    return {
+      summary: `AI offline (mock): ${count} artículos. Ej: "${sample}"`,
+      sentiment: count % 3 === 0 ? 'neutral' : (count % 2 === 0 ? 'bullish' : 'bearish'),
+      highlights: [
+        'Volumen de noticias estable',
+        'Catalizadores a corto plazo limitados',
+        'Usa PAPER=1 para testear reacciones a titulares'
+      ],
+    };
+  }
+
+  // TODO: integración real (placeholder)
+  await delay();
+  return {
+    summary: 'AI (placeholder): análisis básico de titulares.',
+    sentiment: 'neutral',
+    highlights: ['Sin señal fuerte', 'Monitorear próximos eventos'],
+  };
+}
