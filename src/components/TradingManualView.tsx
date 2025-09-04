@@ -1,27 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  ComposedChart,
-  Line
+import {
+  ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Area, Bar, CartesianGrid,
 } from 'recharts';
 import { createSimulator } from '../core/manualTrading/simulator';
 import { coach, nextAdvice, feedback } from '../core/manualTrading/coach';
 import { getSignal } from '../core/manualTrading/strategy';
 import { State, Trade, Advice, TradeFeedback } from '../core/manualTrading/types';
 import { useEnvironment } from '../hooks/useEnvironment';
-import { ensureArray, toNumber } from '../lib/safe';
+import { ensureArray, num, hasAllKeys, onlyFinite } from '../lib/safe';
 import { useContainerReady } from '../hooks/useContainerReady';
 import { useCandles } from '../hooks/useCandles';
 
 export default function TradingManualView() {
   const { ref, ready } = useContainerReady();
-  const { data: candles, loading, error } = useCandles();
+  const { data: candles, loading, error, symbol, timeframe } = useCandles();
   const [state, setState] = useState<State>({
     closes: [100],
     lastPrice: 100,
@@ -92,8 +84,8 @@ export default function TradingManualView() {
 
     const trade = simulatorRef.current.applyTrade({
       side: selectedSide,
-      qty: toNumber(quantity),
-      price: toNumber(state?.lastPrice)
+      qty: num(quantity),
+      price: num(state?.lastPrice)
     });
 
     // Calcular feedback
@@ -133,16 +125,26 @@ export default function TradingManualView() {
     }
   };
 
-  // Preparar datos para el gráfico (blindados)
-  const chartData = ensureArray(candles).map((d: any, index) => ({
-    time: d?.t,
-    open: toNumber(d?.o),
-    high: toNumber(d?.h),
-    low: toNumber(d?.l),
-    close: toNumber(d?.c),
-    volume: toNumber(d?.v),
-    rsi: toNumber(state?.rsi, 50)
-  }));
+  // Normalizamos a un shape simple: {t,o,h,l,c,v,label,close,volume}
+  const rows = ensureArray(candles)
+    .filter(c => hasAllKeys(c, ['t','o','h','l','c','v']))
+    .map(c => ({
+      t: num((c as any).t),
+      o: num((c as any).o),
+      h: num((c as any).h),
+      l: num((c as any).l),
+      c: num((c as any).c),
+      v: num((c as any).v),
+    }))
+    .filter(r => onlyFinite(r, ['o','h','l','c','v']))
+    .map(r => ({
+      ...r,
+      label: new Date(r.t).toLocaleTimeString(),
+      close: r.c,
+      volume: r.v,
+    }));
+
+  const hasData = rows.length > 0;
 
   // Manejo de errores
   if (error) {
@@ -195,39 +197,39 @@ export default function TradingManualView() {
         {/* Panel Principal - Gráfico y Controles */}
         <div className="lg:col-span-3 space-y-6">
           {/* Gráfico */}
-          <div className="bg-white rounded-lg shadow-md p-6" ref={ref} style={{minHeight: 320}}>
+          <div className="bg-white rounded-lg shadow-md p-6" ref={ref} style={{minHeight: 360}}>
             <h2 className="text-xl font-semibold mb-4">Precio en Tiempo Real</h2>
-            {loading ? (
-              <div style={{padding: 16, color: '#888', textAlign: 'center', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                Cargando datos…
-              </div>
-            ) : chartData.length === 0 ? (
-              <div style={{padding: 16, color: '#888', textAlign: 'center', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                No hay datos para mostrar todavía.
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={400}>
-                <ComposedChart data={chartData}>
+            
+            {/* Encabezado / badges */}
+            <div style={{display:'flex',gap:8,alignItems:'center',padding:'8px 0'}}>
+              <span>Symbol: <b>{symbol}</b></span>
+              <span>• TF: <b>{timeframe}</b></span>
+            </div>
+
+            {loading && <div style={{padding:16,color:'#888'}}>Cargando datos…</div>}
+            {!loading && !ready && <div style={{padding:16,color:'#888'}}>Inicializando gráfico…</div>}
+            {!loading && ready && !hasData && (
+              <div style={{padding:16,color:'#888'}}>No hay datos para mostrar todavía.</div>
+            )}
+
+            {ready && hasData && (
+              <ResponsiveContainer width="100%" height={300}>
+                <ComposedChart data={rows}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis domain={['dataMin - 1', 'dataMax + 1']} />
-                  <Tooltip 
-                    formatter={(value: any) => [formatPrice(value), 'Precio']}
-                    labelFormatter={(label) => `Tick ${label}`}
+                  <XAxis dataKey="label" minTickGap={24} />
+                  <YAxis yAxisId="p" />
+                  <YAxis yAxisId="v" orientation="right" hide />
+                  <Tooltip />
+                  <Area
+                    yAxisId="p"
+                    type="monotone"
+                    dataKey="close"
+                    fillOpacity={0.2}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="close" 
-                    stroke="#3b82f6" 
-                    fill="#3b82f6" 
-                    fillOpacity={0.1}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="rsi" 
-                    stroke="#ef4444" 
-                    strokeWidth={2}
-                    yAxisId={1}
+                  <Bar
+                    yAxisId="v"
+                    dataKey="volume"
+                    barSize={3}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -337,16 +339,16 @@ export default function TradingManualView() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatQuantity(toNumber(trade?.qty))}
+                        {formatQuantity(num(trade?.qty))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(toNumber(trade?.price))}
+                        {formatPrice(num(trade?.price))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(toNumber(trade?.fee))}
+                        {formatPrice(num(trade?.fee))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatPrice(toNumber(trade?.total))}
+                        {formatPrice(num(trade?.total))}
                       </td>
                     </tr>
                   ))}
@@ -372,14 +374,14 @@ export default function TradingManualView() {
               <div>
                 <span className="text-sm text-gray-600">Precio Actual:</span>
                 <div className="text-2xl font-bold text-gray-900">
-                  {formatPrice(toNumber(state?.lastPrice))}
+                  {formatPrice(num(state?.lastPrice))}
                 </div>
               </div>
               
               <div>
                 <span className="text-sm text-gray-600">RSI:</span>
                 <div className="text-lg font-semibold text-gray-900">
-                  {state?.rsi ? toNumber(state.rsi).toFixed(2) : 'N/A'}
+                  {state?.rsi ? num(state.rsi).toFixed(2) : 'N/A'}
                 </div>
               </div>
               
@@ -395,9 +397,9 @@ export default function TradingManualView() {
               <div>
                 <span className="text-sm text-gray-600">PnL Total:</span>
                 <div className={`text-lg font-semibold ${
-                  toNumber(state?.pnl) >= 0 ? 'text-green-600' : 'text-red-600'
+                  num(state?.pnl) >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {formatPrice(toNumber(state?.pnl))}
+                  {formatPrice(num(state?.pnl))}
                 </div>
               </div>
             </div>

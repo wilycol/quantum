@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-// Devuelve ref y flag ready cuando el contenedor tiene ancho/alto > 0
-export function useContainerReady() {
+export function useContainerReady(minW = 20, minH = 20) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -11,8 +10,7 @@ export function useContainerReady() {
 
     const check = () => {
       const r = el.getBoundingClientRect();
-      const ok = r.width > 10 && r.height > 10;
-      setReady(ok);
+      setReady(r.width > minW && r.height > minH);
     };
 
     check();
@@ -20,7 +18,7 @@ export function useContainerReady() {
     const ro = new ResizeObserver(check);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [minW, minH]);
 
   return { ref, ready };
 }
