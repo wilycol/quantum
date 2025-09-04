@@ -10,6 +10,12 @@ const AVAILABLE_ASSETS = [...new Set(MOCK_POSITIONS.map(p => p.instrument))];
 const ASSET_COLORS = ['#34c759', '#ff9500', '#007aff', '#ff3b30', '#5856d6', '#ff2d55', '#af52de'];
 
 const INITIAL_PARAMS: Omit<SimulationConfig, 'riskLevel' | 'useAI'> = {
+    initialBalance: 10000,
+    riskPerTrade: 2,
+    maxPositions: 5,
+    stopLoss: 2,
+    takeProfit: 4,
+    leverage: 1,
     initialAmount: 10000,
     simulationTime: 5, // in minutes
     assets: AVAILABLE_ASSETS.slice(0, 5),
@@ -60,7 +66,7 @@ const QuantumCoreView: React.FC = () => {
     const isRunning = status === 'running';
 
     const handleExport = () => {
-        if (!progress?.snapshot?.trades || progress.snapshot.trades.length === 0) {
+        if (typeof progress === 'number' || !progress?.snapshot?.trades || progress.snapshot.trades.length === 0) {
             alert("No trades to export.");
             return;
         }
@@ -82,15 +88,15 @@ const QuantumCoreView: React.FC = () => {
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
-    const metrics = progress?.snapshot?.metrics || {
+    const metrics = (typeof progress === 'object' && progress?.snapshot?.metrics) || {
         currentBalance: params.initialAmount,
         totalProfit: 0,
         totalTrades: 0,
         winRate: 0,
     };
 
-    const trades = progress?.snapshot?.trades || [];
-    const confidenceHistory = progress?.snapshot?.confidenceHistory || [];
+    const trades = (typeof progress === 'object' && progress?.snapshot?.trades) || [];
+    const confidenceHistory = (typeof progress === 'object' && progress?.snapshot?.confidenceHistory) || [];
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
@@ -148,7 +154,7 @@ const QuantumCoreView: React.FC = () => {
             <div className="lg:col-span-3 flex flex-col gap-6">
                 <Card className="bg-brand-navy border border-gray-700/50">
                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-                        <div><h4 className="text-sm text-gray-400 uppercase">Elapsed</h4><p className="text-2xl font-bold text-brand-gold">{formatTime(progress?.elapsedMs ?? 0)}</p></div>
+                        <div><h4 className="text-sm text-gray-400 uppercase">Elapsed</h4><p className="text-2xl font-bold text-brand-gold">{formatTime((typeof progress === 'object' && progress?.elapsedMs) ?? 0)}</p></div>
                         <div><h4 className="text-sm text-gray-400 uppercase">Balance</h4><p className="text-2xl font-bold text-white">${metrics.currentBalance.toFixed(2)}</p></div>
                         <div><h4 className="text-sm text-gray-400 uppercase">P/L</h4><p className={`text-2xl font-bold ${metrics.totalProfit >= 0 ? 'text-brand-green' : 'text-brand-red'}`}>${metrics.totalProfit.toFixed(2)}</p></div>
                         <div><h4 className="text-sm text-gray-400 uppercase">Trades</h4><p className="text-2xl font-bold text-white">{metrics.totalTrades}</p></div>
@@ -157,7 +163,7 @@ const QuantumCoreView: React.FC = () => {
                 </Card>
                  <div className="flex-grow grid grid-cols-1 xl:grid-cols-2 gap-6">
                     <Card className="bg-brand-navy border border-gray-700/50 min-h-[250px] flex flex-col">
-                         <h3 className="text-lg font-bold text-brand-gold mb-2">Confidence Tracker (Steps: {progress?.steps ?? 0})</h3>
+                         <h3 className="text-lg font-bold text-brand-gold mb-2">Confidence Tracker (Steps: {(typeof progress === 'object' && progress?.steps) ?? 0})</h3>
                          <div className="flex-grow">
                              <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={confidenceHistory} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>

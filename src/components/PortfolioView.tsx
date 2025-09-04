@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import Card from './ui/Card';
-import { MOCK_PORTFOLIO_ASSETS, MOCK_REAL_PORTFOLIO_ASSETS, MOCK_PORTFOLIO_HISTORY, MOCK_PORTFOLIO_EVOLUTION } from '../constants';
+import { MOCK_PORTFOLIO_ASSETS, MOCK_REAL_PORTFOLIO_ASSETS, MOCK_PORTFOLIO_HISTORY, MOCK_PORTFOLIO_EVOLUTION, MOCK_PORTFOLIO_EVENTS } from '../constants';
 import { PortfolioAsset } from '../types';
 import { getPortfolioAnalysis, getComparisonAnalysis } from '../services/geminiService';
 import { useSettings } from '../contexts/SettingsContext';
@@ -304,7 +304,7 @@ const PortfolioView: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {MOCK_PORTFOLIO_HISTORY.map(item => (
+                            {MOCK_PORTFOLIO_EVENTS.map(item => (
                                 <tr key={item.id} className="border-b border-gray-800 last:border-b-0">
                                     <td className="py-3 px-3 text-gray-400">{formatTimestamp(item.timestamp)}</td>
                                     <td className="py-3 px-3"><span className={`font-semibold ${item.type === 'BUY' ? 'text-brand-green' : item.type === 'SELL' ? 'text-brand-red' : 'text-white'}`}>{item.type}</span></td>

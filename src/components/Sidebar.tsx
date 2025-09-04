@@ -31,6 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setView }) => {
 
   const navItems = [
     { id: 'quantum_core', name: t('quantumCore'), icon: CpuChipIconModern },
+    { id: 'manual_trading', name: 'Manual Trading', icon: MonitorDotIcon },
     { id: 'desk', name: 'Quantum Desk', icon: MonitorDotIcon },
     { id: 'simulator', name: 'AI Simulator', icon: CpuChipIcon },
     { id: 'portfolio', name: 'Portfolio', icon: WalletIcon },

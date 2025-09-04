@@ -2,6 +2,7 @@
 import React from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import { MainView } from '../types';
+import { useEnvironment } from '../hooks/useEnvironment';
 
 const MagnifyingGlassIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -22,12 +23,17 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ view, setView }) => {
   const { settings, t } = useSettings();
+  const { enableAI, paper, mode } = useEnvironment();
   const unreadCount = settings.notifications.filter(n => !n.isRead).length;
 
   const titles: Record<MainView, { title: string; subtitle: string }> = {
       quantum_core: {
           title: t('quantumCore'),
           subtitle: t('quantumCoreSubtitle')
+      },
+      manual_trading: {
+          title: 'Manual Trading',
+          subtitle: 'Manual trading with AI coaching in simulation mode.'
       },
       simulator: {
           title: 'AI Trading Simulator',
@@ -70,6 +76,34 @@ const Header: React.FC<HeaderProps> = ({ view, setView }) => {
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-brand-gold drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">{title}</h1>
         <p className="text-sm text-gray-400 hidden sm:block">{subtitle}</p>
+        
+        {/* Status Bar */}
+        <div className="flex items-center gap-3 mt-2">
+          {/* Mode y Paper Status */}
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-gray-500">Mode:</span>
+            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full font-medium">
+              {mode}
+            </span>
+            <span className="text-gray-500">•</span>
+            <span className="text-gray-500">Paper:</span>
+            <span className={`px-2 py-1 rounded-full font-medium ${
+              paper ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}>
+              {paper ? 'ON' : 'OFF'}
+            </span>
+          </div>
+          
+          {/* AI Status */}
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">•</span>
+            <span className={`px-2 py-1 rounded-full font-medium text-xs ${
+              enableAI ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'
+            }`}>
+              AI: {enableAI ? 'Active' : 'Mock'}
+            </span>
+          </div>
+        </div>
       </div>
       <div className="flex items-center space-x-2 sm:space-x-4">
         <div className="relative hidden md:block">

@@ -15,6 +15,12 @@ const AVAILABLE_ASSETS = [...new Set(MOCK_POSITIONS.map(p => p.instrument))];
 const ASSET_COLORS = ['#34c759', '#ff9500', '#007aff', '#ff3b30', '#5856d6', '#ff2d55', '#af52de'];
 
 const INITIAL_CONFIG: SimulationConfig = {
+    initialBalance: 10000,
+    riskPerTrade: 2,
+    maxPositions: 5,
+    stopLoss: 2,
+    takeProfit: 4,
+    leverage: 1,
     initialAmount: 10000,
     simulationTime: 5, // in minutes
     assets: AVAILABLE_ASSETS.slice(0, 5),
@@ -28,7 +34,13 @@ const INITIAL_METRICS: SimulationMetrics = {
     currentBalance: INITIAL_CONFIG.initialAmount,
     totalProfit: 0,
     totalTrades: 0,
+    winningTrades: 0,
+    losingTrades: 0,
     winRate: 0,
+    totalPL: 0,
+    maxDrawdown: 0,
+    sharpeRatio: 0,
+    profitFactor: 0,
 };
 
 // Custom Tooltip for the new Executed Operations chart
@@ -85,13 +97,16 @@ const SimulatorView: React.FC = () => {
 
     const initializeAssetStates = useCallback(() => {
         return AVAILABLE_ASSETS.map((instrument): AssetState => ({
+            symbol: instrument,
+            price: 100 + Math.random() * 50,
+            change24h: (Math.random() - 0.5) * 10,
+            volume: 1500 + (Math.random() * 1000),
             instrument,
             priceHistory: MOCK_CANDLESTICK_DATA.map(c => ({ ...c, time: new Date().toLocaleTimeString() })), // Start with fresh timestamps
             confidence: 50,
             rsi: 50,
             trend: 'SIDEWAYS',
             noise: Math.random(),
-            volume: 1500 + (Math.random() * 1000),
             momentum: 0,
             signalReliability: 60 + (Math.random() * 20),
         }));
@@ -220,6 +235,8 @@ const SimulatorView: React.FC = () => {
                     const newTrade: SimulatedTrade = {
                         id: `trade_${Date.now()}_${asset.instrument}`,
                         instrument: asset.instrument,
+                        type: action,
+                        size: potentialInvestment / asset.priceHistory[asset.priceHistory.length - 1].close,
                         action,
                         entryPrice: asset.priceHistory[asset.priceHistory.length - 1].close,
                         timestamp: Date.now(),

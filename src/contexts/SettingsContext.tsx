@@ -98,105 +98,79 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } else {
             root.classList.add('dark');
         }
+    }, [settings.theme]);
 
-        root.classList.remove('text-sm', 'text-base', 'text-lg');
-        switch(settings.fontSize) {
-            case 'Small': root.classList.add('text-sm'); break;
-            case 'Large': root.classList.add('text-lg'); break;
-            default: root.classList.add('text-base'); break;
-        }
-
+    // Save settings to localStorage whenever they change
+    useEffect(() => {
         try {
             localStorage.setItem('quantumTradeSettings', JSON.stringify(settings));
         } catch (error) {
             console.error("Failed to save settings to localStorage", error);
         }
     }, [settings]);
-    
-    const playSound = useCallback((type: 'info' | 'ai_alert' | 'warning') => {
-        if(settings.sounds) {
-            const audioContext = new (window.AudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
 
-            switch (type) {
-                case 'ai_alert':
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
-                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                    break;
-                case 'warning':
-                     oscillator.type = 'sawtooth';
-                    oscillator.frequency.setValueAtTime(300, audioContext.currentTime); // D#4
-                    gainNode.gain.setValueAtTime(0.25, audioContext.currentTime);
-                    break;
-                case 'info':
-                default:
-                    oscillator.type = 'triangle';
-                    oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4
-                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                    break;
-            }
-            
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + 0.15);
+    // Translation function
+    const t = useCallback((key: TranslationKey, ...args: any[]): string => {
+        const translation = translations[settings.language]?.[key] || translations['English']?.[key] || key;
+        if (args.length > 0) {
+            return args.reduce((str, arg, index) => {
+                return str.replace(`{${index}}`, String(arg));
+            }, translation);
         }
-    }, [settings.sounds]);
+        return translation;
+    }, [settings.language]);
 
+    // Notification dispatch function
     const dispatchNotification = useCallback((payload: { type: NotificationType; title: string; message: string; linkTo?: MainView }) => {
         const newNotification: AppNotification = {
             id: Date.now(),
+            type: payload.type,
+            title: payload.title,
+            message: payload.message,
+            linkTo: payload.linkTo,
             timestamp: Date.now(),
             isRead: false,
-            ...payload,
         };
-        setSettings(prev => ({ ...prev, notifications: [newNotification, ...prev.notifications] }));
-        
-        let soundType: 'info' | 'ai_alert' | 'warning' = 'info';
-        if (payload.type === 'ai_alert') soundType = 'ai_alert';
-        if (payload.type === 'portfolio_warning') soundType = 'warning';
-        playSound(soundType);
-
-    }, [playSound]);
-
-    const markAllAsRead = useCallback(() => {
         setSettings(prev => ({
             ...prev,
-            notifications: prev.notifications.map(n => ({...n, isRead: true}))
+            notifications: [newNotification, ...prev.notifications]
         }));
     }, []);
 
-    const clearAllNotifications = useCallback(() => {
-        setSettings(prev => ({ ...prev, notifications: [] }));
+    // Mark all notifications as read
+    const markAllAsRead = useCallback(() => {
+        setSettings(prev => ({
+            ...prev,
+            notifications: prev.notifications.map(n => ({ ...n, isRead: true }))
+        }));
     }, []);
 
-    const t = useCallback((key: TranslationKey, ...args: any[]): string => {
-        const lang = settings.language;
-        const langKey = lang as keyof typeof translations;
-        const translationSet = translations[langKey] || translations.English;
-        let template = translationSet[key] || translations.English[key] || String(key);
+    // Clear all notifications
+    const clearAllNotifications = useCallback(() => {
+        setSettings(prev => ({
+            ...prev,
+            notifications: []
+        }));
+    }, []);
 
-        if (args.length > 0) {
-            args.forEach((arg, index) => {
-                template = template.replace(`{${index}}`, String(arg));
-            });
-        }
-
-        return template;
-    }, [settings.language]);
-
-    const value = useMemo(() => ({ settings, setSettings, t, dispatchNotification, markAllAsRead, clearAllNotifications }), [settings, setSettings, t, dispatchNotification, markAllAsRead, clearAllNotifications]);
+    // Memoize the context value to prevent unnecessary re-renders
+    const contextValue = useMemo(() => ({
+        settings,
+        setSettings,
+        t,
+        dispatchNotification,
+        markAllAsRead,
+        clearAllNotifications,
+    }), [settings, t, dispatchNotification, markAllAsRead, clearAllNotifications]);
 
     return (
-        <SettingsContext.Provider value={value}>
+        <SettingsContext.Provider value={contextValue}>
             {children}
         </SettingsContext.Provider>
     );
 };
 
-// Create a custom hook for easy access
+// Custom hook to use the settings context
 export const useSettings = (): SettingsContextType => {
     const context = useContext(SettingsContext);
     if (context === undefined) {
