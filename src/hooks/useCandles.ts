@@ -49,7 +49,7 @@ export function useCandles() {
     fetchCandles();
   }, [dataMode, viteSymbol, viteTimeframe]);
 
-  return { data, loading, error };
+  return { data, loading, error, symbol: viteSymbol, timeframe: viteTimeframe };
 }
 
 // Función para generar datos mock de velas
