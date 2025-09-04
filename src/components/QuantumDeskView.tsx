@@ -4,6 +4,7 @@ import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveCon
 import { MOCK_WALLET_DATA, MOCK_CANDLESTICK_DATA, MOCK_AI_DECISIONS } from '../constants';
 import { WalletData, Candle, AIDecision, DemoTrade } from '../types';
 import { getTradeAdvice } from '../services/geminiService';
+import { ensureArray } from '../lib/ensureArray';
 import { useSettings } from '../contexts/SettingsContext';
 
 
@@ -228,10 +229,10 @@ const QuantumDeskView: React.FC = () => {
         setAiTrainingMarker(null);
         
         if (demoTrades.length > 0) {
-            const totalPL = demoTrades.reduce((acc, trade) => acc + (trade.pl || 0), 0);
+            const totalPL = ensureArray(demoTrades).reduce((acc, trade: any) => acc + (trade?.pl ?? 0), 0);
             const successfulTrades = demoTrades.filter(t => t.wasCorrectAction).length;
             const reactionTrades = demoTrades.filter(t => t.reactionTime);
-            const avgReactionTime = reactionTrades.length > 0 ? reactionTrades.reduce((acc, t) => acc + t.reactionTime!, 0) / reactionTrades.length : 0;
+            const avgReactionTime = reactionTrades.length > 0 ? (ensureArray(reactionTrades).reduce((acc, t: any) => acc + (t?.reactionTime ?? 0), 0) as number) / (reactionTrades.length || 1) : 0;
             setDemoResults({
                 totalPL,
                 trades: demoTrades.length,
@@ -248,12 +249,12 @@ const QuantumDeskView: React.FC = () => {
             setAssets(initialMockAssets);
             setWalletData(MOCK_WALLET_DATA);
         } else if (operatingMode === 'demo_real_signals') {
-            const liveMockAssets = initialMockAssets.map(a => ({...a, sell: a.sell * 1.001, buy: a.buy * 1.001}));
+            const liveMockAssets = ensureArray(initialMockAssets).map(a => ({...a, sell: a.sell * 1.001, buy: a.buy * 1.001}));
             setAssets(liveMockAssets);
             setWalletData(MOCK_WALLET_DATA);
             setActiveAsset(liveMockAssets[0]);
         } else if (operatingMode === 'modo_real') {
-            const liveMockAssets = initialMockAssets.map(a => ({...a, sell: a.sell * 1.002, buy: a.buy * 1.002}));
+            const liveMockAssets = ensureArray(initialMockAssets).map(a => ({...a, sell: a.sell * 1.002, buy: a.buy * 1.002}));
             const liveWalletData = {...MOCK_WALLET_DATA, balance: 50000, equity: 51234, credit: 0};
             setAssets(liveMockAssets);
             setWalletData(liveWalletData);
@@ -282,7 +283,7 @@ const QuantumDeskView: React.FC = () => {
             const basePrice = activeAsset.buy;
             const volatility = activeAsset.category === 'Crypto' ? 0.05 : (activeAsset.category === 'Stocks' ? 0.02 : 0.005);
 
-            sourceData = MOCK_CANDLESTICK_DATA.map((d, i) => {
+            sourceData = ensureArray(MOCK_CANDLESTICK_DATA).map((d, i) => {
                 const seed = (activeAsset.name.charCodeAt(0) + i) / 100;
                 const multiplier = 1 + Math.sin(seed) * volatility;
                 const open = basePrice * (multiplier + (Math.random() - 0.5) * volatility * 0.1);
@@ -294,11 +295,11 @@ const QuantumDeskView: React.FC = () => {
             });
         }
         
-        return sourceData.map(d => ({ ...d, wick: [d.low, d.high] }));
+        return ensureArray(sourceData).map(d => ({ ...d, wick: [d.low, d.high] }));
 
     }, [activeAsset, operatingMode, isDemoSessionActive, demoChartData]);
 
-    const yDomain = chartData.length > 0 ? [Math.min(...chartData.map(d => d.low)), Math.max(...chartData.map(d => d.high))] : [0, 1];
+    const yDomain = chartData.length > 0 ? [Math.min(...ensureArray(chartData).map((d: any) => d.low)), Math.max(...ensureArray(chartData).map((d: any) => d.high))] : [0, 1];
     const yBuffer = (yDomain[1] - yDomain[0]) * 0.1;
     
     const handleDemoTrade = (action: 'BUY' | 'SELL', price?: number) => {
@@ -554,7 +555,7 @@ const QuantumDeskView: React.FC = () => {
     const isTradingDisabled = operatingMode === 'demo_sim_total' && !isDemoSessionActive;
     
     const renderAiAdvice = (adviceText: string) => {
-        return adviceText.split('\n').map((line, i) => {
+        return ensureArray(adviceText.split('\n')).map((line, i) => {
             if (line.startsWith('**')) {
                 const parts = line.split('**');
                 return <p key={i} className="my-1"><strong className="text-brand-gold/90">{parts[1]}</strong>{parts[2]}</p>;

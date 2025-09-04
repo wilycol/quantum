@@ -13,8 +13,21 @@ import SupportView from './components/SupportView';
 import NotificationsView from './components/NotificationsView';
 import HistoryView from './components/HistoryView';
 import TradingManualView from './components/TradingManualView';
+import { withBoundary } from './components/withBoundary';
 import { useSettings } from './contexts/SettingsContext';
 import { MainView, AppNotification } from './types';
+
+// versiones envueltas con ErrorBoundary
+const TradingManualSafe = withBoundary('TradingManualView', TradingManualView);
+const PortfolioSafe = withBoundary('PortfolioView', PortfolioView);
+const QuantumCoreSafe = withBoundary('QuantumCoreView', QuantumCoreView);
+const SimulatorSafe = withBoundary('SimulatorView', SimulatorView);
+const QuantumDeskSafe = withBoundary('QuantumDeskView', QuantumDeskView);
+const SettingsSafe = withBoundary('SettingsView', SettingsView);
+const NewsSafe = withBoundary('NewsView', NewsView);
+const SupportSafe = withBoundary('SupportView', SupportView);
+const NotificationsSafe = withBoundary('NotificationsView', NotificationsView);
+const HistorySafe = withBoundary('HistoryView', HistoryView);
 
 type AppState = 'splash' | 'login' | 'main';
 
@@ -83,16 +96,16 @@ const App: React.FC = () => {
             <div className="flex-1 flex flex-col overflow-hidden">
               <Header view={currentView} setView={setCurrentView} />
               <main className={`flex-1 overflow-y-auto ${needsPadding ? 'p-2 sm:p-4 lg:p-6' : ''}`}>
-                {currentView === 'quantum_core' && <QuantumCoreView />}
-                {currentView === 'manual_trading' && <TradingManualView />}
-                {currentView === 'simulator' && <SimulatorView />}
-                {currentView === 'desk' && <QuantumDeskView />}
-                {currentView === 'portfolio' && <PortfolioView />}
-                {currentView === 'settings' && <SettingsView />}
-                {currentView === 'news' && <NewsView />}
-                {currentView === 'support' && <SupportView />}
-                {currentView === 'notifications' && <NotificationsView />}
-                {currentView === 'history' && <HistoryView />}
+                {currentView === 'quantum_core' && <QuantumCoreSafe />}
+                {currentView === 'manual_trading' && <TradingManualSafe />}
+                {currentView === 'simulator' && <SimulatorSafe />}
+                {currentView === 'desk' && <QuantumDeskSafe />}
+                {currentView === 'portfolio' && <PortfolioSafe />}
+                {currentView === 'settings' && <SettingsSafe />}
+                {currentView === 'news' && <NewsSafe />}
+                {currentView === 'support' && <SupportSafe />}
+                {currentView === 'notifications' && <NotificationsSafe />}
+                {currentView === 'history' && <HistorySafe />}
               </main>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { Tick } from './types';
+import { ensureArray } from '../../lib/ensureArray';
 
 /**
  * Calcula el RSI (Relative Strength Index)
@@ -75,8 +76,8 @@ export function getSignal(closes: number[]): 'buy' | 'sell' | 'hold' {
 
   // Análisis de tendencia simple
   if (closes.length >= 20) {
-    const shortTerm = closes.slice(-5).reduce((a, b) => a + b, 0) / 5;
-    const longTerm = closes.slice(-20).reduce((a, b) => a + b, 0) / 20;
+    const shortTerm = ensureArray(closes.slice(-5)).reduce((a, b) => a + (b ?? 0), 0) / 5;
+    const longTerm = ensureArray(closes.slice(-20)).reduce((a, b) => a + (b ?? 0), 0) / 20;
     
     if (shortTerm > longTerm * 1.02) {
       return 'sell'; // Tendencia alcista fuerte
