@@ -123,7 +123,7 @@ const Header: React.FC<HeaderProps> = ({ view, setView }) => {
           )}
         </button>
         <button className="rounded-full hover:ring-2 hover:ring-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold transition-all duration-300" title="User Profile">
-            <img src="https://res.cloudinary.com/djojon779/image/upload/v1754407877/hunicorn_jbyfkj.png" alt="User Avatar" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full" />
+            <img src="/img/avatar.svg" alt="User Avatar" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full" />
         </button>
       </div>
     </header>

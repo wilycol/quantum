@@ -102,7 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setView }) => {
         </a>
         <div className={`flex items-center pt-4 mt-4 border-t border-gray-200 dark:border-gray-700/30 ${isCollapsed ? 'justify-center' : ''}`}>
           <div className="relative flex-shrink-0">
-             <img src="https://res.cloudinary.com/djojon779/image/upload/v1754407877/hunicorn_jbyfkj.png" alt="User Avatar" className="w-10 h-10 rounded-full" />
+             <img src="/img/avatar.svg" alt="User Avatar" className="w-10 h-10 rounded-full" />
              <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-white dark:ring-[#0B0C10]"></span>
           </div>
           <div className={`flex flex-col ml-3 ${isCollapsed ? 'hidden' : ''}`}>
