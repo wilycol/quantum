@@ -3,7 +3,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import Card from './ui/Card';
 import { MOCK_PORTFOLIO_ASSETS, MOCK_REAL_PORTFOLIO_ASSETS, MOCK_PORTFOLIO_HISTORY, MOCK_PORTFOLIO_EVOLUTION } from '../constants';
-import { PortfolioAsset } from '../types';
+import { PortfolioAsset } from '../../types';
 import { getPortfolioAnalysis, getComparisonAnalysis } from '../services/geminiService';
 import { useSettings } from '../contexts/SettingsContext';
 

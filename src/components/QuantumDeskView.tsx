@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Rectangle, Area, Legend, Line, ReferenceLine, ReferenceArea } from 'recharts';
 import { MOCK_WALLET_DATA, MOCK_CANDLESTICK_DATA, MOCK_AI_DECISIONS } from '../constants';
-import { WalletData, Candle, AIDecision, DemoTrade } from '../types';
+import { WalletData, Candle, AIDecision, DemoTrade } from '../../types';
 import { getTradeAdvice } from '../services/geminiService';
 import { useSettings } from '../contexts/SettingsContext';
 

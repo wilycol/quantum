@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useSettings } from '../contexts/SettingsContext';
-import { MainView } from '../types';
+import { MainView } from '../../types';
 import { useEnvironment } from '../hooks/useEnvironment';
 
 const MagnifyingGlassIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (

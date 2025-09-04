@@ -3,7 +3,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import Card from './ui/Card';
 import { useSettings } from '../contexts/SettingsContext';
 import { MOCK_FAQS } from '../constants';
-import { FAQItem } from '../types';
+import { FAQItem } from '../../types';
 import { getSupportChatResponse } from '../services/geminiService';
 
 // --- ICONS ---

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ResponsiveContainer, ComposedChart, Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Cell } from 'recharts';
-import { SimulationConfig, SimulatedTrade } from '../types';
+import { SimulationConfig, SimulatedTrade } from '../../types';
 import { MOCK_POSITIONS } from '../constants';
 import Card from './ui/Card';
 import { useQuantumCore } from '../hooks/useQuantumCore';

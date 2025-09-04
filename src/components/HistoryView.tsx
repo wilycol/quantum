@@ -3,7 +3,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import Card from './ui/Card';
 import { useSettings } from '../contexts/SettingsContext';
 import { MOCK_MANUAL_TRADES, MOCK_AI_TRADES, MOCK_AI_INTERACTIONS } from '../constants';
-import { ManualTradeHistory, AITradeHistory, AIInteractionLog } from '../types';
+import { ManualTradeHistory, AITradeHistory, AIInteractionLog } from '../../types';
 import { getWeeklyAnalysis } from '../services/geminiService';
 
 // --- ICONS ---

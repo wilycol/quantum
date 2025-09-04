@@ -1,9 +1,9 @@
 import React from 'react';
 import Card from './ui/Card';
-import { UserRiskConfig, AIStrategyConfig, NotificationConfig } from '../types';
+import { UserRiskConfig, AIStrategyConfig, NotificationConfig } from '../../types';
 import { DEFAULT_USER_RISK_CONFIG, DEFAULT_AI_STRATEGY_CONFIG } from '../constants';
 import { useSettings, GlobalSettings, DEFAULT_GLOBAL_PREFS } from '../contexts/SettingsContext';
-import { TranslationKey } from '../i18n/translations';
+import { TranslationKey } from '../../i18n/translations';
 
 // Icons
 const ShieldCheckIcon = (props: React.SVGProps<SVGSVGElement>) => (<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.956 11.956 0 0 1 12 3c2.35 0 4.597.433 6.568 1.263m-13.136 0A11.956 11.956 0 0 1 12 3c-2.35 0-4.597.433-6.568-1.263m13.136 0A11.956 11.956 0 0 0 12 18.75c-2.35 0-4.597-.433-6.568-1.263m13.136 0A11.956 11.956 0 0 0 12 18.75c2.35 0 4.597.433 6.568-1.263m-13.136 0-3.263-3.263A11.956 11.956 0 0 1 2.25 12c0-2.35.433-4.597 1.263-6.568m18 6.568a11.956 11.956 0 0 1-1.263 6.568m-13.136-13.136L12 18.75" /></svg>);

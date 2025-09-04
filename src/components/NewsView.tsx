@@ -3,7 +3,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import Card from './ui/Card';
 import MarketInsights from './MarketInsights';
 import { MOCK_MARKET_PRICES, MOCK_NEWS_ARTICLES } from '../constants';
-import { NewsArticle } from '../types';
+import { NewsArticle } from '../../types';
 import { getNewsAnalysis } from '../services/geminiService';
 import { useSettings } from '../contexts/SettingsContext';
 

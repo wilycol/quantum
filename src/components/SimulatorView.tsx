@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Label, Line, Legend, BarChart, Cell } from 'recharts';
-import { SimulationConfig, SimulatedTrade, SimulationMetrics, Candle, AssetState } from '../types';
+import { SimulationConfig, SimulatedTrade, SimulationMetrics, Candle, AssetState } from '../../types';
 import { MOCK_CANDLESTICK_DATA, MOCK_POSITIONS } from '../constants';
 import Card from './ui/Card';
 
