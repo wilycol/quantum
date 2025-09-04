@@ -11,6 +11,21 @@ export interface CandleData {
   v: number;    // volume
 }
 
+// Función para obtener datos iniciales (mock o live)
+const getInitialCandles = async (mode: string, symbol: string, timeframe: string) => {
+  if (mode === 'mock') {
+    // Datos mock
+    return generateMockCandles(symbol, timeframe);
+  } else {
+    // Datos live (placeholder para futura implementación)
+    // const liveData = await fetchLiveCandles(symbol, timeframe);
+    // return liveData;
+    
+    // Por ahora, usar mock incluso en modo live
+    return generateMockCandles(symbol, timeframe);
+  }
+};
+
 // Hook para obtener datos de velas (mock o live según ENV)
 export function useCandles() {
   const [data, setData] = useState<CandleData[]>([]);
@@ -20,19 +35,6 @@ export function useCandles() {
   const { dataMode, viteSymbol, viteTimeframe } = useEnvironment();
 
   useEffect(() => {
-    const getInitialCandles = async (mode: string, symbol: string, timeframe: string) => {
-      if (mode === 'mock') {
-        // Datos mock
-        return generateMockCandles(symbol, timeframe);
-      } else {
-        // Datos live (placeholder para futura implementación)
-        // const liveData = await fetchLiveCandles(symbol, timeframe);
-        // return liveData;
-        
-        // Por ahora, usar mock incluso en modo live
-        return generateMockCandles(symbol, timeframe);
-      }
-    };
 
     const fetchCandles = async () => {
       try {
@@ -58,6 +60,24 @@ export function useCandles() {
     };
 
     fetchCandles();
+  }, [dataMode, viteSymbol, viteTimeframe]);
+
+  // Refresco automático cada cierre de vela en modo live
+  useEffect(() => {
+    if (dataMode !== 'live') return;
+    
+    const tfMs = getIntervalMs(viteTimeframe);
+    const id = window.setInterval(async () => {
+      try {
+        const fresh = await getInitialCandles('live', viteSymbol, viteTimeframe);
+        console.info('[DATA REFRESH] live • candles:', fresh.length);
+        setData(fresh);
+      } catch (e) { 
+        console.warn('[DATA REFRESH ERROR]', e); 
+      }
+    }, tfMs); // 1m => 60s
+    
+    return () => clearInterval(id);
   }, [dataMode, viteSymbol, viteTimeframe]);
 
   return { data, loading, error, symbol: viteSymbol, timeframe: viteTimeframe };
