@@ -1,0 +1,57 @@
+:root{
+  --bg:#0b0b0d;
+  --panel:#141418;
+  --muted:#9aa0a6;
+  --text:#e6e6e6;
+  --accent:#4f46e5; /* indigo */
+  --card:#111216;
+  --border:#21222a;
+}
+
+html,body,#root{ height:100%; }
+body{ background:var(--bg); color:var(--text); margin:0; }
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+
+.muted{ color:var(--muted); }
+
+/* Layout del tablero */
+.q-grid{
+  display:grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  gap:16px;
+}
+@media (max-width: 1280px){
+  .q-grid{ grid-template-columns: 1fr; }
+}
+
+/* Área del chart */
+.chart-card{ padding:16px; }
+
+/* Tarjetas pequeñas a la derecha */
+.side-card{ padding:16px; }
+
+/* Botones */
+.btn{
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  padding:10px 14px;
+  cursor:pointer;
+}
+.btn.ghost{
+  background:transparent;
+  border:1px solid var(--border);
+}
+
+/* Tablas */
+.table{ width:100%; border-collapse:collapse; }
+.table th,.table td{
+  border-top:1px solid var(--border);
+  padding:10px;
+}
