@@ -4,6 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import Card from './ui/Card';
 import { MOCK_PORTFOLIO_ASSETS, MOCK_REAL_PORTFOLIO_ASSETS, MOCK_PORTFOLIO_HISTORY, MOCK_PORTFOLIO_EVOLUTION, MOCK_PORTFOLIO_EVENTS } from '../constants';
 import { PortfolioAsset } from '../types';
+import { ensureArray } from '../lib/ensureArray';
 import { getPortfolioAnalysis, getComparisonAnalysis } from '../services/geminiService';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -34,12 +35,12 @@ const PortfolioView: React.FC = () => {
     useEffect(() => {
         const checkPerformance = () => {
             if (settings.notificationConfig.triggers.significantMoves) {
-                activeAssets.forEach(asset => {
-                    if (asset.plPercent <= -10) {
+                ensureArray(activeAssets).forEach((asset: any) => {
+                    if (asset?.plPercent <= -10) {
                         dispatchNotification({
                             type: 'portfolio_warning',
                             title: 'Alerta de Portafolio',
-                            message: `El activo ${asset.name} ha caído un ${asset.plPercent.toFixed(1)}%.`,
+                            message: `El activo ${asset?.name} ha caído un ${asset?.plPercent?.toFixed(1)}%.`,
                             linkTo: 'portfolio'
                         });
                     }
@@ -66,11 +67,11 @@ const PortfolioView: React.FC = () => {
         return new Date(timestamp).toLocaleDateString(undefined, { timeZone: settings.timezone });
     }, [settings.timezone]);
 
-    const totalPortfolioValue = useMemo(() => activeAssets.reduce((sum, asset) => sum + asset.totalValue, 0), [activeAssets]);
+    const totalPortfolioValue = useMemo(() => ensureArray(activeAssets).reduce((sum, asset: any) => sum + (asset?.totalValue ?? 0), 0), [activeAssets]);
 
     const distributionData = useMemo(() => {
-        const categories = activeAssets.reduce((acc, asset) => {
-            acc[asset.category] = (acc[asset.category] || 0) + asset.totalValue;
+        const categories = ensureArray(activeAssets).reduce((acc, asset: any) => {
+            acc[asset?.category ?? 'Unknown'] = (acc[asset?.category ?? 'Unknown'] || 0) + (asset?.totalValue ?? 0);
             return acc;
         }, {} as Record<string, number>);
         return Object.entries(categories).map(([name, value]) => ({ name, value }));

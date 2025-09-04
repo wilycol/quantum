@@ -4,6 +4,7 @@ import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveCon
 import { SimulationConfig, SimulatedTrade, SimulationMetrics, Candle, AssetState } from '../types';
 import { MOCK_CANDLESTICK_DATA, MOCK_POSITIONS } from '../constants';
 import Card from './ui/Card';
+import { ensureArray } from '../lib/ensureArray';
 
 const XMarkIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -11,7 +12,7 @@ const XMarkIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-const AVAILABLE_ASSETS = [...new Set(MOCK_POSITIONS.map(p => p.instrument))];
+const AVAILABLE_ASSETS = [...new Set(ensureArray(MOCK_POSITIONS).map(p => p.instrument))];
 const ASSET_COLORS = ['#34c759', '#ff9500', '#007aff', '#ff3b30', '#5856d6', '#ff2d55', '#af52de'];
 
 const INITIAL_CONFIG: SimulationConfig = {
@@ -96,13 +97,13 @@ const SimulatorView: React.FC = () => {
     useEffect(() => { configRef.current = config; }, [config]);
 
     const initializeAssetStates = useCallback(() => {
-        return AVAILABLE_ASSETS.map((instrument): AssetState => ({
+        return ensureArray(AVAILABLE_ASSETS).map((instrument): AssetState => ({
             symbol: instrument,
             price: 100 + Math.random() * 50,
             change24h: (Math.random() - 0.5) * 10,
             volume: 1500 + (Math.random() * 1000),
             instrument,
-            priceHistory: MOCK_CANDLESTICK_DATA.map(c => ({ ...c, time: new Date().toLocaleTimeString() })), // Start with fresh timestamps
+            priceHistory: ensureArray(MOCK_CANDLESTICK_DATA).map(c => ({ ...c, time: new Date().toLocaleTimeString() })), // Start with fresh timestamps
             confidence: 50,
             rsi: 50,
             trend: 'SIDEWAYS',
@@ -121,7 +122,7 @@ const SimulatorView: React.FC = () => {
                 <div className="bg-brand-navy p-3 rounded-lg border border-brand-gold/50 text-xs text-white shadow-xl min-w-[200px]">
                     <p className="font-bold text-gray-300 mb-2">Time: {label}</p>
                     <div className="space-y-1">
-                    {payload.map((pld: any) => {
+                    {ensureArray(payload).map((pld: any) => {
                         const assetName = pld.dataKey;
                         const confidence = pld.value;
                         
@@ -156,7 +157,7 @@ const SimulatorView: React.FC = () => {
         const currentAssetStates = assetStatesRef.current;
         const currentConfig = configRef.current;
 
-        const newStates = currentAssetStates.map(asset => {
+        const newStates = ensureArray(currentAssetStates).map((asset: any) => {
             const lastCandle = asset.priceHistory[asset.priceHistory.length - 1];
             const change = (Math.random() - 0.495) * (lastCandle.close * 0.005);
             const newClose = lastCandle.close + change;
@@ -217,15 +218,15 @@ const SimulatorView: React.FC = () => {
         });
     
         const sortedAssets = [...newStates].filter(a => currentConfig.assets.includes(a.instrument)).sort((a, b) => b.confidence - a.confidence);
-        const committedCapital = currentTrades.filter(t => t.status === 'OPEN').reduce((sum, t) => sum + (t.investedAmount || 0), 0);
-        let availableCapital = currentMetrics.currentBalance - committedCapital;
+        const committedCapital = ensureArray(currentTrades.filter((t: any) => t.status === 'OPEN')).reduce((sum, t: any) => sum + (t?.investedAmount ?? 0), 0);
+        let availableCapital = currentMetrics.currentBalance - ((committedCapital || 0) as number);
 
         const allocationPercentages = [0.70, 0.10, 0.10, 0.05, 0.05];
         
         let newTradesThisTick: SimulatedTrade[] = [];
         const confidenceThreshold = 85 - (currentConfig.riskTolerance * 0.35);
 
-        sortedAssets.slice(0, 5).forEach((asset, index) => {
+        ensureArray(sortedAssets.slice(0, 5)).forEach((asset, index) => {
             const hasOpenTrade = currentTrades.some(t => t.instrument === asset.instrument && t.status === 'OPEN');
             if (!hasOpenTrade && asset.confidence > confidenceThreshold) {
                 const potentialInvestment = currentMetrics.currentBalance * allocationPercentages[index];
@@ -251,14 +252,14 @@ const SimulatorView: React.FC = () => {
             }
         });
     
-        const updatedTrades = currentTrades.map(t => closedTradesThisTick.find(ct => ct.id === t.id) || t).concat(newTradesThisTick);
+        const updatedTrades = ensureArray(currentTrades).map((t: any) => closedTradesThisTick.find((ct: any) => ct.id === t.id) || t).concat(newTradesThisTick);
         setTrades(updatedTrades);
 
-        const totalProfitOfClosedTrades = updatedTrades.filter(t => t.status === 'CLOSED').reduce((sum, t) => sum + (t.profit || 0), 0);
+        const totalProfitOfClosedTrades = ensureArray(updatedTrades.filter((t: any) => t.status === 'CLOSED')).reduce((sum, t: any) => sum + (t?.profit ?? 0), 0);
         const newCurrentBalance = currentMetrics.initialBalance + totalProfitOfClosedTrades;
 
-        const finalClosedTrades = updatedTrades.filter(t => t.status === 'CLOSED');
-        const successfulTrades = finalClosedTrades.filter(t => (t.profit || 0) > 0).length;
+        const finalClosedTrades = updatedTrades.filter((t: any) => t.status === 'CLOSED');
+        const successfulTrades = finalClosedTrades.filter((t: any) => (t.profit || 0) > 0).length;
         setMetrics({
             initialBalance: currentMetrics.initialBalance,
             currentBalance: newCurrentBalance,
@@ -272,9 +273,9 @@ const SimulatorView: React.FC = () => {
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         };
 
-        currentConfig.assets.forEach(assetSymbol => {
+        ensureArray(currentConfig.assets).forEach(assetSymbol => {
             const assetState = newStates.find(s => s.instrument === assetSymbol);
-            newConfidenceHistoryPoint[assetSymbol] = assetState ? assetState.confidence : 0;
+            newConfidenceHistoryPoint[assetSymbol as string] = assetState ? assetState.confidence : 0;
         });
         
         setConfidenceHistory(prev => [...prev.slice(-99), newConfidenceHistoryPoint]);
@@ -318,7 +319,7 @@ const SimulatorView: React.FC = () => {
         setIsSimulating(false);
         const finalAssetStates = assetStatesRef.current;
         const finalTrades = tradesRef.current;
-        const closedTrades = finalTrades.map((trade): SimulatedTrade => {
+        const closedTrades = ensureArray(finalTrades).map((trade: any): SimulatedTrade => {
             if (trade.status === 'OPEN') {
                 const asset = finalAssetStates.find(a => a.instrument === trade.instrument);
                 if (!asset) return trade;
@@ -345,7 +346,7 @@ const SimulatorView: React.FC = () => {
         setTrades(closedTrades);
 
         // Recalculate final metrics after closing all trades
-        const totalProfitOfAllTrades = closedTrades.reduce((sum, t) => sum + (t.profit || 0), 0);
+        const totalProfitOfAllTrades = ensureArray(closedTrades).reduce((sum, t: any) => sum + (t?.profit ?? 0), 0);
         const newCurrentBalance = metricsRef.current.initialBalance + totalProfitOfAllTrades;
         const successfulTrades = closedTrades.filter(t => (t.profit || 0) > 0).length;
 
@@ -380,8 +381,8 @@ const SimulatorView: React.FC = () => {
             return;
         }
         const headers = "ID,Instrument,Action,Entry Price,Exit Price,Invested ($),Returned ($),Profit ($),Duration (s),Timestamp,Confidence (%),Reason,Exit Strategy,Exit Trigger";
-        const rows = closedTrades
-            .map(t => {
+        const rows = ensureArray(closedTrades)
+            .map((t: any) => {
                 const durationInSeconds = t.exitTimestamp && t.timestamp ? (t.exitTimestamp - t.timestamp) / 1000 : 0;
                 return [
                     t.id, t.instrument, t.action,

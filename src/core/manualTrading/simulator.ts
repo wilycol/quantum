@@ -1,4 +1,5 @@
 import { Tick, Trade, State, SimulatorOptions } from './types';
+import { ensureArray } from '../../lib/ensureArray';
 import { rsi, getSignal } from './strategy';
 
 export class TradingSimulator {
@@ -95,10 +96,9 @@ export class TradingSimulator {
     // Calcular PnL simple (para demo)
     if (tradeData.side === 'sell') {
       // Si vendemos, asumimos que compramos antes a un precio menor
-      const avgBuyPrice = this.state.trades
-        .filter(t => t.side === 'buy')
-        .reduce((sum, t) => sum + t.price * t.qty, 0) / 
-        this.state.trades.filter(t => t.side === 'buy').reduce((sum, t) => sum + t.qty, 0);
+      const buyTrades = ensureArray(this.state.trades).filter(t => t.side === 'buy');
+      const avgBuyPrice = ensureArray(buyTrades).reduce((sum, t) => sum + (t?.price ?? 0) * (t?.qty ?? 0), 0) / 
+        ensureArray(buyTrades).reduce((sum, t) => sum + (t?.qty ?? 0), 0);
       
       if (avgBuyPrice > 0) {
         this.state.pnl += (tradeData.price - avgBuyPrice) * tradeData.qty - fee;

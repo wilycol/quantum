@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useMemo, useCall
 import { translations, TranslationKey } from '../i18n/translations';
 import { NotificationConfig, AppNotification, NotificationType, MainView, GitHubConfig, AIStrategyConfig } from '../types';
 import { DEFAULT_AI_STRATEGY_CONFIG } from '../constants';
+import { ensureArray } from '../lib/ensureArray';
 
 // Define the shape of your settings
 export interface GlobalSettings {
@@ -113,7 +114,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const t = useCallback((key: TranslationKey, ...args: any[]): string => {
         const translation = translations[settings.language]?.[key] || translations['English']?.[key] || key;
         if (args.length > 0) {
-            return args.reduce((str, arg, index) => {
+            return ensureArray(args).reduce((str, arg, index) => {
                 return str.replace(`{${index}}`, String(arg));
             }, translation);
         }
