@@ -12,6 +12,10 @@ export function useEnvironment() {
     MODE: get('MODE', 'demo'),
     SYMBOL: get('SYMBOL', 'BTC/USDT'),
     TIMEFRAME: get('TIMEFRAME', '1m'),
+    // Nuevas variables de datos
+    DATA_MODE: get('DATA_MODE', 'mock'),
+    VITE_SYMBOL: get('VITE_SYMBOL', 'BTCUSDT'),
+    VITE_TIMEFRAME: get('VITE_TIMEFRAME', '1m'),
     // Compatibilidad con nombres anteriores
     appName: get('APP_NAME', 'QuantumTrade'),
     enableAI: get('ENABLE_AI', '0') === '1',
@@ -19,5 +23,9 @@ export function useEnvironment() {
     mode: get('MODE', 'demo').toUpperCase(),
     symbol: get('SYMBOL', 'BTC/USDT'),
     timeframe: get('TIMEFRAME', '1m'),
+    // Nuevas propiedades de compatibilidad
+    dataMode: get('DATA_MODE', 'mock'),
+    viteSymbol: get('VITE_SYMBOL', 'BTCUSDT'),
+    viteTimeframe: get('VITE_TIMEFRAME', '1m'),
   };
 }
