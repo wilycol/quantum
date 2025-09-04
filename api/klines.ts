@@ -1,4 +1,4 @@
-// Vercel Serverless Function: /api/klines
+// /api/klines  -> proxy a Binance (evita CORS)
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -10,11 +10,8 @@ export default async function handler(req: any, res: any) {
     const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
     const r = await fetch(url);
     if (!r.ok) return res.status(r.status).json({ error: `Binance ${r.status}` });
-    const arr = await r.json();
-    // Normalizamos: t,o,h,l,c,v
-    const out = (arr as any[]).map(k => ({
-      t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5],
-    }));
+    const arr = await r.json() as any[];
+    const out = arr.map(k => ({ t:k[0], o:+k[1], h:+k[2], l:+k[3], c:+k[4], v:+k[5] }));
     res.status(200).json(out);
   } catch (e:any) {
     res.status(500).json({ error: e?.message || 'proxy-failed' });

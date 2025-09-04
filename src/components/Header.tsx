@@ -103,6 +103,17 @@ const Header: React.FC<HeaderProps> = ({ view, setView }) => {
               AI: {enableAI ? 'Active' : 'Mock'}
             </span>
           </div>
+          
+          {/* Feed Status */}
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">•</span>
+            <span className="text-gray-500">Feed:</span>
+            <span className={`px-2 py-1 rounded-full font-medium text-xs ${
+              import.meta.env.VITE_DATA_MODE === 'live' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
+            }`}>
+              {import.meta.env.VITE_DATA_MODE === 'live' ? 'LIVE' : 'MOCK'}
+            </span>
+          </div>
         </div>
       </div>
       <div className="flex items-center space-x-2 sm:space-x-4">

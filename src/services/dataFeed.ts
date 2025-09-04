@@ -21,9 +21,9 @@ const TF_TO_BINANCE: Record<string, string> = {
 // Función para obtener datos de Binance a través de nuestro proxy
 export async function fetchBinanceKlines(symbol: string, timeframe: string, limit = 200): Promise<Candle[]> {
   const interval = TF_TO_BINANCE[timeframe] ?? '1m';
-  // ← llamar a nuestro proxy (evita CORS)
-  const url = `/api/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-  const res = await fetch(url);
+  
+  // usar nuestro proxy (no llamar directo a api.binance)
+  const res = await fetch(`/api/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`);
   if (!res.ok) throw new Error(`Proxy ${res.status}`);
   const arr = await res.json() as any[];
   return arr.map(k => ({ t:k.t, o:+k.o, h:+k.h, l:+k.l, c:+k.c, v:+k.v }));
