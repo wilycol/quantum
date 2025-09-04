@@ -804,33 +804,39 @@ const QuantumDeskView: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex-1 p-2 min-h-[250px] md:min-h-[300px] relative">
-                             <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart
-                                    data={chartData}
-                                    margin={{ top: 5, right: 15, left: -25, bottom: 5 }}
-                                    onClick={handleChartClick}
-                                    onMouseMove={handleChartMouseMove}
-                                    onMouseLeave={handleChartMouseLeave}
-                                    style={{ cursor: isTradeFromChartArmed ? 'crosshair' : 'default' }}
-                                    barCategoryGap="70%"
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" />
-                                    <XAxis dataKey="time" stroke="#9a9a9a" fontSize={12} />
-                                    <YAxis stroke="#9a9a9a" fontSize={12} domain={[yDomain[0] - yBuffer, yDomain[1] + yBuffer]} tickFormatter={(value) => `${Number(value).toFixed(4)}`} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#facc15', strokeDasharray: '3 3' }}/>
-                                    <Bar dataKey="wick" shape={<CandlestickShape />} />
-                                    {crosshairData && (
-                                        <>
-                                            <ReferenceLine y={crosshairData.price} stroke="#facc15" strokeDasharray="2 2" />
-                                            <ReferenceLine x={crosshairData.time} stroke="#facc15" strokeDasharray="2 2" />
-                                        </>
-                                    )}
-                                    {isDemoSessionActive && aiTrainingMarker && (
-                                        <ReferenceLine x={aiTrainingMarker.time} stroke="#0ea5e9" strokeWidth={2} label={{ value: 'AI Signal', fill: '#0ea5e9', position: 'top' }} />
-                                    )}
-                                    {proactiveAiAlertArea && <ReferenceArea y1={proactiveAiAlertArea.y1} y2={proactiveAiAlertArea.y2} stroke="rgba(250, 204, 21, 0.5)" fill="rgba(250, 204, 21, 0.2)" strokeOpacity={0.5} />}
-                                </ComposedChart>
-                            </ResponsiveContainer>
+                             {Array.isArray(chartData) && chartData.length > 0 ? (
+                                 <ResponsiveContainer width="100%" height="100%">
+                                    <ComposedChart
+                                        data={chartData}
+                                        margin={{ top: 5, right: 15, left: -25, bottom: 5 }}
+                                        onClick={handleChartClick}
+                                        onMouseMove={handleChartMouseMove}
+                                        onMouseLeave={handleChartMouseLeave}
+                                        style={{ cursor: isTradeFromChartArmed ? 'crosshair' : 'default' }}
+                                        barCategoryGap="70%"
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" />
+                                        <XAxis dataKey="time" stroke="#9a9a9a" fontSize={12} />
+                                        <YAxis stroke="#9a9a9a" fontSize={12} domain={[yDomain[0] - yBuffer, yDomain[1] + yBuffer]} tickFormatter={(value) => `${Number(value).toFixed(4)}`} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#facc15', strokeDasharray: '3 3' }}/>
+                                        <Bar dataKey="wick" shape={<CandlestickShape />} />
+                                        {crosshairData && (
+                                            <>
+                                                <ReferenceLine y={crosshairData.price} stroke="#facc15" strokeDasharray="2 2" />
+                                                <ReferenceLine x={crosshairData.time} stroke="#facc15" strokeDasharray="2 2" />
+                                            </>
+                                        )}
+                                        {isDemoSessionActive && aiTrainingMarker && (
+                                            <ReferenceLine x={aiTrainingMarker.time} stroke="#0ea5e9" strokeWidth={2} label={{ value: 'AI Signal', fill: '#0ea5e9', position: 'top' }} />
+                                        )}
+                                        {proactiveAiAlertArea && <ReferenceArea y1={proactiveAiAlertArea.y1} y2={proactiveAiAlertArea.y2} stroke="rgba(250, 204, 21, 0.5)" fill="rgba(250, 204, 21, 0.2)" strokeOpacity={0.5} />}
+                                    </ComposedChart>
+                                </ResponsiveContainer>
+                             ) : (
+                                 <div style={{ padding: 16, color: '#888', textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                     No hay datos para mostrar todavía.
+                                 </div>
+                             )}
                         </div>
                         <div className="absolute bottom-4 left-4 z-10">
                             <button onClick={() => setIsTradeFromChartArmed(!isTradeFromChartArmed)}

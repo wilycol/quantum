@@ -518,36 +518,48 @@ const SimulatorView: React.FC = () => {
                     <Card className="bg-brand-navy border border-gray-700/50 min-h-[250px] flex flex-col">
                          <h3 className="text-lg font-bold text-brand-gold mb-2">Confidence Tracker</h3>
                          <div className="flex-grow">
-                             <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={confidenceHistory} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" />
-                                    <XAxis dataKey="time" stroke="#9a9a9a" fontSize={12} interval="preserveStartEnd" />
-                                    <YAxis stroke="#9a9a9a" fontSize={12} domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} />
-                                    <Tooltip content={<CustomConfidenceTooltip />} cursor={{fill: 'rgba(212, 175, 55, 0.1)'}}/>
-                                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                                    {config.assets.slice(0, 5).map((asset, i) => (
-                                        <Line key={asset} type="monotone" dataKey={asset} stroke={ASSET_COLORS[i % ASSET_COLORS.length]} dot={false} strokeWidth={2} name={asset}/>
-                                    ))}
-                                </ComposedChart>
-                             </ResponsiveContainer>
+                             {Array.isArray(confidenceHistory) && confidenceHistory.length > 0 ? (
+                                 <ResponsiveContainer width="100%" height="100%">
+                                    <ComposedChart data={confidenceHistory} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" />
+                                        <XAxis dataKey="time" stroke="#9a9a9a" fontSize={12} interval="preserveStartEnd" />
+                                        <YAxis stroke="#9a9a9a" fontSize={12} domain={[0, 100]} tickFormatter={(value) => `${value.toFixed(0)}%`} />
+                                        <Tooltip content={<CustomConfidenceTooltip />} cursor={{fill: 'rgba(212, 175, 55, 0.1)'}}/>
+                                        <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                                        {config.assets.slice(0, 5).map((asset, i) => (
+                                            <Line key={asset} type="monotone" dataKey={asset} stroke={ASSET_COLORS[i % ASSET_COLORS.length]} dot={false} strokeWidth={2} name={asset}/>
+                                        ))}
+                                    </ComposedChart>
+                                 </ResponsiveContainer>
+                             ) : (
+                                 <div style={{ padding: 16, color: '#888', textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                     No hay datos para mostrar todavía.
+                                 </div>
+                             )}
                          </div>
                     </Card>
                     <Card className="bg-brand-navy border border-gray-700/50 min-h-[250px] flex flex-col">
                         <h3 className="text-lg font-bold text-brand-gold mb-2">Executed Operations Timeline</h3>
                         <div className="flex-grow">
-                           <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={trades.filter(t => t.status === 'CLOSED')} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" />
-                                    <XAxis dataKey="timestamp" stroke="#9a9a9a" fontSize={10} tickFormatter={(ts) => new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} />
-                                    <YAxis stroke="#9a9a9a" fontSize={10} tickFormatter={(val) => `$${Number(val/1000).toFixed(0)}k`} />
-                                    <Tooltip content={<CustomTradeTooltip />} cursor={{fill: 'rgba(212, 175, 55, 0.1)'}}/>
-                                    <Bar dataKey="investedAmount">
-                                         {trades.filter(t => t.status === 'CLOSED').map((trade, index) => (
-                                            <Cell key={`cell-${index}`} fill={(trade.profit || 0) >= 0 ? '#34c759' : '#ff3b30'} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
+                           {Array.isArray(trades) && trades.filter(t => t.status === 'CLOSED').length > 0 ? (
+                               <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={trades.filter(t => t.status === 'CLOSED')} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#3a3a3a" />
+                                        <XAxis dataKey="timestamp" stroke="#9a9a9a" fontSize={10} tickFormatter={(ts) => new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} />
+                                        <YAxis stroke="#9a9a9a" fontSize={10} tickFormatter={(val) => `$${Number(val/1000).toFixed(0)}k`} />
+                                        <Tooltip content={<CustomTradeTooltip />} cursor={{fill: 'rgba(212, 175, 55, 0.1)'}}/>
+                                        <Bar dataKey="investedAmount">
+                                             {trades.filter(t => t.status === 'CLOSED').map((trade, index) => (
+                                                <Cell key={`cell-${index}`} fill={(trade.profit || 0) >= 0 ? '#34c759' : '#ff3b30'} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                           ) : (
+                               <div style={{ padding: 16, color: '#888', textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                   No hay datos para mostrar todavía.
+                               </div>
+                           )}
                         </div>
                     </Card>
                 </div>
