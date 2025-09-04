@@ -1,21 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import QuantumCoreView from './components/QuantumCoreView';
 import SplashScreen from './components/SplashScreen';
 import LoginScreen from './components/LoginScreen';
-import SimulatorView from './components/SimulatorView';
-import QuantumDeskView from './components/QuantumDeskView';
-import PortfolioView from './components/PortfolioView';
-import SettingsView from './components/SettingsView';
-import NewsView from './components/NewsView';
-import SupportView from './components/SupportView';
-import NotificationsView from './components/NotificationsView';
-import HistoryView from './components/HistoryView';
-import TradingManualView from './components/TradingManualView';
 import { withBoundary } from './components/withBoundary';
 import { useSettings } from './contexts/SettingsContext';
 import { MainView, AppNotification } from './types';
+
+// Carga perezosa de vistas pesadas
+const TradingManualView = lazy(() => import('./components/TradingManualView'));
+const PortfolioView = lazy(() => import('./components/PortfolioView'));
+const QuantumCoreView = lazy(() => import('./components/QuantumCoreView'));
+const SimulatorView = lazy(() => import('./components/SimulatorView'));
+const QuantumDeskView = lazy(() => import('./components/QuantumDeskView'));
+const SettingsView = lazy(() => import('./components/SettingsView'));
+const NewsView = lazy(() => import('./components/NewsView'));
+const SupportView = lazy(() => import('./components/SupportView'));
+const NotificationsView = lazy(() => import('./components/NotificationsView'));
+const HistoryView = lazy(() => import('./components/HistoryView'));
+
+// Componente de loading para Suspense
+const LoadingFallback: React.FC = () => (
+  <div style={{ 
+    padding: 16, 
+    textAlign: 'center', 
+    color: '#888',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '200px'
+  }}>
+    <div>
+      <div style={{ 
+        width: '32px', 
+        height: '32px', 
+        border: '3px solid #f3f3f3',
+        borderTop: '3px solid #3498db',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite',
+        margin: '0 auto 16px'
+      }}></div>
+      <div>Cargando vista...</div>
+    </div>
+  </div>
+);
 
 // versiones envueltas con ErrorBoundary
 const TradingManualSafe = withBoundary('TradingManualView', TradingManualView);
@@ -96,16 +124,18 @@ const App: React.FC = () => {
             <div className="flex-1 flex flex-col overflow-hidden">
               <Header view={currentView} setView={setCurrentView} />
               <main className={`flex-1 overflow-y-auto ${needsPadding ? 'p-2 sm:p-4 lg:p-6' : ''}`}>
-                {currentView === 'quantum_core' && <QuantumCoreSafe />}
-                {currentView === 'manual_trading' && <TradingManualSafe />}
-                {currentView === 'simulator' && <SimulatorSafe />}
-                {currentView === 'desk' && <QuantumDeskSafe />}
-                {currentView === 'portfolio' && <PortfolioSafe />}
-                {currentView === 'settings' && <SettingsSafe />}
-                {currentView === 'news' && <NewsSafe />}
-                {currentView === 'support' && <SupportSafe />}
-                {currentView === 'notifications' && <NotificationsSafe />}
-                {currentView === 'history' && <HistorySafe />}
+                <Suspense fallback={<LoadingFallback />}>
+                  {currentView === 'quantum_core' && <QuantumCoreSafe />}
+                  {currentView === 'manual_trading' && <TradingManualSafe />}
+                  {currentView === 'simulator' && <SimulatorSafe />}
+                  {currentView === 'desk' && <QuantumDeskSafe />}
+                  {currentView === 'portfolio' && <PortfolioSafe />}
+                  {currentView === 'settings' && <SettingsSafe />}
+                  {currentView === 'news' && <NewsSafe />}
+                  {currentView === 'support' && <SupportSafe />}
+                  {currentView === 'notifications' && <NotificationsSafe />}
+                  {currentView === 'history' && <HistorySafe />}
+                </Suspense>
               </main>
             </div>
           </div>
