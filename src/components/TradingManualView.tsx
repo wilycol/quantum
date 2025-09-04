@@ -17,9 +17,11 @@ import { State, Trade, Advice, TradeFeedback } from '../core/manualTrading/types
 import { useEnvironment } from '../hooks/useEnvironment';
 import { ensureArray, toNumber } from '../lib/safe';
 import { useContainerReady } from '../hooks/useContainerReady';
+import { useCandles } from '../hooks/useCandles';
 
 export default function TradingManualView() {
   const { ref, ready } = useContainerReady();
+  const { data: candles, loading, error } = useCandles();
   const [state, setState] = useState<State>({
     closes: [100],
     lastPrice: 100,
@@ -132,12 +134,26 @@ export default function TradingManualView() {
   };
 
   // Preparar datos para el gráfico (blindados)
-  const rawCloses = state?.closes ?? [];
-  const chartData = ensureArray(rawCloses).map((close, index) => ({
-    time: index,
-    price: toNumber(close),
+  const chartData = ensureArray(candles).map((d: any, index) => ({
+    time: d?.t,
+    open: toNumber(d?.o),
+    high: toNumber(d?.h),
+    low: toNumber(d?.l),
+    close: toNumber(d?.c),
+    volume: toNumber(d?.v),
     rsi: toNumber(state?.rsi, 50)
   }));
+
+  // Manejo de errores
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div style={{padding: 16, color: '#f88', textAlign: 'center'}}>
+          Error: {String(error.message || error)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -181,7 +197,15 @@ export default function TradingManualView() {
           {/* Gráfico */}
           <div className="bg-white rounded-lg shadow-md p-6" ref={ref} style={{minHeight: 320}}>
             <h2 className="text-xl font-semibold mb-4">Precio en Tiempo Real</h2>
-            {ready && chartData.length > 0 ? (
+            {loading ? (
+              <div style={{padding: 16, color: '#888', textAlign: 'center', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                Cargando datos…
+              </div>
+            ) : chartData.length === 0 ? (
+              <div style={{padding: 16, color: '#888', textAlign: 'center', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                No hay datos para mostrar todavía.
+              </div>
+            ) : (
               <ResponsiveContainer width="100%" height={400}>
                 <ComposedChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -193,7 +217,7 @@ export default function TradingManualView() {
                   />
                   <Area 
                     type="monotone" 
-                    dataKey="price" 
+                    dataKey="close" 
                     stroke="#3b82f6" 
                     fill="#3b82f6" 
                     fillOpacity={0.1}
@@ -207,10 +231,6 @@ export default function TradingManualView() {
                   />
                 </ComposedChart>
               </ResponsiveContainer>
-            ) : (
-              <div style={{ padding: 16, color: '#888', textAlign: 'center', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {ready ? 'No hay datos para mostrar todavía.' : 'Inicializando gráfico…'}
-              </div>
             )}
           </div>
 
