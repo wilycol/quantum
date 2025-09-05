@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useEnvironment } from './useEnvironment';
+import { fetchBinanceKlines, generateMockCandles as generateMockCandlesFromService } from '../services/dataFeed';
 
 // Tipos para los datos de velas
 export interface CandleData {
@@ -15,14 +16,15 @@ export interface CandleData {
 const getInitialCandles = async (mode: string, symbol: string, timeframe: string) => {
   if (mode === 'mock') {
     // Datos mock
-    return generateMockCandles(symbol, timeframe);
+    return generateMockCandlesFromService(symbol, timeframe);
   } else {
-    // Datos live (placeholder para futura implementación)
-    // const liveData = await fetchLiveCandles(symbol, timeframe);
-    // return liveData;
-    
-    // Por ahora, usar mock incluso en modo live
-    return generateMockCandles(symbol, timeframe);
+    // Datos live usando el proxy
+    try {
+      return await fetchBinanceKlines(symbol, timeframe, 500);
+    } catch (error) {
+      console.warn('[LIVE FALLBACK] Using mock data due to error:', error);
+      return generateMockCandlesFromService(symbol, timeframe);
+    }
   }
 };
 
@@ -75,7 +77,7 @@ export function useCandles() {
       } catch (e) { 
         console.warn('[DATA REFRESH ERROR]', e); 
       }
-    }, tfMs); // 1m => 60s
+    }, tfMs);
     
     return () => clearInterval(id);
   }, [dataMode, viteSymbol, viteTimeframe]);
@@ -92,7 +94,7 @@ function generateMockCandles(symbol: string, timeframe: string): CandleData[] {
   // Precio base según el símbolo
   const basePrice = getBasePrice(symbol);
   
-  for (let i = 100; i >= 0; i--) {
+  for (let i = 500; i >= 0; i--) {
     const timestamp = now - (i * intervalMs);
     const price = basePrice + (Math.random() - 0.5) * basePrice * 0.02; // ±1% variación
     const open = price;
