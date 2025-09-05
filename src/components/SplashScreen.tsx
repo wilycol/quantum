@@ -16,31 +16,52 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onCompleted }) => {
     const video = videoRef.current;
     if (!video) return;
 
+    console.log('[SPLASH] Video element found, URL:', SPLASH_VIDEO_URL);
+
     const handleVideoEnd = () => {
+      console.log('[SPLASH] Video ended, starting fade out');
       setIsFadingOut(true);
+    };
+
+    const handleVideoError = (e: any) => {
+      console.error('[SPLASH] Video error:', e);
+      // If video fails to load, proceed to login after 3 seconds
+      setTimeout(handleVideoEnd, 3000);
+    };
+
+    const handleVideoLoad = () => {
+      console.log('[SPLASH] Video loaded successfully');
     };
 
     const handleFadeOutEnd = (event: TransitionEvent) => {
       // Ensure we only trigger onCompleted when the fade-out transition for opacity has ended.
       if (event.propertyName === 'opacity' && isFadingOut) {
+        console.log('[SPLASH] Fade out complete, calling onCompleted');
         onCompleted();
       }
     };
 
     // The 'ended' event fires when the video playback has finished.
     video.addEventListener('ended', handleVideoEnd);
+    video.addEventListener('error', handleVideoError);
+    video.addEventListener('loadeddata', handleVideoLoad);
     
     // The 'transitionend' event fires when the fade-out CSS transition is complete.
     video.parentElement?.addEventListener('transitionend', handleFadeOutEnd);
 
     // A fallback timeout to ensure the splash screen doesn't get stuck,
     // e.g., if the video fails to load or the 'ended' event doesn't fire.
-    const fallbackTimeout = setTimeout(handleVideoEnd, 10000); // 10-second fallback to match video length
+    const fallbackTimeout = setTimeout(() => {
+      console.log('[SPLASH] Fallback timeout reached, proceeding to login');
+      handleVideoEnd();
+    }, 5000); // Reduced to 5 seconds
 
     return () => {
       clearTimeout(fallbackTimeout);
       if (video) {
         video.removeEventListener('ended', handleVideoEnd);
+        video.removeEventListener('error', handleVideoError);
+        video.removeEventListener('loadeddata', handleVideoLoad);
         video.parentElement?.removeEventListener('transitionend', handleFadeOutEnd);
       }
     };
