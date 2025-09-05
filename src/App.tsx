@@ -93,7 +93,7 @@ const NotificationToaster: React.FC<{ notification: AppNotification | null }> = 
 
 const App: React.FC = () => {
   const { settings } = useSettings();
-  const [appState, setAppState] = useState<AppState>('splash');
+  const [appState, setAppState] = useState<AppState>('login');
   const [currentView, setCurrentView] = useState<MainView>('manual_trading');
   const [lastNotification, setLastNotification] = useState<AppNotification | null>(null);
 
