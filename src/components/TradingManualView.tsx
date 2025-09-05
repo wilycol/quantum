@@ -10,6 +10,7 @@ import { useEnvironment } from '../hooks/useEnvironment';
 import { ensureArray, num, hasAllKeys, onlyFinite } from '../lib/safe';
 import { useContainerReady } from '../hooks/useContainerReady';
 import { useCandles } from '../hooks/useCandles';
+import { usePaper } from '../hooks/usePaper';
 
 export default function TradingManualView() {
   const { ref, ready } = useContainerReady();
@@ -29,6 +30,7 @@ export default function TradingManualView() {
   const [nextIn, setNextIn] = useState(3);
   const [quantity, setQuantity] = useState(100);
   const [selectedSide, setSelectedSide] = useState<'buy' | 'sell'>('buy');
+  const [qty, setQty] = useState(100);
   const [lastFeedback, setLastFeedback] = useState<TradeFeedback | null>(null);
   const { mode: envMode, paper, enableAI } = useEnvironment();
   const [mode, setMode] = useState<'Demo' | 'Hybrid' | 'Live'>('Demo');
@@ -147,6 +149,16 @@ export default function TradingManualView() {
     }
   };
 
+  // Componente Row para mostrar información
+  const Row = ({ label, value, color }: { label: string; value: string; color?: string }) => (
+    <div className="flex justify-between items-center">
+      <span className="text-sm muted">{label}:</span>
+      <span className="text-lg font-semibold" style={{ color }}>
+        {value}
+      </span>
+    </div>
+  );
+
   // Normalizamos a un shape simple: {t,o,h,l,c,v,label,close,volume}
   const rows = ensureArray(candles)
     .filter(c => hasAllKeys(c, ['t','o','h','l','c','v']))
@@ -171,6 +183,9 @@ export default function TradingManualView() {
   // Calcular precio actual desde las velas reales
   const last = rows.at(-1);
   const lastClose = last?.close ?? 0;
+
+  // Hook de paper trading
+  const { state: paperState, unrealized, equity, submit, reset } = usePaper(lastClose);
 
   // RSI simple (14)
   function calcRSI(data: typeof rows, period = 14) {
@@ -320,56 +335,58 @@ export default function TradingManualView() {
         </div>
       </div>
 
+      <div className="panel side-card">
+        <h2 className="text-xl font-semibold mb-4">Portfolio</h2>
+        <div className="space-y-4">
+          <Row label="Precio Actual" value={"$" + lastClose.toLocaleString()} />
+          <Row 
+            label="PnL" 
+            value={(unrealized >= 0 ? '+' : '') + "$" + unrealized.toFixed(2)} 
+            color={unrealized >= 0 ? '#22c55e' : '#ef4444'} 
+          />
+          <Row label="Cash" value={"$" + paperState.cash.toFixed(2)} />
+          <Row 
+            label="Posición" 
+            value={paperState.pos ? `${paperState.pos.side} ${paperState.pos.qty} @ $${paperState.pos.avg.toFixed(2)}` : '—'} 
+          />
+          <Row label="Equity" value={"$" + equity.toFixed(2)} />
+        </div>
+      </div>
+
       <div style={{height:16}} />
       <div className="panel side-card">
-        <h2 className="text-xl font-semibold mb-4">Controles de Trading</h2>
+        <h2 className="text-xl font-semibold mb-4">Paper Trading</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Selección de Side */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Dirección
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setSelectedSide('buy')}
-                    className={`btn ${selectedSide === 'buy' ? '' : 'ghost'}`}
-                  >
-                    BUY
-                  </button>
-                  <button
-                    onClick={() => setSelectedSide('sell')}
-                    className={`btn ${selectedSide === 'sell' ? '' : 'ghost'}`}
-                  >
-                    SELL
-                  </button>
-                </div>
-              </div>
+          {/* Controles de trading */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Cantidad
+            </label>
+            <input
+              type="number"
+              value={qty}
+              onChange={e => setQty(Number(e.target.value) || 0)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              min="1"
+              step="1"
+            />
+          </div>
 
-              {/* Cantidad */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cantidad
-                </label>
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min="1"
-                  step="1"
-                />
-              </div>
+          <div className="flex gap-2 items-end">
+            <button className="btn" onClick={() => submit('BUY', qty)}>
+              BUY
+            </button>
+            <button className="btn ghost" onClick={() => submit('SELL', qty)}>
+              SELL
+            </button>
+          </div>
 
-              {/* Botón Trade Now */}
-              <div className="flex items-end">
-                <button
-                  onClick={handleTrade}
-                  className="btn w-full"
-                >
-                  Trade Now
-                </button>
-              </div>
-            </div>
+          <div className="flex items-end">
+            <button onClick={reset} className="btn ghost w-full">
+              Reset
+            </button>
+          </div>
+        </div>
       </div>
 
       <div style={{height:16}} />
@@ -379,46 +396,34 @@ export default function TradingManualView() {
           <table className="table">
             <thead>
               <tr>
-                <th className="text-left">Hora</th>
-                <th className="text-left">Side</th>
-                <th className="text-left">Cantidad</th>
-                <th className="text-left">Precio</th>
-                <th className="text-left">PnL</th>
-                <th className="text-left">Estado</th>
+                <th>TIEMPO</th>
+                <th>SIDE</th>
+                <th>CANTIDAD</th>
+                <th>PRECIO</th>
+                <th>FEE</th>
+                <th>TOTAL PnL</th>
               </tr>
             </thead>
             <tbody>
-              {ensureArray(state?.trades).slice().reverse().map((trade: any) => (
-                <tr key={trade?.id}>
-                  <td>{trade?.time?.toLocaleTimeString() ?? 'N/A'}</td>
-                  <td>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      trade?.side === 'buy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {trade?.side?.toUpperCase() ?? 'N/A'}
-                    </span>
-                  </td>
-                  <td>{trade?.qty ?? 'N/A'}</td>
-                  <td>{formatPrice(num(trade?.price))}</td>
-                  <td className={num(trade?.pnl) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatPrice(num(trade?.pnl))}
-                  </td>
-                  <td>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      trade?.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {trade?.status ?? 'N/A'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {ensureArray(state?.trades).length === 0 && (
+              {paperState.trades.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center muted">
+                  <td colSpan={6} style={{textAlign:'center',color:'#999'}}>
                     No hay trades aún
                   </td>
                 </tr>
               )}
+              {paperState.trades.slice().reverse().map(t => (
+                <tr key={t.id}>
+                  <td>{new Date(t.ts).toLocaleTimeString()}</td>
+                  <td>{t.side}</td>
+                  <td>{t.qty}</td>
+                  <td>${t.price.toFixed(2)}</td>
+                  <td>${t.fee.toFixed(2)}</td>
+                  <td style={{color: t.pnl>=0?'#22c55e':'#ef4444'}}>
+                    ${t.pnl.toFixed(2)}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
