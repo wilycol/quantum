@@ -28,7 +28,7 @@ export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const symbol   = searchParams.get('symbol')   ?? 'BTCUSDT';
   const interval = searchParams.get('interval') ?? '1m';
-  const limit    = searchParams.get('limit')    ?? '200';
+  const limit    = searchParams.get('limit')    ?? '500';
 
   // Intentar cada mirror hasta que uno funcione
   for (const baseUrl of MIRRORS) {
@@ -39,8 +39,16 @@ export default async function handler(req) {
       if (r.ok) {
         const arr = await r.json();
         const out = arr.map(k => ({ t:k[0], o:+k[1], h:+k[2], l:+k[3], c:+k[4], v:+k[5] }));
+        
+        // cuando devuelvas la respuesta OK:
         return new Response(JSON.stringify(out), {
-          headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+            'access-control-allow-origin': '*',
+            'x-qt-host': baseUrl,                    // <— aseguramos el header
+            'cache-control': 'public, max-age=20'
+          }
         });
       }
     } catch (e) {

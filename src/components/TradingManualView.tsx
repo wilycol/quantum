@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ResponsiveContainer, ComposedChart, XAxis, YAxis, Tooltip, Area, Bar, CartesianGrid,
 } from 'recharts';
@@ -168,6 +168,29 @@ export default function TradingManualView() {
 
   const hasData = rows.length > 0;
 
+  // Calcular precio actual desde las velas reales
+  const last = rows.at(-1);
+  const lastClose = last?.close ?? 0;
+
+  // RSI simple (14)
+  function calcRSI(data: typeof rows, period = 14) {
+    const closes = data.map(d => d.close);
+    if (closes.length <= period) return 50;
+    let gains = 0, losses = 0;
+    for (let i = closes.length - period; i < closes.length; i++) {
+      const diff = closes[i] - closes[i - 1];
+      if (diff >= 0) gains += diff; else losses -= diff;
+    }
+    const rs = (gains / period) / ((losses || 1e-9) / period);
+    return Math.max(0, Math.min(100, 100 - 100 / (1 + rs)));
+  }
+
+  const rsi = useMemo(() => calcRSI(rows, 14), [rows]);
+
+  const signal =
+    rsi > 70 ? 'SELL' :
+    rsi < 30 ? 'BUY'  : 'HOLD';
+
   // Manejo de errores
   if (error) {
     return (
@@ -201,10 +224,14 @@ export default function TradingManualView() {
               <ResponsiveContainer width="100%" height={300}>
                 <ComposedChart data={rows}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="label" minTickGap={24} />
-                  <YAxis yAxisId="p" />
+                  <XAxis dataKey="label" minTickGap={32} />
+                  <YAxis yAxisId="p" domain={['dataMin - 50', 'dataMax + 50']}
+                         tickFormatter={(v)=> v.toLocaleString('en-US')} />
                   <YAxis yAxisId="v" orientation="right" hide />
-                  <Tooltip />
+                  <Tooltip formatter={(v: any, name: string) => {
+                    if (name === 'volume') return [v.toLocaleString('en-US'), 'Volume'];
+                    return [Number(v).toLocaleString('en-US', {maximumFractionDigits:2}), 'Close'];
+                  }} />
                   <Area
                     yAxisId="p"
                     type="monotone"
@@ -227,20 +254,20 @@ export default function TradingManualView() {
             <div className="flex justify-between items-center">
               <span className="text-sm muted">Precio Actual:</span>
               <span className="text-lg font-semibold">
-                {formatPrice(num(state?.lastPrice))}
+                ${lastClose.toLocaleString('en-US', {maximumFractionDigits:2})}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm muted">RSI:</span>
               <span className="text-lg font-semibold">
-                {state?.rsi ? num(state.rsi).toFixed(2) : 'N/A'}
+                {rsi.toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm muted">Señal:</span>
-              <div className={`mt-1 px-3 py-2 rounded-lg text-center font-medium ${getSignalBgColor(state?.side ?? 'hold')}`}>
-                <span className={getSignalColor(state?.side ?? 'hold')}>
-                  {(state?.side ?? 'hold').toUpperCase()}
+              <div className={`mt-1 px-3 py-2 rounded-lg text-center font-medium ${getSignalBgColor(signal.toLowerCase())}`}>
+                <span className={getSignalColor(signal.toLowerCase())}>
+                  {signal}
                 </span>
               </div>
             </div>
