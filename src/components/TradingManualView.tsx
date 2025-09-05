@@ -206,6 +206,16 @@ export default function TradingManualView() {
     rsi > 70 ? 'SELL' :
     rsi < 30 ? 'BUY'  : 'HOLD';
 
+  // Límites de riesgo
+  const maxQtyPerTrade = Math.floor(equity * 0.05); // 5% del equity
+  const canSell = paperState.pos && paperState.pos.side === 'BUY' && paperState.pos.qty > 0;
+  const canBuy = qty <= maxQtyPerTrade;
+  const canSellQty = canSell && qty <= (paperState.pos?.qty || 0);
+  
+  // Estado de riesgo
+  const riskStatus = qty > maxQtyPerTrade ? 'ALERTA' : 'OK';
+  const riskColor = riskStatus === 'OK' ? '#22c55e' : '#ef4444';
+
   // Manejo de errores
   if (error) {
     return (
@@ -279,10 +289,21 @@ export default function TradingManualView() {
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm muted">Señal:</span>
+              <span className="text-sm muted">Señal RSI:</span>
               <div className={`mt-1 px-3 py-2 rounded-lg text-center font-medium ${getSignalBgColor(signal.toLowerCase())}`}>
                 <span className={getSignalColor(signal.toLowerCase())}>
                   {signal}
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm muted">Riesgo:</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium" style={{ color: riskColor }}>
+                  {riskStatus}
+                </span>
+                <span className="text-xs text-gray-500">
+                  (Max: {maxQtyPerTrade})
                 </span>
               </div>
             </div>
@@ -350,6 +371,14 @@ export default function TradingManualView() {
             value={paperState.pos ? `${paperState.pos.side} ${paperState.pos.qty} @ $${paperState.pos.avg.toFixed(2)}` : '—'} 
           />
           <Row label="Equity" value={"$" + equity.toFixed(2)} />
+          <Row 
+            label="Límite por Trade" 
+            value={`${maxQtyPerTrade} (5% equity)`} 
+          />
+          <Row 
+            label="Disponible para Venta" 
+            value={paperState.pos?.qty || 0} 
+          />
         </div>
       </div>
 
@@ -373,11 +402,25 @@ export default function TradingManualView() {
           </div>
 
           <div className="flex gap-2 items-end">
-            <button className="btn" onClick={() => submit('BUY', qty)}>
-              BUY
+            <button 
+              className={`btn ${!canBuy ? 'opacity-50 cursor-not-allowed' : ''} ${
+                signal === 'BUY' ? 'ring-2 ring-green-500' : ''
+              }`}
+              onClick={() => canBuy && submit('BUY', qty)}
+              disabled={!canBuy}
+              title={!canBuy ? `Cantidad excede el límite de riesgo (${maxQtyPerTrade})` : signal === 'BUY' ? 'Señal RSI: BUY' : ''}
+            >
+              BUY {signal === 'BUY' && '✓'}
             </button>
-            <button className="btn ghost" onClick={() => submit('SELL', qty)}>
-              SELL
+            <button 
+              className={`btn ghost ${!canSellQty ? 'opacity-50 cursor-not-allowed' : ''} ${
+                signal === 'SELL' ? 'ring-2 ring-red-500' : ''
+              }`}
+              onClick={() => canSellQty && submit('SELL', qty)}
+              disabled={!canSellQty}
+              title={!canSell ? 'No hay posición para vender' : !canSellQty ? `Cantidad excede la posición disponible (${paperState.pos?.qty || 0})` : signal === 'SELL' ? 'Señal RSI: SELL' : ''}
+            >
+              SELL {signal === 'SELL' && '✓'}
             </button>
           </div>
 
