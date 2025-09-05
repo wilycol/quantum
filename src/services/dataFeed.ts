@@ -9,7 +9,7 @@ export interface Candle {
 }
 
 // Mapeo de timeframes a intervalos de Binance
-const TF_TO_BINANCE: Record<string, string> = {
+const TF: Record<string, string> = {
   '1m': '1m',
   '5m': '5m',
   '15m': '15m',
@@ -19,11 +19,14 @@ const TF_TO_BINANCE: Record<string, string> = {
 };
 
 // Función para obtener datos de Binance a través de nuestro proxy
-export async function fetchBinanceKlines(symbol: string, timeframe: string, limit = 200): Promise<Candle[]> {
-  const interval = TF_TO_BINANCE[timeframe] ?? '1m';
+export async function fetchBinanceKlines(symbol: string, timeframe: string, limit = 500): Promise<Candle[]> {
+  const interval = TF[timeframe] ?? '1m';
   const url = `/api/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-  console.info('[DATA FETCH]', url); // <-- verifica en consola que usa /api/klines
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: 'no-store' });
+
+  // 👇 huella clara para que Wily lo vea en consola
+  console.info('[DATA FETCH]', url, '• host:', res.headers.get('x-qt-host'), '• status:', res.status);
+
   if (!res.ok) throw new Error(`Proxy ${res.status}`);
   const arr = await res.json() as any[];
   return arr.map(k => ({ t:k.t, o:+k.o, h:+k.h, l:+k.l, c:+k.c, v:+k.v }));
