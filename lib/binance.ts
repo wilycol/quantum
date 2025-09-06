@@ -1,96 +1,128 @@
 // lib/binance.ts
 import crypto from 'crypto';
 
-const SPOT = process.env.BINANCE_SPOT_TESTNET_BASE || 'https://testnet.binance.vision';
-const API_KEY = process.env.BINANCE_API_KEY || '';
-const API_SECRET = process.env.BINANCE_API_SECRET || '';
+// BASE: testnet por defecto; en prod podrás cambiar a mainnet si quieres.
+const BASE = process.env.BINANCE_SPOT_TESTNET_BASE || 'https://testnet.binance.vision';
 
-if (!SPOT.startsWith('https://')) {
-  throw new Error('BINANCE_SPOT_TESTNET_BASE inválida');
+// Keys
+const API_KEY = process.env.BINANCE_API_KEY || '';
+const API_SECRET = (process.env.BINANCE_API_SECRET || '').trim();
+
+// Validaciones tempranas
+if (!API_KEY || !API_SECRET) {
+  console.warn('[binance] WARNING: faltan API_KEY/SECRET en este environment');
 }
 
-function qs(params: Record<string, any>) {
-  return Object.entries(params)
-    .filter(([, v]) => v !== undefined && v !== null)
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-    .join('&');
+// --- Control de tiempo (para evitar -1021) ---
+let timeOffsetMs = 0;       // serverTime - localTime
+let lastSync = 0;
+
+async function syncServerTime() {
+  const url = `${BASE}/api/v3/time`;
+  const t0 = Date.now();
+  const r = await fetch(url, { cache: 'no-store' });
+  const txt = await r.text();
+  if (!r.ok) throw new Error(`time sync failed: ${r.status} ${txt}`);
+  const data = JSON.parse(txt) as { serverTime: number };
+  const t1 = Date.now();
+  // Aproximamos offset al centro del RTT
+  const local = Math.round((t0 + t1) / 2);
+  timeOffsetMs = data.serverTime - local;
+  lastSync = Date.now();
+  console.log('[binance] time synced. offset(ms)=', timeOffsetMs);
+}
+
+async function ensureTime() {
+  if (Date.now() - lastSync > 60_000) { // resync cada 60s
+    try { await syncServerTime(); } catch (e) { console.warn('[binance] time sync error:', (e as any)?.message); }
+  }
 }
 
 function sign(query: string) {
   return crypto.createHmac('sha256', API_SECRET).update(query).digest('hex');
 }
 
-export async function serverTime(): Promise<number> {
-  const r = await fetch(`${SPOT}/api/v3/time`, { cache: 'no-store' });
-  if (!r.ok) throw new Error(`serverTime ${r.status}`);
-  const j = await r.json();
-  return j.serverTime as number;
+function encode(params: Record<string, any>) {
+  const usp = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v === undefined || v === null) return;
+    usp.set(k, String(v));
+  });
+  return usp.toString();
 }
 
-export async function signedFetch(
+async function signedFetch(
+  method: 'GET'|'POST'|'DELETE',
   path: string,
-  method: 'GET' | 'POST' | 'DELETE',
-  params: Record<string, any> = {}
+  params: Record<string, any> = {},
 ) {
-  if (!API_KEY || !API_SECRET) throw new Error('BINANCE_API_KEY/SECRET no configurados');
-  const srv = await serverTime();
-  const queryObj = { recvWindow: 5000, timestamp: srv, ...params };
-  const query = qs(queryObj);
-  const signature = sign(query);
-  const endpoint = `${SPOT}${path}?${query}&signature=${signature}`;
-  const headers = { 'X-MBX-APIKEY': API_KEY };
+  await ensureTime();
+  const recvWindow = params.recvWindow ?? 5000;
+  const timestamp = (Date.now() + timeOffsetMs);
+  const baseParams = { ...params, recvWindow, timestamp };
 
-  const r = await fetch(endpoint, { method, headers });
+  const qs = encode(baseParams);
+  const sig = sign(qs);
+
+  const url = `${BASE}${path}?${qs}&signature=${sig}`;
+
+  const r = await fetch(url, {
+    method,
+    headers: { 'X-MBX-APIKEY': API_KEY },
+  });
+
   const text = await r.text();
-  let data: any; try { data = JSON.parse(text); } catch { data = text; }
-
-  // Reintento de drift -1021
-  if (!r.ok && data?.code === -1021) {
-    const srv2 = await serverTime();
-    const q2 = qs({ recvWindow: 10000, timestamp: srv2, ...params });
-    const s2 = sign(q2);
-    const ep2 = `${SPOT}${path}?${q2}&signature=${s2}`;
-    const r2 = await fetch(ep2, { method, headers });
-    const d2 = await r2.json().catch(() => ({}));
-    if (!r2.ok) throw new Error(`Binance err ${r2.status} ${JSON.stringify(d2)}`);
-    return d2;
+  if (!r.ok) {
+    // Intenta parsear error de binance: { code: -1021, msg: 'Timestamp...' }
+    let err: any = text;
+    try { err = JSON.parse(text); } catch {}
+    throw new Error(`binance ${method} ${path} ${r.status} ${typeof err==='string'?err:JSON.stringify(err)}`);
   }
-
-  if (!r.ok) throw new Error(`Binance err ${r.status} ${JSON.stringify(data)}`);
-  return data;
+  try { return JSON.parse(text); } catch { return text; }
 }
 
-export async function getSpotAccount() {
-  return signedFetch('/api/v3/account', 'GET');
+// --- APIs públicas útiles para debug ---
+export async function ping() {
+  const url = `${BASE}/api/v3/ping`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`ping failed ${r.status}`);
+  return true;
+}
+export async function serverTime() {
+  await syncServerTime();
+  return { offsetMs: timeOffsetMs, lastSync };
 }
 
-export async function getSpotBalances() {
-  const acc = await getSpotAccount();
-  return acc.balances as Array<{ asset: string; free: string; locked: string }>;
-}
-
+// --- Spot Account ---
 export type SpotOrderReq = {
   symbol: string;
-  side: 'BUY' | 'SELL';
-  type: 'MARKET' | 'LIMIT';
+  side: 'BUY'|'SELL';
+  type: 'MARKET'|'LIMIT';
   quantity?: number;
   quoteOrderQty?: number;
   price?: number;
-  timeInForce?: 'GTC' | 'IOC' | 'FOK';
+  timeInForce?: 'GTC'|'IOC'|'FOK';
   test?: boolean;
 };
 
+export async function getSpotBalances() {
+  const data = await signedFetch('GET', '/api/v3/account', {});
+  // filtra balances > 0
+  const balances = (data.balances || []).filter((b: any) => +b.free > 0 || +b.locked > 0);
+  return balances;
+}
+
 export async function placeSpotOrder(req: SpotOrderReq) {
   const path = req.test ? '/api/v3/order/test' : '/api/v3/order';
-  const params = {
+  // Para POST, Binance también acepta la firma en querystring; dejamos body vacío.
+  const params: Record<string, any> = {
     symbol: req.symbol,
     side: req.side,
     type: req.type,
+    timeInForce: req.timeInForce,
     quantity: req.quantity,
     quoteOrderQty: req.quoteOrderQty,
     price: req.price,
-    timeInForce: req.type === 'LIMIT' ? (req.timeInForce || 'GTC') : undefined,
-    newOrderRespType: 'RESULT',
   };
-  return signedFetch(path, 'POST', params);
+  return signedFetch('POST', path, params);
 }
