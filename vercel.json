@@ -1,5 +1,8 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
-  ]
+  "functions": {
+    "api/*.{js,ts}": {
+      "runtime": "nodejs18.x",
+      "regions": ["fra1"]
+    }
+  }
 }
