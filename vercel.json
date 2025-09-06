@@ -1,5 +1,15 @@
 {
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
-  ]
+  ],
+  "functions": {
+    "api/**.ts": {
+      "runtime": "nodejs20.x",
+      "regions": ["cdg1", "fra1", "hnd1"]
+    },
+    "api/**.js": {
+      "runtime": "nodejs20.x",
+      "regions": ["cdg1", "fra1", "hnd1"]
+    }
+  }
 }
