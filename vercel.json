@@ -1,9 +1,8 @@
 {
-  "version": 2,
-  "regions": ["cdg1", "fra1", "hnd1"],
   "functions": {
-    "api/**/*.{js,ts}": {
-      "runtime": "nodejs20.x"
+    "api/*.{js,ts}": {
+      "runtime": "nodejs18.x",
+      "regions": ["fra1"]
     }
   }
 }
