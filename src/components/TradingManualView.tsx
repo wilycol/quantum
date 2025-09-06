@@ -11,6 +11,8 @@ import { ensureArray, num, hasAllKeys, onlyFinite } from '../lib/safe';
 import { useContainerReady } from '../hooks/useContainerReady';
 import { useCandles } from '../hooks/useCandles';
 import { usePaper } from '../hooks/usePaper';
+import { CLIENT_TRADING_MODE, MODE_BADGE } from '../lib/mode';
+import { getBalances, placeOrderBinance } from '../services/api';
 
 export default function TradingManualView() {
   const { ref, ready } = useContainerReady();
@@ -30,8 +32,10 @@ export default function TradingManualView() {
   const [nextIn, setNextIn] = useState(3);
   const [quantity, setQuantity] = useState(100);
   const [selectedSide, setSelectedSide] = useState<'buy' | 'sell'>('buy');
-  const [qty, setQty] = useState(100);
+  const [qty, setQty] = useState(0.001); // en BTC para BTCUSDT
   const [lastFeedback, setLastFeedback] = useState<TradeFeedback | null>(null);
+  const [tradingLoading, setTradingLoading] = useState(false);
+  const [msg, setMsg] = useState<string | undefined>(undefined);
   const { mode: envMode, paper, enableAI } = useEnvironment();
   const [mode, setMode] = useState<'Demo' | 'Hybrid' | 'Live'>('Demo');
   
@@ -216,6 +220,63 @@ export default function TradingManualView() {
   const riskStatus = qty > maxQtyPerTrade ? 'ALERTA' : 'OK';
   const riskColor = riskStatus === 'OK' ? '#22c55e' : '#ef4444';
 
+  // Validación de riesgo para Binance
+  const riskOk = useMemo(() => {
+    // guardrail simple: 5% del equity como máximo
+    const maxBase = equity > 0 ? (equity * 0.05) / lastClose : 0.0;
+    return qty <= maxBase + 1e-9;
+  }, [equity, lastClose, qty]);
+
+  // Funciones de orden
+  type Side = 'BUY' | 'SELL';
+
+  async function onOrder(side: Side) {
+    try {
+      setTradingLoading(true); 
+      setMsg(undefined);
+
+      if (CLIENT_TRADING_MODE === 'paper') {
+        // Paper: usa el motor local
+        submit(side, Number(qty));
+        setMsg(`PAPER ${side} ${qty}`);
+        return;
+      }
+
+      // TESTNET: valida guardrails mínimos en cliente
+      if (!riskOk) { 
+        setMsg('ALERTA: qty excede límite de 5% de equity'); 
+        return; 
+      }
+
+      const payload = {
+        symbol: 'BTCUSDT',
+        side,
+        type: 'MARKET' as const,
+        quantity: Number(qty),
+        test: false, // pon true las primeras veces si quieres "/order/test"
+      };
+
+      const res = await placeOrderBinance(payload);
+      setMsg(`TESTNET OK: ${side} ${qty} -> ${JSON.stringify(res.data ?? {})}`);
+    } catch (e: any) {
+      setMsg(`ERROR: ${e?.message || e}`);
+    } finally {
+      setTradingLoading(false);
+    }
+  }
+
+  async function onCheckBalances() {
+    try {
+      setTradingLoading(true);
+      const r = await getBalances();
+      setMsg(`Balances: ${JSON.stringify(r.data)}`);
+    } catch (e: any) {
+      setMsg(`ERROR balances: ${e?.message || e}`);
+    } finally {
+      setTradingLoading(false);
+    }
+  }
+
   // Manejo de errores
   if (error) {
     return (
@@ -379,12 +440,27 @@ export default function TradingManualView() {
             label="Disponible para Venta" 
             value={paperState.pos?.qty || 0} 
           />
+          <Row 
+            label="Riesgo Binance" 
+            value={riskOk ? 'OK' : 'ALERTA (qty > 5% equity)'}
+            color={riskOk ? '#16a34a' : '#dc2626'}
+          />
         </div>
       </div>
 
       <div style={{height:16}} />
       <div className="panel side-card">
-        <h2 className="text-xl font-semibold mb-4">Paper Trading</h2>
+        {/* Badge de modo */}
+        <div style={{
+          display:'inline-block', padding:'4px 8px', borderRadius:8,
+          background: CLIENT_TRADING_MODE==='paper' ? '#fff7ed' : '#eef2ff',
+          color: CLIENT_TRADING_MODE==='paper' ? '#9a3412' : '#3730a3',
+          fontWeight:700, marginBottom:8
+        }}>
+          MODE: {MODE_BADGE}
+        </div>
+
+        <h2 className="text-xl font-semibold mb-4">Trading</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Controles de trading */}
           <div>
@@ -393,11 +469,11 @@ export default function TradingManualView() {
             </label>
             <input
               type="number"
+              step="0.0001"
+              min="0"
               value={qty}
               onChange={e => setQty(Number(e.target.value) || 0)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              min="1"
-              step="1"
             />
           </div>
 
@@ -406,8 +482,8 @@ export default function TradingManualView() {
               className={`btn ${!canBuy ? 'opacity-50 cursor-not-allowed' : ''} ${
                 signal === 'BUY' ? 'ring-2 ring-green-500' : ''
               }`}
-              onClick={() => canBuy && submit('BUY', qty)}
-              disabled={!canBuy}
+              onClick={() => onOrder('BUY')}
+              disabled={tradingLoading || !canBuy}
               title={!canBuy ? `Cantidad excede el límite de riesgo (${maxQtyPerTrade})` : signal === 'BUY' ? 'Señal RSI: BUY' : ''}
             >
               BUY {signal === 'BUY' && '✓'}
@@ -416,17 +492,30 @@ export default function TradingManualView() {
               className={`btn ghost ${!canSellQty ? 'opacity-50 cursor-not-allowed' : ''} ${
                 signal === 'SELL' ? 'ring-2 ring-red-500' : ''
               }`}
-              onClick={() => canSellQty && submit('SELL', qty)}
-              disabled={!canSellQty}
+              onClick={() => onOrder('SELL')}
+              disabled={tradingLoading || !canSellQty}
               title={!canSell ? 'No hay posición para vender' : !canSellQty ? `Cantidad excede la posición disponible (${paperState.pos?.qty || 0})` : signal === 'SELL' ? 'Señal RSI: SELL' : ''}
             >
               SELL {signal === 'SELL' && '✓'}
             </button>
           </div>
 
-          <div className="flex items-end">
-            <button onClick={reset} className="btn ghost w-full">
-              Reset
+          <div className="flex gap-2 items-end">
+            {CLIENT_TRADING_MODE !== 'paper' && (
+              <button 
+                disabled={tradingLoading} 
+                onClick={onCheckBalances}
+                className="btn ghost"
+              >
+                Balances
+              </button>
+            )}
+            <button 
+              disabled={loading} 
+              onClick={reset}
+              className="btn ghost"
+            >
+              Reset (paper)
             </button>
           </div>
         </div>
@@ -471,6 +560,27 @@ export default function TradingManualView() {
           </table>
         </div>
       </div>
+
+      {/* Mensajes */}
+      {msg && (
+        <div style={{marginTop: 16}}>
+          <div className="panel side-card">
+            <h3 className="text-lg font-semibold mb-2">Mensajes del Sistema</h3>
+            <pre style={{
+              whiteSpace:'pre-wrap', 
+              fontSize:12, 
+              background:'#111', 
+              color:'#ddd', 
+              padding:8, 
+              borderRadius:8,
+              overflow: 'auto',
+              maxHeight: '200px'
+            }}>
+              {msg}
+            </pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
