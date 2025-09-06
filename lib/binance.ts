@@ -5,6 +5,10 @@ const SPOT = process.env.BINANCE_SPOT_TESTNET_BASE || 'https://testnet.binance.v
 const API_KEY = process.env.BINANCE_API_KEY || '';
 const API_SECRET = process.env.BINANCE_API_SECRET || '';
 
+if (!SPOT.startsWith('https://')) {
+  throw new Error('BINANCE_SPOT_TESTNET_BASE inválida');
+}
+
 function qs(params: Record<string, any>) {
   return Object.entries(params)
     .filter(([, v]) => v !== undefined && v !== null)

@@ -12,7 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
   try {
-    const body = req.body as SpotOrderReq;
+    const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) as SpotOrderReq;
+
     if (!body?.symbol || !body?.side || !body?.type) {
       return res.status(400).json({ ok: false, error: 'symbol/side/type requeridos' });
     }
@@ -40,6 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(200).json({ ok: true, data });
   } catch (e: any) {
-    res.status(500).json({ ok: false, error: e?.message || 'unknown' });
+    console.error('[order] error:', e?.message, e?.stack);
+    res.status(500).json({ ok: false, where: 'order', error: e?.message || 'unknown' });
   }
 }
