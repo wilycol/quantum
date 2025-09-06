@@ -17,12 +17,12 @@ export const CLIENT_FEED_MODE: FeedMode =
 export const MODE_BADGE = CLIENT_TRADING_MODE.toUpperCase();
 export const FEED_BADGE = CLIENT_FEED_MODE.toUpperCase();
 
-// DEBUG banner (solo en navegador)
+// DEBUG banner
 if (typeof window !== 'undefined') {
   // @ts-ignore
   const E = import.meta.env || {} as any;
   // eslint-disable-next-line no-console
-  console.info('[QT] env preview:', {
+  console.info('[QT] env:', {
     VITE_TRADING_MODE: E.VITE_TRADING_MODE,
     NEXT_PUBLIC_TRADING_MODE: E.NEXT_PUBLIC_TRADING_MODE,
     VITE_DATA_MODE: E.VITE_DATA_MODE,

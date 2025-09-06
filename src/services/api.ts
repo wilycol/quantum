@@ -30,7 +30,7 @@ export type PlaceOrderPayload = {
 };
 
 export async function getBalances() {
-  return apiGet<{ ok: boolean; data: any[] }>('/api/binance/balances');
+  return apiGet<{ ok: boolean; data: any[]; timeInfo?: any }>('/api/binance/balances');
 }
 
 export async function placeOrderBinance(payload: PlaceOrderPayload) {
