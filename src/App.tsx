@@ -108,6 +108,21 @@ const App: React.FC = () => {
     }
   }, [settings.notifications, settings.notificationConfig.pushEnabled, lastNotification]);
 
+  // Listener para navegación desde SupportView
+  useEffect(() => {
+    const handleNavigate = (event: CustomEvent) => {
+      const { view } = event.detail;
+      if (view && typeof view === 'string') {
+        setCurrentView(view as MainView);
+      }
+    };
+
+    window.addEventListener('navigate', handleNavigate as EventListener);
+    return () => {
+      window.removeEventListener('navigate', handleNavigate as EventListener);
+    };
+  }, []);
+
 
   const handleSplashComplete = () => {
     setAppState('login');

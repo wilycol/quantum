@@ -145,6 +145,22 @@ const SupportView: React.FC = () => {
                                 <p className="text-sm text-gray-600 dark:text-gray-400">Compilación de seguridad y cumplimiento</p>
                             </div>
                         </a>
+                        
+                        {/* Documentación Legal */}
+                        <div className="border-t border-gray-300 dark:border-gray-700 pt-4 mt-6">
+                            <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">📋 Documentación Legal</h4>
+                            
+                            <button 
+                                onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'legal' } }))}
+                                className="w-full flex items-center gap-4 p-4 bg-emerald-100 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/30 transition-colors"
+                            >
+                                <BookOpenIcon className="w-8 h-8 text-emerald-600" />
+                                <div className="text-left">
+                                    <h4 className="font-bold text-gray-900 dark:text-white">⚖️ Términos Legales & Privacidad</h4>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Aviso legal, términos de uso y política de privacidad</p>
+                                </div>
+                            </button>
+                        </div>
                     </div>
                 );
             case 'faq':
@@ -164,6 +180,22 @@ const SupportView: React.FC = () => {
                                     <p>{chatResponse}</p>
                                 </div>
                              )}
+                        </Card>
+                        
+                        {/* Acceso Rápido a Documentación Legal */}
+                        <Card className="bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1">⚖️ Documentación Legal</h4>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Accede a términos legales y política de privacidad</p>
+                                </div>
+                                <button 
+                                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'legal' } }))}
+                                    className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold"
+                                >
+                                    Ver Términos
+                                </button>
+                            </div>
                         </Card>
                         <div>
                             <div className="flex flex-wrap gap-2 mb-4">
