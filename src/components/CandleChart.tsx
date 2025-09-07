@@ -28,9 +28,8 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
     isUserZoomed: boolean;
   }>({ visibleRange: null, isUserZoomed: false });
 
-  // Referencias para los event handlers
+  // Referencia para el event handler
   const handleWheelRef = useRef<((event: WheelEvent) => void) | null>(null);
-  const handleDocumentWheelRef = useRef<((event: WheelEvent) => void) | null>(null);
 
   // ------- create chart once
   useEffect(() => {
@@ -83,6 +82,8 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
 
         // Control de zoom personalizado con Ctrl + rueda del mouse
         const handleWheel = (event: WheelEvent) => {
+          console.log('[ZOOM DEBUG] Wheel event:', { ctrlKey: event.ctrlKey, deltaY: event.deltaY });
+          
           // Solo permitir zoom si se presiona Ctrl
           if (!event.ctrlKey) {
             return; // Permitir scroll normal de la página
@@ -94,7 +95,10 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           
           const timeScale = chart.timeScale();
           const visibleRange = timeScale.getVisibleRange();
-          if (!visibleRange) return;
+          if (!visibleRange) {
+            console.log('[ZOOM DEBUG] No visible range available');
+            return;
+          }
           
           const delta = event.deltaY;
           const zoomFactor = delta > 0 ? 1.1 : 0.9; // Zoom out si delta > 0, zoom in si delta < 0
@@ -105,6 +109,14 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           
           const newFrom = center - newRange / 2;
           const newTo = center + newRange / 2;
+          
+          console.log('[ZOOM DEBUG] Applying zoom:', { 
+            originalRange: range, 
+            newRange, 
+            zoomFactor, 
+            from: newFrom, 
+            to: newTo 
+          });
           
           timeScale.setVisibleRange({
             from: newFrom as Time,
@@ -118,26 +130,11 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           };
         };
         
-        // Listener adicional en el documento para interceptar eventos cuando el mouse está sobre el chart
-        const handleDocumentWheel = (event: WheelEvent) => {
-          // Verificar si el mouse está sobre el elemento del chart
-          if (el.contains(event.target as Node)) {
-            if (!event.ctrlKey) {
-              return; // Permitir scroll normal si no hay Ctrl
-            }
-            // Prevenir el zoom automático de la librería
-            event.preventDefault();
-            event.stopPropagation();
-          }
-        };
-        
-        // Guardar referencias para la limpieza
+        // Guardar referencia para la limpieza
         handleWheelRef.current = handleWheel;
-        handleDocumentWheelRef.current = handleDocumentWheel;
         
-        // Agregar listeners
-        el.addEventListener('wheel', handleWheel, { passive: false, capture: true });
-        document.addEventListener('wheel', handleDocumentWheel, { passive: false, capture: true });
+        // Agregar listener solo en el elemento del chart
+        el.addEventListener('wheel', handleWheel, { passive: false });
         
         // Listener para detectar cuando el usuario cambia el zoom manualmente
         const handleVisibleRangeChange = (timeRange: any) => {
@@ -184,10 +181,7 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
         // Remover listeners personalizados
         const el = elRef.current;
         if (el && handleWheelRef.current) {
-          el.removeEventListener('wheel', handleWheelRef.current, { capture: true });
-        }
-        if (handleDocumentWheelRef.current) {
-          document.removeEventListener('wheel', handleDocumentWheelRef.current, { capture: true });
+          el.removeEventListener('wheel', handleWheelRef.current);
         }
         chartRef.current.remove();
       }
