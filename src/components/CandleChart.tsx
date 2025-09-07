@@ -3,7 +3,7 @@ import { createChart, CrosshairMode, IChartApi, ISeriesApi, Time } from "lightwe
 import { usePriceFeed } from "../hooks/usePriceFeed";
 
 type Marker = { time: Time; position: "aboveBar" | "belowBar"; color: string; shape: "arrowUp" | "arrowDown"; text: string };
-type LineRef = ReturnType<IChartApi["addHorizontalLine"]>;
+type LineRef = ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>;
 
 interface CandleChartProps {
   symbol?: string;
@@ -27,6 +27,10 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
     visibleRange: { from: number; to: number } | null;
     isUserZoomed: boolean;
   }>({ visibleRange: null, isUserZoomed: false });
+
+  // Referencias para los event handlers
+  const handleWheelRef = useRef<((event: WheelEvent) => void) | null>(null);
+  const handleDocumentWheelRef = useRef<((event: WheelEvent) => void) | null>(null);
 
   // ------- create chart once
   useEffect(() => {
@@ -52,12 +56,17 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
             borderVisible: false, 
             timeVisible: true, 
             secondsVisible: false,
-            // Deshabilitar zoom automático con rueda del mouse
             rightOffset: 0,
             barSpacing: 6,
             minBarSpacing: 0.5,
+            // Deshabilitar completamente el zoom automático
+            shiftVisibleRangeOnNewBar: false,
+            lockVisibleTimeRangeOnResize: false,
           },
           autoSize: true,
+          // Deshabilitar todas las interacciones automáticas de zoom
+          handleScroll: false,
+          handleScale: false,
         });
         
         const series = chart.addCandlestickSeries({
@@ -79,7 +88,9 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
             return; // Permitir scroll normal de la página
           }
           
-          event.preventDefault(); // Prevenir scroll de la página
+          // Prevenir completamente el comportamiento por defecto
+          event.preventDefault();
+          event.stopPropagation();
           
           const timeScale = chart.timeScale();
           const visibleRange = timeScale.getVisibleRange();
@@ -88,16 +99,16 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           const delta = event.deltaY;
           const zoomFactor = delta > 0 ? 1.1 : 0.9; // Zoom out si delta > 0, zoom in si delta < 0
           
-          const range = visibleRange.to - visibleRange.from;
+          const range = Number(visibleRange.to) - Number(visibleRange.from);
           const newRange = range * zoomFactor;
-          const center = (visibleRange.from + visibleRange.to) / 2;
+          const center = (Number(visibleRange.from) + Number(visibleRange.to)) / 2;
           
           const newFrom = center - newRange / 2;
           const newTo = center + newRange / 2;
           
           timeScale.setVisibleRange({
-            from: newFrom,
-            to: newTo
+            from: newFrom as Time,
+            to: newTo as Time
           });
           
           // Guardar el estado del zoom del usuario
@@ -107,8 +118,26 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           };
         };
         
-        // Agregar listener de rueda del mouse
-        el.addEventListener('wheel', handleWheel, { passive: false });
+        // Listener adicional en el documento para interceptar eventos cuando el mouse está sobre el chart
+        const handleDocumentWheel = (event: WheelEvent) => {
+          // Verificar si el mouse está sobre el elemento del chart
+          if (el.contains(event.target as Node)) {
+            if (!event.ctrlKey) {
+              return; // Permitir scroll normal si no hay Ctrl
+            }
+            // Prevenir el zoom automático de la librería
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        };
+        
+        // Guardar referencias para la limpieza
+        handleWheelRef.current = handleWheel;
+        handleDocumentWheelRef.current = handleDocumentWheel;
+        
+        // Agregar listeners
+        el.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+        document.addEventListener('wheel', handleDocumentWheel, { passive: false, capture: true });
         
         // Listener para detectar cuando el usuario cambia el zoom manualmente
         const handleVisibleRangeChange = (timeRange: any) => {
@@ -154,8 +183,11 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
       if (chartRef.current) {
         // Remover listeners personalizados
         const el = elRef.current;
-        if (el) {
-          el.removeEventListener('wheel', handleWheel);
+        if (el && handleWheelRef.current) {
+          el.removeEventListener('wheel', handleWheelRef.current, { capture: true });
+        }
+        if (handleDocumentWheelRef.current) {
+          document.removeEventListener('wheel', handleDocumentWheelRef.current, { capture: true });
         }
         chartRef.current.remove();
       }
