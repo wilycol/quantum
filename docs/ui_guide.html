@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumTrade - Comprehensive UI & Functionality Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #c9c9c9;
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background-color: #1e1e1e;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #3a3a3a;
+        }
+        header {
+            text-align: center;
+            border-bottom: 1px solid #3a3a3a;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        header img {
+            width: 80px;
+            height: auto;
+        }
+        h1, h2, h3, h4 {
+            color: #D4AF37;
+            margin-top: 0;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        h2 {
+            font-size: 1.8rem;
+            border-bottom: 1px solid #3a3a3a;
+            padding-bottom: 0.5rem;
+            margin-top: 2.5rem;
+        }
+        h3 {
+            font-size: 1.4rem;
+            color: #e0c56e;
+            margin-top: 2rem;
+        }
+        h4 {
+            font-size: 1.1rem;
+            color: #f0e1a4;
+            margin-top: 1.5rem;
+        }
+        p {
+            margin-bottom: 1rem;
+        }
+        code {
+            background-color: #2a2a2a;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #f1f1f1;
+        }
+        ul, ol {
+            padding-left: 1.5rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            margin-top: 0.5rem;
+        }
+        .color-swatch {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            margin-right: 0.5em;
+            vertical-align: middle;
+            border: 1px solid #5a5a5a;
+        }
+        .note {
+            background-color: rgba(212, 175, 55, 0.1);
+            border-left: 4px solid #D4AF37;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="https://res.cloudinary.com/djojon779/image/upload/f_auto,q_auto/v1754260994/ChatGPT_Image_3_ago_2025_04_34_50_p.m._naw5on.png" alt="QuantumTrade Logo">
+            <div class="logo-text">QuantumTrade</div>
+            <h1>Comprehensive UI & Functionality Guide</h1>
+            <p>Your complete guide to mastering the QuantumTrade Dashboard.</p>
+        </header>
+
+        <section>
+            <h2>1. General UI Principles</h2>
+            <p>The QuantumTrade interface is designed to be powerful yet intuitive, providing a clean and focused environment for traders. We adhere to several core design principles.</p>
+
+            <h3>1.1 Color Language</h3>
+            <p>Colors are used consistently throughout the application to convey meaning quickly:</p>
+            <ul>
+                <li><span class="color-swatch" style="background-color: #D4AF37;"></span><strong>Brand Gold (<code>#D4AF37</code>):</strong> Used for primary actions, important highlights, AI-related features, and positive performance metrics like win rate.</li>
+                <li><span class="color-swatch" style="background-color: #34c759;"></span><strong>Brand Green (<code>#34c759</code>):</strong> Indicates profit, positive gains (P/L), and BUY actions.</li>
+                <li><span class="color-swatch" style="background-color: #ff3b30;"></span><strong>Brand Red (<code>#ff3b30</code>):</strong> Indicates loss, negative gains (P/L), and SELL actions.</li>
+                <li><span class="color-swatch" style="background-color: #1a2a45;"></span><strong>Brand Navy (<code>#1a2a45</code>):</strong> The primary background color for most card and panel elements in the dark theme, providing a high-contrast, low-fatigue workspace.</li>
+            </ul>
+
+            <h3>1.2 Tooltips</h3>
+            <p>Almost every interactive element, from sidebar icons to buttons in the trading panel, features a descriptive tooltip. Hovering over an element will reveal a small pop-up explaining its function. This feature can be toggled in the <strong>Settings</strong> panel.</p>
+        </section>
+
+        <section>
+            <h2>2. Main Layout Components</h2>
+            
+            <h3>2.1 Sidebar</h3>
+            <p>The primary navigation hub, located on the left. It can be collapsed to an icon-only view for more screen space. An active view is highlighted with a golden accent.</p>
+            <ul>
+                <li><strong>QuantumCore:</strong> The AI's operational dashboard.</li>
+                <li><strong>Quantum Desk:</strong> The manual trading terminal.</li>
+                <li><strong>AI Simulator:</strong> A risk-free environment to test AI strategies.</li>
+                <li><strong>Portfolio:</strong> Your asset management center.</li>
+                <li><strong>Notifications:</strong> A log of all system and AI alerts. A badge indicates unread notifications.</li>
+                <li><strong>History & Reports:</strong> Review past trades and AI performance.</li>
+                <li><strong>Documentation:</strong> Access project documents like this one.</li>
+                <li><strong>Support:</strong> Get help and answers to questions.</li>
+                <li><strong>Settings:</strong> Configure the application to your preferences.</li>
+            </ul>
+
+            <h3>2.2 Header</h3>
+            <p>Located at the top, the Header displays the title of the current view, a search bar, a quick-access notifications button, and the user profile menu.</p>
+        </section>
+
+        <section>
+            <h2>3. Application Panels (Views)</h2>
+
+            <h3>3.1 QuantumCore</h3>
+            <p>This is the "brain" of the AI. It shows a high-level overview of the AI's autonomous simulation and decision-making process.</p>
+            <ul>
+                <li><strong>Simulation Config:</strong> Set the parameters for the AI's simulation, including initial capital, duration, risk tolerance, and asset selection.</li>
+                <li><strong>Controls:</strong> Start, Stop, Reset, and Emergency Stop the simulation. You can also export the results.</li>
+                <li><strong>Metrics Dashboard:</strong> Real-time key performance indicators (KPIs) of the simulation, including elapsed time, current balance, total Profit/Loss (P/L), number of trades, and win rate.</li>
+                <li><strong>Confidence Tracker:</strong> A line chart visualizing the AI's confidence level for each selected asset over time. High confidence often precedes a trade decision.</li>
+                <li><strong>Executed Operations Timeline:</strong> A bar chart showing when trades were executed and their invested amount. Bars are colored green for profitable trades and red for losing trades.</li>
+                <li><strong>Executed Trades Log:</strong> A detailed table of every trade made by the AI during the simulation.</li>
+            </ul>
+
+            <h3>3.2 Quantum Desk (Manual Trading)</h3>
+            <p>The manual trading terminal, augmented with AI assistance.</p>
+            <ul>
+                <li><strong>Market Watch:</strong> A list of tradable assets. You can filter by category, search, and add assets to your favorites. Clicking an asset loads its chart.</li>
+                <li><strong>Chart Panel:</strong> A detailed candlestick chart for the selected asset. You can change timeframes and activate "Trade from Chart" mode to execute trades by clicking directly on the chart. Special golden candles indicate significant AI signals.</li>
+                <li><strong>Execution Panel:</strong> Set your trade volume, Stop Loss (SL), and Take Profit (TP). Execute BUY or SELL orders. The "1-Click Trading" toggle bypasses the AI advice step for faster execution.</li>
+                <li><strong>AI Coach Panel:</strong> Accessible via the floating robot icon, this panel provides on-demand trade advice from the Gemini API, allows you to configure AI assistance intensity, and shows a log of recent AI decisions.</li>
+                <li><strong>Account Info:</strong> Displays your current equity, margin, and balance.</li>
+            </ul>
+            <div class="note">
+                <strong>Training Mode:</strong> In "Full Simulation" mode, the Quantum Desk becomes a training ground. You can start a session where the AI provides signals and you must react in time, receiving feedback on your performance.
+            </div>
+
+            <h3>3.3 AI Simulator</h3>
+            <p>A more detailed and user-interactive version of QuantumCore, designed for strategy testing.</p>
+            <ul>
+                <li><strong>Functionality:</strong> Very similar to QuantumCore, but with a focus on granular analysis. Users can see a more detailed trade log and inspect individual trade results in a modal window.</li>
+                <li><strong>Purpose:</strong> Use the simulator to understand how the AI behaves under different risk settings and market conditions before applying similar strategies in a real environment.</li>
+            </ul>
+
+            <h3>3.4 Portfolio</h3>
+            <p>A comprehensive overview of all your assets.</p>
+            <ul>
+                <li><strong>Simulated/Real Toggle:</strong> Switch between your simulated portfolio and your (mock) real-world portfolio.</li>
+                <li><strong>Compare Feature:</strong> A powerful tool that displays both portfolios side-by-side and uses the Gemini API to generate a comparative analysis, highlighting potential gains missed in your real portfolio.</li>
+                <li><strong>Portfolio Value Chart:</strong> An area chart showing the historical value of your portfolio.</li>
+                <li><strong>Asset Distribution:</strong> A pie chart showing the allocation of your capital across different asset classes (Crypto, Stocks, etc.).</li>
+                <li><strong>AI Advisor:</strong> A button that sends your current portfolio composition to the Gemini API for analysis, providing rebalancing suggestions and performance alerts.</li>
+            </ul>
+
+            <h3>3.5 Other Views</h3>
+            <ul>
+                <li><strong>News:</strong> A feed of market news with an integrated "AI Market Insights" panel powered by Gemini with Google Search grounding for the latest information.</li>
+                <li><strong>History & Reports:</strong> A detailed log of all manual and AI trades, plus a log of your interactions with the AI. Features a "Weekly AI Analysis" where the AI reflects on its own performance.</li>
+                <li><strong>Notifications:</strong> A central place to view all alerts generated by the system.</li>
+                <li><strong>Settings:</strong> A detailed panel to configure risk management rules, AI strategy profiles, notification preferences, and global settings like theme and language.</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>

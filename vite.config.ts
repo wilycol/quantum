@@ -8,12 +8,26 @@ export default defineConfig(({ mode }) => {
       plugins: [react()],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        // Exponer variables VITE_ al cliente
+        'import.meta.env.VITE_DATA_MODE': JSON.stringify(env.VITE_DATA_MODE),
+        'import.meta.env.VITE_SYMBOL': JSON.stringify(env.VITE_SYMBOL),
+        'import.meta.env.VITE_TIMEFRAME': JSON.stringify(env.VITE_TIMEFRAME)
       },
       resolve: {
         alias: {
           // Fix: __dirname is not available in ESM modules. Using `import.meta.url` for path resolution.
           '@': fileURLToPath(new URL('.', import.meta.url)),
+        }
+      },
+      server: {
+        proxy: {
+          '/api/klines': {
+            target: 'https://api.binance.com',
+            changeOrigin: true,
+            secure: true,
+            rewrite: (path) => path.replace(/^\/api/, '/api/v3')
+          }
         }
       },
       build: {

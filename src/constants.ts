@@ -51,6 +51,10 @@ export const MOCK_NEWS_ARTICLES = [
 export const MOCK_FAQS = [
   { q: "How to start paper trading?", a: "Enable PAPER=1 in settings.", category: "Trading" },
   { q: "How to switch mode?", a: "Change MODE to demo|hybrid|live.", category: "Configuration" },
+  { q: "Where can I find the legal terms?", a: "Go to Support > Documentation > Términos Legales & Privacidad, or click the legal button in the modal.", category: "General" },
+  { q: "What is the maximum risk per trade?", a: "The platform enforces a maximum of 5% of your equity per trade to protect your capital.", category: "Security" },
+  { q: "Is this platform safe for trading?", a: "Yes, the platform uses paper trading by default and includes comprehensive risk management features.", category: "Security" },
+  { q: "How do I access the documentation?", a: "Go to Support > Documentation tab to access all technical and business documentation.", category: "General" },
 ];
 
 // History (manual/AI)

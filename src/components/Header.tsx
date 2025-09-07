@@ -23,8 +23,19 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ view, setView }) => {
   const { settings, t } = useSettings();
-  const { enableAI, paper, mode } = useEnvironment();
+  const { enableAI, paper, mode, dataMode } = useEnvironment();
   const unreadCount = settings.notifications.filter(n => !n.isRead).length;
+
+  // Debug log para verificar variables (solo en desarrollo)
+  if (import.meta.env.DEV) {
+    console.log('[HEADER DEBUG]', {
+      dataMode,
+      enableAI,
+      paper,
+      mode,
+      importMetaEnv: (import.meta as any)?.env
+    });
+  }
 
   const titles: Record<MainView, { title: string; subtitle: string }> = {
       quantum_core: {
@@ -109,9 +120,9 @@ const Header: React.FC<HeaderProps> = ({ view, setView }) => {
             <span className="text-gray-500">•</span>
             <span className="text-gray-500">Feed:</span>
             <span className={`px-2 py-1 rounded-full font-medium text-xs ${
-              import.meta.env.VITE_DATA_MODE === 'live' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
+              dataMode === 'live' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
             }`}>
-              {import.meta.env.VITE_DATA_MODE === 'live' ? 'LIVE' : 'MOCK'}
+              {dataMode === 'live' ? 'LIVE' : 'MOCK'}
             </span>
           </div>
         </div>
