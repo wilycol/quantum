@@ -7,6 +7,7 @@ import { Candle } from '../types/candle';
 import { usePaper } from '../hooks/usePaper';
 import { placeOrderBinance, getBalances } from '../services/api';
 import { IACoachPanel } from './IACoachPanel';
+import PriceChart from './PriceChart';
 
 // Helpers UI
 const fmt = (n:number) => isFinite(n) ? '$'+n.toFixed(2) : '-';
@@ -106,8 +107,8 @@ export default function TradingManualView() {
         {/* Columna izquierda */}
         <div>
           {/* Chart */}
-          <div style={{height:320, border:'1px solid #222', borderRadius:12, marginBottom:12, display:'flex', alignItems:'center', justifyContent:'center', color:'#aaa', position:'relative'}}>
-            {candles.length ? 'Chart aquí (usa candles del estado)' : 'Cargando velas...'}
+          <div style={{height:320, border:'1px solid #222', borderRadius:12, marginBottom:12, position:'relative'}}>
+            <PriceChart />
             {/* Botón Trade Now sobre el chart */}
             <div style={{position:'absolute', right:12, bottom:12, display:'flex', gap:8}}>
               <button disabled={loading} onClick={()=>onOrder('BUY')}>Trade Now (BUY)</button>
