@@ -84,10 +84,24 @@ export default function TradingManualView() {
     try {
       setLoading(true); setMsg(undefined);
 
+      // Disparar evento para el chart con precio actual y niveles TP/SL
+      const currentPrice = lastClose;
+      const tp = takeProfit > 0 ? takeProfit : undefined;
+      const sl = stopLoss > 0 ? stopLoss : undefined;
+      
+      window.dispatchEvent(new CustomEvent("qt:order", { 
+        detail: { 
+          side: side.toLowerCase() as "buy"|"sell", 
+          price: currentPrice, 
+          tp, 
+          sl 
+        } 
+      }));
+
       if (!canReal) {
         // Paper
         submit(side, Number(qty));
-        setMsg(`PAPER ${side} ${qty}`);
+        setMsg(`PAPER ${side} ${qty} @ ${fmt(currentPrice)}${tp ? ` TP:${fmt(tp)}` : ''}${sl ? ` SL:${fmt(sl)}` : ''}`);
         return;
       }
 
@@ -99,11 +113,48 @@ export default function TradingManualView() {
         quantity: Number(qty),
         test: false,
       });
-      setMsg(`TESTNET OK: ${side} ${qty} -> ${JSON.stringify(res.data ?? {})}`);
+      setMsg(`TESTNET OK: ${side} ${qty} @ ${fmt(currentPrice)} -> ${JSON.stringify(res.data ?? {})}`);
     } catch (e: any) {
       setMsg(`ERROR: ${e?.message||e}`);
     } finally { setLoading(false); }
   }
+
+  // Funciones auxiliares para manejar órdenes con precios específicos
+  const onBuy = (price?: number, tp?: number, sl?: number) => {
+    const orderPrice = price || lastClose;
+    const orderTp = tp || takeProfit;
+    const orderSl = sl || stopLoss;
+    
+    window.dispatchEvent(new CustomEvent("qt:order", { 
+      detail: { 
+        side: "buy", 
+        price: orderPrice, 
+        tp: orderTp > 0 ? orderTp : undefined, 
+        sl: orderSl > 0 ? orderSl : undefined 
+      } 
+    }));
+    
+    // Ejecutar la orden
+    onOrder('BUY');
+  };
+
+  const onSell = (price?: number, tp?: number, sl?: number) => {
+    const orderPrice = price || lastClose;
+    const orderTp = tp || takeProfit;
+    const orderSl = sl || stopLoss;
+    
+    window.dispatchEvent(new CustomEvent("qt:order", { 
+      detail: { 
+        side: "sell", 
+        price: orderPrice, 
+        tp: orderTp > 0 ? orderTp : undefined, 
+        sl: orderSl > 0 ? orderSl : undefined 
+      } 
+    }));
+    
+    // Ejecutar la orden
+    onOrder('SELL');
+  };
 
   async function onCheckBalances() {
     try {
@@ -263,14 +314,14 @@ export default function TradingManualView() {
                 <div className="flex gap-2">
                   <button 
                     disabled={loading} 
-                    onClick={()=>onOrder('BUY')}
+                    onClick={()=>onBuy()}
                     className="flex-1 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50"
                   >
                     BUY
                   </button>
                   <button 
                     disabled={loading} 
-                    onClick={()=>onOrder('SELL')}
+                    onClick={()=>onSell()}
                     className="flex-1 bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 disabled:opacity-50"
                   >
                     SELL
@@ -346,7 +397,11 @@ export default function TradingManualView() {
           <IACoachPanel
             candles={candles}
             onAction={(side) => {
-              onOrder(side);
+              if (side === 'BUY') {
+                onBuy();
+              } else {
+                onSell();
+              }
             }}
           />
         </div>

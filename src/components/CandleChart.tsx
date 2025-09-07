@@ -1,14 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { createChart, CrosshairMode, IChartApi, ISeriesApi } from "lightweight-charts";
+import { createChart, CrosshairMode, IChartApi, ISeriesApi, Time } from "lightweight-charts";
 import { usePriceFeed } from "../hooks/usePriceFeed";
 
-// Debug: Log the imported functions
-console.log('[CandleChart] Imported functions:', {
-  createChart: typeof createChart,
-  CrosshairMode,
-  IChartApi: typeof IChartApi,
-  ISeriesApi: typeof ISeriesApi
-});
+type Marker = { time: Time; position: "aboveBar" | "belowBar"; color: string; shape: "arrowUp" | "arrowDown"; text: string };
+type LineRef = ReturnType<IChartApi["addHorizontalLine"]>;
 
 interface CandleChartProps {
   symbol?: string;
@@ -22,43 +17,34 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const roRef = useRef<ResizeObserver | null>(null);
   const [chartReady, setChartReady] = useState(false);
+  const [markers, setMarkers] = useState<Marker[]>([]);
+  const entryLineRef = useRef<LineRef | null>(null);
+  const tpLineRef = useRef<LineRef | null>(null);
+  const slLineRef = useRef<LineRef | null>(null);
 
-  // 1) Mount chart when element is available
+  // ------- create chart once
   useEffect(() => {
-    console.log('[CandleChart] useEffect triggered, elRef.current:', elRef.current);
-    
+    const el = elRef.current;
+    if (!el) return;
+
     const createChartInstance = () => {
-      const el = elRef.current;
-      if (!el) {
-        console.log('[CandleChart] Element not ready, retrying...');
-        return false;
-      }
-      
-      console.log('[CandleChart] Creating chart on element:', el, 'dimensions:', el.clientWidth, 'x', el.clientHeight);
-      
       // Check if element has proper dimensions
       if (el.clientWidth === 0 || el.clientHeight === 0) {
-        console.log('[CandleChart] Element has zero dimensions, retrying...');
         return false;
       }
       
       try {
-        console.log('[CandleChart] About to create chart with createChart function:', typeof createChart);
         const chart = createChart(el, {
           layout: { background: { color: "transparent" }, textColor: "#cbd5e1" },
           grid: {
             vertLines: { color: "rgba(255,255,255,0.06)" },
             horzLines: { color: "rgba(255,255,255,0.06)" },
           },
-          crosshair: { mode: CrosshairMode.Normal }, // ← cursor de cruz
+          crosshair: { mode: CrosshairMode.Normal },
           rightPriceScale: { borderVisible: false },
           timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
           autoSize: true,
         });
-        
-        console.log('[CandleChart] Chart created:', chart);
-        console.log('[CandleChart] Chart methods:', Object.getOwnPropertyNames(chart));
-        console.log('[CandleChart] addCandlestickSeries method:', typeof chart.addCandlestickSeries);
         
         const series = chart.addCandlestickSeries({
           upColor: "#22c55e", downColor: "#ef4444",
@@ -66,7 +52,7 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           borderVisible: false,
         });
 
-        // autosize on container resize
+        // responsive
         const ro = new ResizeObserver(() => {
           chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
         });
@@ -77,7 +63,6 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
         roRef.current = ro;
         setChartReady(true);
         
-        console.log('[CandleChart] Chart created successfully, chartReady set to true');
         return true;
       } catch (error) {
         console.error('[CandleChart] Error creating chart:', error);
@@ -87,13 +72,10 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
 
     // Try to create chart immediately
     if (!createChartInstance()) {
-      // If failed, try again after a longer delay to allow element to get proper dimensions
-      console.log('[CandleChart] First attempt failed, scheduling retry...');
+      // If failed, try again after a delay
       const timer = setTimeout(() => {
-        console.log('[CandleChart] Retry attempt...');
         if (!createChartInstance()) {
-          // If still failing, try one more time with even longer delay
-          console.log('[CandleChart] Second attempt failed, final retry...');
+          // Final retry
           setTimeout(() => {
             createChartInstance();
           }, 500);
@@ -104,7 +86,6 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
     }
 
     return () => {
-      console.log('[CandleChart] Cleanup function called');
       if (roRef.current) roRef.current.disconnect();
       if (chartRef.current) chartRef.current.remove();
       chartRef.current = null;
@@ -113,29 +94,136 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
     };
   }, []);
 
-  // 2) Push data whenever candles change
+  // ------- set data when candles change
   useEffect(() => {
     if (!seriesRef.current || !candles?.length || !chartReady) return;
-    const data = candles.map(c => ({
-      time: Math.floor(c.t / 1000),
-      open: c.o, high: c.h, low: c.l, close: c.c,
+    const data = candles.map(c => ({ 
+      time: Math.floor(c.t/1000) as Time, 
+      open: c.o, 
+      high: c.h, 
+      low: c.l, 
+      close: c.c 
     }));
     seriesRef.current.setData(data);
     chartRef.current?.timeScale().fitContent();
   }, [candles, chartReady]);
 
-  // Debug info
-  console.log('[CandleChart]', { 
-    candlesCount: candles?.length, 
-    loading, 
-    error, 
-    mode,
-    chartReady,
-    firstCandle: candles?.[0],
-    lastCandle: candles?.[candles?.length - 1]
-  });
+  // ------- OHLC tooltip (floating)
+  useEffect(() => {
+    const el = elRef.current;
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    if (!el || !chart || !series || !chartReady) return;
 
-  // Always render the chart container so useEffect can run
+    // tooltip element
+    const tip = document.createElement("div");
+    tip.style.position = "absolute";
+    tip.style.pointerEvents = "none";
+    tip.style.zIndex = "10";
+    tip.style.top = "8px";
+    tip.style.left = "8px";
+    tip.style.padding = "6px 8px";
+    tip.style.background = "rgba(17,24,39,0.9)";
+    tip.style.border = "1px solid rgba(148,163,184,0.3)";
+    tip.style.borderRadius = "8px";
+    tip.style.fontSize = "12px";
+    tip.style.color = "#e5e7eb";
+    tip.style.fontFamily = "monospace";
+    tip.textContent = "—";
+    el.appendChild(tip);
+
+    const fmt = (n: number) => (Math.abs(n) >= 1000 ? n.toFixed(2) : n.toString());
+
+    const sub = chart.subscribeCrosshairMove(param => {
+      const p = param.seriesData.get(series);
+      if (!p) {
+        tip.textContent = "—";
+        return;
+      }
+      const d = p as { open:number; high:number; low:number; close:number };
+      const t = (param.time as number) ?? 0;
+      tip.innerHTML = `<b>${new Date(t*1000).toLocaleTimeString()}</b><br/>
+        O: ${fmt(d.open)} H: ${fmt(d.high)} L: ${fmt(d.low)} C: <b>${fmt(d.close)}</b>`;
+    });
+
+    return () => {
+      chart.unsubscribeCrosshairMove(sub);
+      if (el.contains(tip)) {
+        el.removeChild(tip);
+      }
+    };
+  }, [chartReady]);
+
+  // ------- consume eventos globales para crear marcadores y líneas
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series || !chartReady) return;
+
+    const onOrder = (e: Event) => {
+      const { side, price, time, tp, sl } = (e as CustomEvent).detail as { 
+        side: "buy"|"sell"; 
+        price:number; 
+        time?: number; 
+        tp?: number; 
+        sl?: number 
+      };
+      const lastTime = time ?? (candles?.length ? Math.floor(candles[candles.length-1].t/1000) : Math.floor(Date.now()/1000));
+
+      // marker
+      const m: Marker = side === "buy"
+        ? { time: lastTime as Time, position: "belowBar", color: "#22c55e", shape: "arrowUp", text: `BUY ${price}` }
+        : { time: lastTime as Time, position: "aboveBar", color: "#ef4444", shape: "arrowDown", text: `SELL ${price}` };
+      
+      setMarkers(prev => {
+        const next = [...prev, m];
+        series.setMarkers(next);
+        return next;
+      });
+
+      // entry line
+      if (entryLineRef.current) { 
+        series.removePriceLine(entryLineRef.current); 
+        entryLineRef.current = null; 
+      }
+      entryLineRef.current = series.createPriceLine({
+        price,
+        color: "#93c5fd",
+        lineStyle: 2, // dashed
+        title: `Entry ${price}`,
+      });
+
+      // TP/SL opcionales
+      if (tpLineRef.current) { 
+        series.removePriceLine(tpLineRef.current); 
+        tpLineRef.current = null; 
+      }
+      if (slLineRef.current) { 
+        series.removePriceLine(slLineRef.current); 
+        slLineRef.current = null; 
+      }
+      
+      if (typeof tp === "number") {
+        tpLineRef.current = series.createPriceLine({ 
+          price: tp, 
+          color: "#22c55e", 
+          lineStyle: 0, 
+          title: `TP ${tp}` 
+        });
+      }
+      if (typeof sl === "number") {
+        slLineRef.current = series.createPriceLine({ 
+          price: sl, 
+          color: "#ef4444", 
+          lineStyle: 0, 
+          title: `SL ${sl}` 
+        });
+      }
+    };
+
+    window.addEventListener("qt:order", onOrder as EventListener);
+    return () => window.removeEventListener("qt:order", onOrder as EventListener);
+  }, [candles, chartReady]);
+
   return (
     <div
       ref={elRef}
@@ -167,7 +255,7 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
       
       {!chartReady && !loading && !error && candles?.length && (
         <div className="absolute inset-0 flex items-center justify-center bg-blue-900 rounded-2xl">
-          <div className="text-white">Inicializando chart... (chartReady: {chartReady.toString()})</div>
+          <div className="text-white">Inicializando chart...</div>
         </div>
       )}
     </div>
