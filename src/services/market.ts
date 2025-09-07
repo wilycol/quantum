@@ -3,10 +3,12 @@ import { Candle, mapBinanceKlines } from '../types/candle';
 
 export async function getKlinesLive(symbol: string, interval: string, limit = 500) {
   const url = `/api/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&limit=${limit}`;
-  const r = await fetch(url);
+  const r = await fetch(url, { cache: 'no-store' });
   const j = await r.json();
-  if (!r.ok || j?.ok === false) throw new Error(j?.error || 'klines failed');
-  return mapBinanceKlines(j.data as any[]);
+  if (!r.ok) throw new Error(j?.error || `klines ${r.status}`);
+  const arr = Array.isArray(j) ? j : (j?.data ?? []);
+  if (!Array.isArray(arr)) throw new Error('bad_klines_shape');
+  return mapBinanceKlines(arr as any[]);
 }
 
 export function getKlinesMock(limit = 500): Candle[] {
