@@ -12,6 +12,8 @@ export default function CandleChart() {
 
   // 1) Mount chart when element is available
   useEffect(() => {
+    console.log('[CandleChart] useEffect triggered, elRef.current:', elRef.current);
+    
     const createChartInstance = () => {
       const el = elRef.current;
       if (!el) {
@@ -19,7 +21,7 @@ export default function CandleChart() {
         return false;
       }
       
-      console.log('[CandleChart] Creating chart on element:', el);
+      console.log('[CandleChart] Creating chart on element:', el, 'dimensions:', el.clientWidth, 'x', el.clientHeight);
       
       try {
         const chart = createChart(el, {
@@ -50,7 +52,7 @@ export default function CandleChart() {
         roRef.current = ro;
         setChartReady(true);
         
-        console.log('[CandleChart] Chart created successfully');
+        console.log('[CandleChart] Chart created successfully, chartReady set to true');
         return true;
       } catch (error) {
         console.error('[CandleChart] Error creating chart:', error);
@@ -61,7 +63,9 @@ export default function CandleChart() {
     // Try to create chart immediately
     if (!createChartInstance()) {
       // If failed, try again after a short delay
+      console.log('[CandleChart] First attempt failed, scheduling retry...');
       const timer = setTimeout(() => {
+        console.log('[CandleChart] Retry attempt...');
         createChartInstance();
       }, 100);
       
@@ -69,6 +73,7 @@ export default function CandleChart() {
     }
 
     return () => {
+      console.log('[CandleChart] Cleanup function called');
       if (roRef.current) roRef.current.disconnect();
       if (chartRef.current) chartRef.current.remove();
       chartRef.current = null;
@@ -124,9 +129,10 @@ export default function CandleChart() {
   }
 
   if (!chartReady) {
+    console.log('[CandleChart] Rendering initialization state, chartReady:', chartReady);
     return (
       <div className="w-full h-[420px] rounded-2xl flex items-center justify-center bg-blue-900">
-        <div className="text-white">Inicializando chart...</div>
+        <div className="text-white">Inicializando chart... (chartReady: {chartReady.toString()})</div>
       </div>
     );
   }
