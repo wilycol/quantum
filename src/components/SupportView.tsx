@@ -181,7 +181,10 @@ const SupportView: React.FC = () => {
                             <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">📋 Documentación Legal</h4>
                             
                             <button 
-                                onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'legal' } }))}
+                                onClick={() => {
+                                    window.dispatchEvent(new CustomEvent('navigate-to-document', { detail: { docType: 'legal-privacy' } }));
+                                    window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'document' } }));
+                                }}
                                 className="w-full flex items-center gap-4 p-4 bg-emerald-100 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/30 transition-colors"
                             >
                                 <BookOpenIcon className="w-8 h-8 text-emerald-600" />
@@ -220,7 +223,10 @@ const SupportView: React.FC = () => {
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Accede a términos legales y política de privacidad</p>
                                 </div>
                                 <button 
-                                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'legal' } }))}
+                                    onClick={() => {
+                                        window.dispatchEvent(new CustomEvent('navigate-to-document', { detail: { docType: 'legal-privacy' } }));
+                                        window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'document' } }));
+                                    }}
                                     className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold"
                                 >
                                     Ver Términos

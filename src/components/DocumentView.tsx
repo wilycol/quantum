@@ -10,6 +10,7 @@ const DOCUMENT_PATHS = {
   'technical-specification': '/docs/technical_specification.html',
   'ui-guide': '/docs/ui_guide.html',
   'security-compliance': '/docs/security_compliance.html',
+  'legal-privacy': '/docs/legal_privacy.html',
 } as const;
 
 type DocumentType = keyof typeof DOCUMENT_PATHS;
@@ -20,6 +21,7 @@ const DOCUMENT_TITLES = {
   'technical-specification': '⚙️ Technical Specification',
   'ui-guide': '🎨 UI & Functionality Guide',
   'security-compliance': '🔒 Security & Compliance',
+  'legal-privacy': '⚖️ Aviso Legal & Privacidad',
 } as const;
 
 export default function DocumentView({ documentType }: DocumentViewProps) {
