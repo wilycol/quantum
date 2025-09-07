@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { createChart, CrosshairMode, IChartApi, ISeriesApi } from "lightweight-charts";
 import { usePriceFeed } from "../hooks/usePriceFeed";
 
+// Debug: Log the imported functions
+console.log('[CandleChart] Imported functions:', {
+  createChart: typeof createChart,
+  CrosshairMode,
+  IChartApi: typeof IChartApi,
+  ISeriesApi: typeof ISeriesApi
+});
+
 export default function CandleChart() {
   const { candles, loading, error, mode } = usePriceFeed("BTCUSDT", "1m");
   const elRef = useRef<HTMLDivElement>(null);
@@ -30,6 +38,7 @@ export default function CandleChart() {
       }
       
       try {
+        console.log('[CandleChart] About to create chart with createChart function:', typeof createChart);
         const chart = createChart(el, {
           layout: { background: { color: "transparent" }, textColor: "#cbd5e1" },
           grid: {
@@ -41,6 +50,11 @@ export default function CandleChart() {
           timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
           autoSize: true,
         });
+        
+        console.log('[CandleChart] Chart created:', chart);
+        console.log('[CandleChart] Chart methods:', Object.getOwnPropertyNames(chart));
+        console.log('[CandleChart] addCandlestickSeries method:', typeof chart.addCandlestickSeries);
+        
         const series = chart.addCandlestickSeries({
           upColor: "#22c55e", downColor: "#ef4444",
           wickUpColor: "#22c55e", wickDownColor: "#ef4444",
