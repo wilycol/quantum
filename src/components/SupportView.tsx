@@ -107,10 +107,7 @@ const SupportView: React.FC = () => {
                         </div>
                         
                         <button 
-                            onClick={() => {
-                                window.dispatchEvent(new CustomEvent('navigate-to-document', { detail: { docType: 'business-plan' } }));
-                                window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'document' } }));
-                            }}
+                            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'business-plan' } }))}
                             className="w-full flex items-center gap-4 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-left"
                         >
                             <BookOpenIcon className="w-8 h-8 text-brand-gold" />
@@ -121,10 +118,7 @@ const SupportView: React.FC = () => {
                         </button>
                         
                         <button 
-                            onClick={() => {
-                                window.dispatchEvent(new CustomEvent('navigate-to-document', { detail: { docType: 'marketing-strategy' } }));
-                                window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'document' } }));
-                            }}
+                            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'marketing-strategy' } }))}
                             className="w-full flex items-center gap-4 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-left"
                         >
                             <BookOpenIcon className="w-8 h-8 text-brand-gold" />
@@ -135,10 +129,7 @@ const SupportView: React.FC = () => {
                         </button>
                         
                         <button 
-                            onClick={() => {
-                                window.dispatchEvent(new CustomEvent('navigate-to-document', { detail: { docType: 'technical-specification' } }));
-                                window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'document' } }));
-                            }}
+                            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'technical-spec' } }))}
                             className="w-full flex items-center gap-4 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-left"
                         >
                             <BookOpenIcon className="w-8 h-8 text-brand-gold" />
@@ -149,10 +140,7 @@ const SupportView: React.FC = () => {
                         </button>
                         
                         <button 
-                            onClick={() => {
-                                window.dispatchEvent(new CustomEvent('navigate-to-document', { detail: { docType: 'ui-guide' } }));
-                                window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'document' } }));
-                            }}
+                            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'ui-guide' } }))}
                             className="w-full flex items-center gap-4 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-left"
                         >
                             <BookOpenIcon className="w-8 h-8 text-brand-gold" />
@@ -163,10 +151,7 @@ const SupportView: React.FC = () => {
                         </button>
                         
                         <button 
-                            onClick={() => {
-                                window.dispatchEvent(new CustomEvent('navigate-to-document', { detail: { docType: 'security-compliance' } }));
-                                window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'document' } }));
-                            }}
+                            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'security-compliance' } }))}
                             className="w-full flex items-center gap-4 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-left"
                         >
                             <BookOpenIcon className="w-8 h-8 text-brand-gold" />
@@ -181,10 +166,7 @@ const SupportView: React.FC = () => {
                             <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide">📋 Documentación Legal</h4>
                             
                             <button 
-                                onClick={() => {
-                                    window.dispatchEvent(new CustomEvent('navigate-to-document', { detail: { docType: 'legal-privacy' } }));
-                                    window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'document' } }));
-                                }}
+                                onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'legal-privacy' } }))}
                                 className="w-full flex items-center gap-4 p-4 bg-emerald-100 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/30 transition-colors"
                             >
                                 <BookOpenIcon className="w-8 h-8 text-emerald-600" />
@@ -223,10 +205,7 @@ const SupportView: React.FC = () => {
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Accede a términos legales y política de privacidad</p>
                                 </div>
                                 <button 
-                                    onClick={() => {
-                                        window.dispatchEvent(new CustomEvent('navigate-to-document', { detail: { docType: 'legal-privacy' } }));
-                                        window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'document' } }));
-                                    }}
+                                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'legal-privacy' } }))}
                                     className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold"
                                 >
                                     Ver Términos

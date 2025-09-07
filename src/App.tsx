@@ -22,6 +22,14 @@ const HistoryView = lazy(() => import('./components/HistoryView'));
 const LegalView = lazy(() => import('./components/LegalView'));
 const DocumentView = lazy(() => import('./components/DocumentView'));
 
+// Document views
+const BusinessPlanView = lazy(() => import('./components/documents/BusinessPlanView'));
+const MarketingStrategyView = lazy(() => import('./components/documents/MarketingStrategyView'));
+const TechnicalSpecView = lazy(() => import('./components/documents/TechnicalSpecView'));
+const UIGuideView = lazy(() => import('./components/documents/UIGuideView'));
+const SecurityComplianceView = lazy(() => import('./components/documents/SecurityComplianceView'));
+const LegalPrivacyView = lazy(() => import('./components/documents/LegalPrivacyView'));
+
 // Componente de loading para Suspense
 const LoadingFallback: React.FC = () => (
   <div style={{ 
@@ -61,6 +69,14 @@ const NotificationsSafe = withBoundary('NotificationsView', NotificationsView);
 const HistorySafe = withBoundary('HistoryView', HistoryView);
 const LegalSafe = withBoundary('LegalView', LegalView);
 const DocumentSafe = withBoundary('DocumentView', DocumentView);
+
+// Document view boundaries
+const BusinessPlanSafe = withBoundary('BusinessPlanView', BusinessPlanView);
+const MarketingStrategySafe = withBoundary('MarketingStrategyView', MarketingStrategyView);
+const TechnicalSpecSafe = withBoundary('TechnicalSpecView', TechnicalSpecView);
+const UIGuideSafe = withBoundary('UIGuideView', UIGuideView);
+const SecurityComplianceSafe = withBoundary('SecurityComplianceView', SecurityComplianceView);
+const LegalPrivacySafe = withBoundary('LegalPrivacyView', LegalPrivacyView);
 
 type AppState = 'splash' | 'login' | 'main';
 
@@ -157,6 +173,14 @@ const App: React.FC = () => {
                   {currentView === 'history' && <HistorySafe />}
                   {currentView === 'legal' && <LegalSafe />}
                   {currentView === 'document' && <DocumentSafe />}
+                  
+                  {/* Document views */}
+                  {currentView === 'business-plan' && <BusinessPlanSafe />}
+                  {currentView === 'marketing-strategy' && <MarketingStrategySafe />}
+                  {currentView === 'technical-spec' && <TechnicalSpecSafe />}
+                  {currentView === 'ui-guide' && <UIGuideSafe />}
+                  {currentView === 'security-compliance' && <SecurityComplianceSafe />}
+                  {currentView === 'legal-privacy' && <LegalPrivacySafe />}
                 </Suspense>
               </main>
             </div>
