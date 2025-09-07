@@ -104,44 +104,36 @@ export default function CandleChart() {
     lastCandle: candles?.[candles?.length - 1]
   });
 
-  if (loading) {
-    return (
-      <div className="w-full h-[420px] rounded-2xl flex items-center justify-center bg-gray-900">
-        <div className="text-white">Cargando datos del chart...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="w-full h-[420px] rounded-2xl flex items-center justify-center bg-red-900">
-        <div className="text-white">Error: {error}</div>
-      </div>
-    );
-  }
-
-  if (!candles?.length) {
-    return (
-      <div className="w-full h-[420px] rounded-2xl flex items-center justify-center bg-yellow-900">
-        <div className="text-white">Sin datos disponibles (modo: {mode})</div>
-      </div>
-    );
-  }
-
-  if (!chartReady) {
-    console.log('[CandleChart] Rendering initialization state, chartReady:', chartReady);
-    return (
-      <div className="w-full h-[420px] rounded-2xl flex items-center justify-center bg-blue-900">
-        <div className="text-white">Inicializando chart... (chartReady: {chartReady.toString()})</div>
-      </div>
-    );
-  }
-
+  // Always render the chart container so useEffect can run
   return (
     <div
       ref={elRef}
       className="w-full h-[420px] rounded-2xl"
       style={{ cursor: "crosshair" }}
-    />
+    >
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-2xl">
+          <div className="text-white">Cargando datos del chart...</div>
+        </div>
+      )}
+      
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-red-900 rounded-2xl">
+          <div className="text-white">Error: {error}</div>
+        </div>
+      )}
+      
+      {!candles?.length && !loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-yellow-900 rounded-2xl">
+          <div className="text-white">Sin datos disponibles (modo: {mode})</div>
+        </div>
+      )}
+      
+      {!chartReady && !loading && !error && candles?.length && (
+        <div className="absolute inset-0 flex items-center justify-center bg-blue-900 rounded-2xl">
+          <div className="text-white">Inicializando chart... (chartReady: {chartReady.toString()})</div>
+        </div>
+      )}
+    </div>
   );
 }
