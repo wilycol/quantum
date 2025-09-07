@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createChart, CrosshairMode, IChartApi, ISeriesApi } from "lightweight-charts";
 import { usePriceFeed } from "../hooks/usePriceFeed";
 
@@ -8,10 +8,13 @@ export default function CandleChart() {
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const roRef = useRef<ResizeObserver | null>(null);
+  const [chartReady, setChartReady] = useState(false);
 
   // 1) Mount chart once
   useEffect(() => {
-    const el = elRef.current!;
+    const el = elRef.current;
+    if (!el) return; // Wait for element to be available
+    
     const chart = createChart(el, {
       layout: { background: { color: "transparent" }, textColor: "#cbd5e1" },
       grid: {
@@ -38,25 +41,27 @@ export default function CandleChart() {
     chartRef.current = chart;
     seriesRef.current = series;
     roRef.current = ro;
+    setChartReady(true);
 
     return () => {
       ro.disconnect();
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      setChartReady(false);
     };
   }, []);
 
   // 2) Push data whenever candles change
   useEffect(() => {
-    if (!seriesRef.current || !candles?.length) return;
+    if (!seriesRef.current || !candles?.length || !chartReady) return;
     const data = candles.map(c => ({
       time: Math.floor(c.t / 1000),
       open: c.o, high: c.h, low: c.l, close: c.c,
     }));
     seriesRef.current.setData(data);
     chartRef.current?.timeScale().fitContent();
-  }, [candles]);
+  }, [candles, chartReady]);
 
   // Debug info
   console.log('[CandleChart]', { 
@@ -64,6 +69,7 @@ export default function CandleChart() {
     loading, 
     error, 
     mode,
+    chartReady,
     firstCandle: candles?.[0],
     lastCandle: candles?.[candles?.length - 1]
   });
@@ -88,6 +94,14 @@ export default function CandleChart() {
     return (
       <div className="w-full h-[420px] rounded-2xl flex items-center justify-center bg-yellow-900">
         <div className="text-white">Sin datos disponibles (modo: {mode})</div>
+      </div>
+    );
+  }
+
+  if (!chartReady) {
+    return (
+      <div className="w-full h-[420px] rounded-2xl flex items-center justify-center bg-blue-900">
+        <div className="text-white">Inicializando chart...</div>
       </div>
     );
   }
