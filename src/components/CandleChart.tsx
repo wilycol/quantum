@@ -21,6 +21,12 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
   const entryLineRef = useRef<LineRef | null>(null);
   const tpLineRef = useRef<LineRef | null>(null);
   const slLineRef = useRef<LineRef | null>(null);
+  
+  // Estado para mantener el zoom del usuario
+  const userZoomStateRef = useRef<{
+    visibleRange: { from: number; to: number } | null;
+    isUserZoomed: boolean;
+  }>({ visibleRange: null, isUserZoomed: false });
 
   // ------- create chart once
   useEffect(() => {
@@ -42,7 +48,15 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           },
           crosshair: { mode: CrosshairMode.Normal },
           rightPriceScale: { borderVisible: false },
-          timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+          timeScale: { 
+            borderVisible: false, 
+            timeVisible: true, 
+            secondsVisible: false,
+            // Deshabilitar zoom automático con rueda del mouse
+            rightOffset: 0,
+            barSpacing: 6,
+            minBarSpacing: 0.5,
+          },
           autoSize: true,
         });
         
@@ -57,6 +71,56 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
         });
         ro.observe(el);
+
+        // Control de zoom personalizado con Ctrl + rueda del mouse
+        const handleWheel = (event: WheelEvent) => {
+          // Solo permitir zoom si se presiona Ctrl
+          if (!event.ctrlKey) {
+            return; // Permitir scroll normal de la página
+          }
+          
+          event.preventDefault(); // Prevenir scroll de la página
+          
+          const timeScale = chart.timeScale();
+          const visibleRange = timeScale.getVisibleRange();
+          if (!visibleRange) return;
+          
+          const delta = event.deltaY;
+          const zoomFactor = delta > 0 ? 1.1 : 0.9; // Zoom out si delta > 0, zoom in si delta < 0
+          
+          const range = visibleRange.to - visibleRange.from;
+          const newRange = range * zoomFactor;
+          const center = (visibleRange.from + visibleRange.to) / 2;
+          
+          const newFrom = center - newRange / 2;
+          const newTo = center + newRange / 2;
+          
+          timeScale.setVisibleRange({
+            from: newFrom,
+            to: newTo
+          });
+          
+          // Guardar el estado del zoom del usuario
+          userZoomStateRef.current = {
+            visibleRange: { from: newFrom, to: newTo },
+            isUserZoomed: true
+          };
+        };
+        
+        // Agregar listener de rueda del mouse
+        el.addEventListener('wheel', handleWheel, { passive: false });
+        
+        // Listener para detectar cuando el usuario cambia el zoom manualmente
+        const handleVisibleRangeChange = (timeRange: any) => {
+          if (timeRange) {
+            userZoomStateRef.current = {
+              visibleRange: { from: timeRange.from, to: timeRange.to },
+              isUserZoomed: true
+            };
+          }
+        };
+        
+        chart.timeScale().subscribeVisibleTimeRangeChange(handleVisibleRangeChange);
 
         chartRef.current = chart;
         seriesRef.current = series;
@@ -87,7 +151,14 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
 
     return () => {
       if (roRef.current) roRef.current.disconnect();
-      if (chartRef.current) chartRef.current.remove();
+      if (chartRef.current) {
+        // Remover listeners personalizados
+        const el = elRef.current;
+        if (el) {
+          el.removeEventListener('wheel', handleWheel);
+        }
+        chartRef.current.remove();
+      }
       chartRef.current = null;
       seriesRef.current = null;
       setChartReady(false);
@@ -97,6 +168,7 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
   // ------- set data when candles change
   useEffect(() => {
     if (!seriesRef.current || !candles?.length || !chartReady) return;
+    
     const data = candles.map(c => ({ 
       time: Math.floor(c.t/1000) as Time, 
       open: c.o, 
@@ -104,8 +176,24 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
       low: c.l, 
       close: c.c 
     }));
+    
+    // Guardar el estado actual del zoom antes de actualizar datos
+    const currentZoomState = userZoomStateRef.current;
+    
     seriesRef.current.setData(data);
-    chartRef.current?.timeScale().fitContent();
+    
+    // Si el usuario tenía un zoom personalizado, restaurarlo
+    if (currentZoomState.isUserZoomed && currentZoomState.visibleRange) {
+      // Pequeño delay para asegurar que los datos se hayan procesado
+      setTimeout(() => {
+        if (chartRef.current) {
+          chartRef.current.timeScale().setVisibleRange(currentZoomState.visibleRange);
+        }
+      }, 50);
+    } else {
+      // Solo hacer fitContent si el usuario no tenía zoom personalizado
+      chartRef.current?.timeScale().fitContent();
+    }
   }, [candles, chartReady]);
 
   // ------- OHLC tooltip (floating)
@@ -227,7 +315,7 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
   return (
     <div
       ref={elRef}
-      className="w-full h-[420px] rounded-2xl"
+      className="w-full h-[420px] rounded-2xl relative"
       style={{ 
         cursor: "crosshair",
         minHeight: "420px",
@@ -235,6 +323,11 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
         position: "relative"
       }}
     >
+      {/* Indicador de zoom */}
+      <div className="absolute top-2 right-2 z-10 bg-gray-800/80 text-white text-xs px-2 py-1 rounded-md border border-gray-600">
+        <span className="text-gray-300">Zoom: </span>
+        <span className="text-yellow-400 font-mono">Ctrl + Scroll</span>
+      </div>
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-2xl">
           <div className="text-white">Cargando datos del chart...</div>
