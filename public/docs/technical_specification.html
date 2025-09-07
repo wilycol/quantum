@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumTrade - Technical Specification</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #c9c9c9;
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background-color: #1e1e1e;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #3a3a3a;
+        }
+        header {
+            text-align: center;
+            border-bottom: 1px solid #3a3a3a;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        header img {
+            width: 80px;
+            height: auto;
+        }
+        h1, h2, h3 {
+            color: #D4AF37;
+            margin-top: 0;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        h2 {
+            font-size: 1.8rem;
+            border-bottom: 1px solid #3a3a3a;
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+        }
+        h3 {
+            font-size: 1.3rem;
+            color: #e0c56e;
+        }
+        p {
+            margin-bottom: 1rem;
+        }
+        code {
+            background-color: #2a2a2a;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #f1f1f1;
+        }
+        ul, ol {
+            padding-left: 1.5rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+        a {
+            color: #007aff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="https://res.cloudinary.com/djojon779/image/upload/f_auto,q_auto/v1754260994/ChatGPT_Image_3_ago_2025_04_34_50_p.m._naw5on.png" alt="QuantumTrade Logo">
+            <div class="logo-text">QuantumTrade</div>
+            <h1>Technical Specification</h1>
+            <p>Version 1.0 | Last Updated: [Current Date]</p>
+        </header>
+
+        <section>
+            <h2>1. Introduction</h2>
+            <p>This document outlines the technical architecture and implementation details of the QuantumTrade Dashboard. The application is a sophisticated, single-page web application (SPA) designed to provide traders with a powerful suite of tools, enhanced by Artificial Intelligence through Google's Gemini API.</p>
+        </section>
+
+        <section>
+            <h2>2. Frontend Technology Stack</h2>
+            <p>The application is built using a modern, performant, and maintainable frontend stack.</p>
+            <ul>
+                <li><strong>Framework:</strong> React 18 for building the user interface.</li>
+                <li><strong>Language:</strong> TypeScript for static typing, ensuring code quality and reducing runtime errors.</li>
+                <li><strong>Build Tool:</strong> Vite for fast development and optimized production builds.</li>
+                <li><strong>Styling:</strong> Tailwind CSS for a utility-first CSS framework, enabling rapid and consistent UI development. Global styles and complex component styles are handled via standard CSS files.</li>
+                <li><strong>Charting:</strong> Recharts for creating responsive and interactive charts.</li>
+                <li><strong>AI Integration:</strong> <code>@google/genai</code> SDK for seamless communication with the Gemini API.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>3. Application Architecture</h2>
+            <p>The application follows a component-based architecture, promoting reusability and separation of concerns.</p>
+            
+            <h3>3.1 Core Components</h3>
+            <ul>
+                <li><strong><code>App.tsx</code>:</strong> The root component that manages the application's overall state (Splash, Login, Main) and routing between different views.</li>
+                <li><strong><code>Sidebar.tsx</code> & <code>Header.tsx</code>:</strong> The main navigation and header components, providing consistent UI across all views.</li>
+                <li><strong>View Components (e.g., <code>QuantumCoreView.tsx</code>, <code>QuantumDeskView.tsx</code>):</strong> Each major feature of the application is encapsulated in its own view component, which acts as a container for smaller, specialized components.</li>
+                <li><strong>UI Components (e.g., <code>Card.tsx</code>):</strong> Reusable UI primitives to maintain visual consistency.</li>
+            </ul>
+
+            <h3>3.2 State Management</h3>
+            <p>Global application settings and state are managed using React's Context API.</p>
+            <ul>
+                <li><strong><code>SettingsContext.tsx</code>:</strong> A centralized provider that manages user preferences like language, theme, notifications, and timezone. This context also provides a translation function (<code>t</code>) and a notification dispatcher (<code>dispatchNotification</code>) to all components.</li>
+                <li><strong>Local State:</strong> Component-specific state is managed locally using the <code>useState</code> and <code>useReducer</code> hooks to keep components self-contained.</li>
+            </ul>
+
+            <h3>3.3 Asynchronous Operations & AI</h3>
+            <ul>
+                <li><strong><code>geminiService.ts</code>:</strong> A dedicated service module that abstracts all interactions with the Gemini API. It contains functions for fetching market insights, getting trade advice, analyzing portfolios, etc. This centralizes API logic and error handling.</li>
+                <li><strong><code>quantumCoreWorkerFactory.ts</code>:</strong> To handle the intensive processing of the QuantumCore simulation without blocking the main UI thread, a Web Worker is utilized. This factory creates the worker from a string blob, simplifying the build process. The worker runs the simulation logic, and communicates with the main thread via messages for progress updates.</li>
+                <li><strong><code>quantumCoreController.ts</code> & <code>useQuantumCore.ts</code>:</strong> These files manage the lifecycle of the web worker. The controller provides a simple API (start, stop, etc.), and the <code>useQuantumCore</code> hook makes this functionality easily accessible to the <code>QuantumCoreView</code> component.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>4. Gemini API Integration</h2>
+            <p>The Gemini API is the cornerstone of the application's AI capabilities. All API interactions are handled securely and efficiently.</p>
+            
+            <h3>4.1 API Key Management</h3>
+            <p>The Gemini API key is managed exclusively through an environment variable (<code>process.env.API_KEY</code>). This is injected at build time by Vite. <strong>The key is never stored in the source code or exposed directly to the client-side user interface.</strong></p>
+            
+            <h3>4.2 Feature Implementation</h3>
+            <ul>
+                <li><strong>Market Insights (<code>MarketInsights.tsx</code>):</strong> Uses the Gemini model with Google Search grounding (<code>tools: [{ googleSearch: {} }]</code>) to provide up-to-date, verifiable information about market trends. The service extracts and displays grounding sources for user verification.</li>
+                <li><strong>Trade Advice (<code>QuantumDeskView.tsx</code>):</strong> Generates concise, actionable trading advice by sending a structured prompt to the Gemini text model.</li>
+                <li><strong>Portfolio Analysis (<code>PortfolioView.tsx</code>):</strong> Sends a summary of the user's portfolio to Gemini and requests a detailed analysis covering rebalancing, performance, and general tips.</li>
+                <li><strong>AI Support Chat (<code>SupportView.tsx</code>):</strong> Implements a simple RAG (Retrieval-Augmented Generation) pattern by providing FAQs as context in the prompt to the Gemini API, ensuring the AI assistant answers based on known information.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>5. Data Flow</h2>
+            <p>The application primarily uses mock data for demonstration purposes, but is architected for real-time data integration.</p>
+            <ol>
+                <li><strong>Constants:</strong> Mock data for positions, wallet balances, news, etc., is stored in <code>constants.ts</code>.</li>
+                <li><strong>Component State:</strong> Views load this mock data into their local state.</li>
+                <li><strong>User Interaction:</strong> User actions (e.g., requesting analysis) trigger calls to the <code>geminiService.ts</code>.</li>
+                <li><strong>API Call:</strong> The service constructs a prompt and sends it to the Gemini API via the <code>@google/genai</code> SDK.</li>
+                <li><strong>Response Handling:</strong> The component receives the response from the service and updates its state, causing the UI to re-render with the new information.</li>
+            </ol>
+        </section>
+
+    </div>
+</body>
+</html>

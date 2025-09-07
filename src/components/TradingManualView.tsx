@@ -64,6 +64,38 @@ export default function TradingManualView() {
 
   useEffect(() => { fetchCandles(); }, [fetchCandles]);
 
+  // Listener para órdenes desde el chart
+  useEffect(() => {
+    const onOrder = (e: Event) => {
+      const { side, symbol, price, qty } = (e as CustomEvent).detail;
+      console.log('[TradingManualView] Order from chart:', { side, symbol, price, qty });
+      
+      // Validar símbolo
+      if (!validateSymbol(symbol)) {
+        setMsg(`ERROR: Símbolo ${symbol} no permitido`);
+        return;
+      }
+      
+      // Validar cantidad por riesgo
+      const riskValidation = ensureQtyWithinRisk(qty, equity, price);
+      if (!riskValidation.success) {
+        setMsg(`RIESGO: ${riskValidation.error} (Máximo: ${riskValidation.maxQty.toFixed(6)})`);
+        return;
+      }
+      
+      // Ejecutar orden en paper mode
+      try {
+        submit(side, qty);
+        setMsg(`PAPER ${side.toUpperCase()} ${qty} @ ${fmt(price)} (desde chart)`);
+      } catch (error: any) {
+        setMsg(`ERROR: ${error?.message || error}`);
+      }
+    };
+    
+    window.addEventListener("qt:order", onOrder as EventListener);
+    return () => window.removeEventListener("qt:order", onOrder as EventListener);
+  }, [equity, submit]);
+
   // guardrails 5% equity con estado de riesgo
   const riskStatus = useMemo(() => {
     if (equity <= 0 || lastClose <= 0) {
