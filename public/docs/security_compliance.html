@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantumTrade - Security & Compliance</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #c9c9c9;
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background-color: #1e1e1e;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #3a3a3a;
+        }
+        header {
+            text-align: center;
+            border-bottom: 1px solid #3a3a3a;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        header img {
+            width: 80px;
+            height: auto;
+        }
+        h1, h2, h3 {
+            color: #D4AF37;
+            margin-top: 0;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        h2 {
+            font-size: 1.8rem;
+            border-bottom: 1px solid #3a3a3a;
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+        }
+        h3 {
+            font-size: 1.3rem;
+            color: #e0c56e;
+        }
+        p {
+            margin-bottom: 1rem;
+        }
+        code {
+            background-color: #2a2a2a;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #f1f1f1;
+        }
+        ul {
+            padding-left: 1.5rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            margin-top: 0.5rem;
+        }
+        .alert {
+            background-color: rgba(255, 59, 48, 0.1);
+            border-left: 4px solid #ff3b30;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="https://res.cloudinary.com/djojon779/image/upload/f_auto,q_auto/v1754260994/ChatGPT_Image_3_ago_2025_04_34_50_p.m._naw5on.png" alt="QuantumTrade Logo">
+            <div class="logo-text">QuantumTrade</div>
+            <h1>Security & Compliance Protocol</h1>
+            <p>Ensuring the safety and integrity of user data and assets.</p>
+        </header>
+
+        <section>
+            <h2>1. Core Security Principles</h2>
+            <p>The security of the QuantumTrade platform is paramount. Our architecture and development practices are guided by the principles of least privilege, defense-in-depth, and secure-by-design.</p>
+        </section>
+
+        <section>
+            <h2>2. API Key Management</h2>
+            <p>Proper management of API keys is critical for the security of AI interactions and future exchange integrations.</p>
+            
+            <h3>2.1 Gemini API Key</h3>
+            <div class="alert">
+                <strong>Crucial:</strong> The Gemini API key is handled as a build-time environment variable (<code>process.env.API_KEY</code>). It is <strong>never</strong> exposed in the client-side code, stored in browser local storage, or requested from the user via a UI input field. This approach ensures that the key remains confidential and is only used by the application's backend services (simulated by Vite's build process in this demo).
+            </div>
+            
+            <h3>2.2 Exchange API Keys (Future)</h3>
+            <p>For future integration with exchanges like Binance or Bybit:</p>
+            <ul>
+                <li>Keys will be stored in a secure, encrypted backend vault (e.g., HashiCorp Vault, AWS KMS).</li>
+                <li>Users will be strongly advised to create API keys with restricted permissions, allowing only trading and portfolio reading, with withdrawals disabled.</li>
+                <li>All API key entry and transmission will occur over encrypted HTTPS connections.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>3. Data Protection</h2>
+            
+            <h3>3.1 Data in Transit</h3>
+            <p>All communication between the user's browser and our servers (and subsequently to third-party APIs like Gemini) must be encrypted using industry-standard Transport Layer Security (TLS) 1.2 or higher. The application will enforce HTTPS to prevent man-in-the-middle attacks.</p>
+            
+            <h3>3.2 Data at Rest</h3>
+            <p>User-specific configuration and sensitive data (such as linked exchange accounts in the future) will be encrypted at rest in our backend databases using AES-256 encryption.</p>
+            
+            <h3>3.3 Client-Side Storage</h3>
+            <p>Non-sensitive user preferences (e.g., theme, language) are stored in the browser's <code>localStorage</code>. No sensitive information, such as passwords or API keys, is ever stored on the client side.</p>
+        </section>
+
+        <section>
+            <h2>4. User Authentication & Authorization</h2>
+            
+            <h3>4.1 Authentication</h3>
+            <p>The current application uses a simulated Google OAuth flow for login. In a production environment, this will be a full OAuth 2.0 implementation, ensuring that we never handle or store user passwords directly. This delegates the primary authentication responsibility to a trusted provider like Google.</p>
+
+            <h3>4.2 Session Management</h3>
+            <p>Secure, short-lived session tokens (e.g., JSON Web Tokens - JWTs) will be used to manage user sessions after login. These tokens will be transmitted via secure HTTP-only cookies to mitigate Cross-Site Scripting (XSS) vulnerabilities.</p>
+
+            <h3>4.3 Two-Factor Authentication (2FA)</h3>
+            <p>A planned feature on our roadmap is the implementation of mandatory 2FA (via TOTP apps like Google Authenticator) for all accounts to provide an additional layer of security against unauthorized access.</p>
+        </section>
+
+        <section>
+            <h2>5. Compliance</h2>
+            <p>As QuantumTrade evolves, we are committed to adhering to relevant financial and data protection regulations.</p>
+            <ul>
+                <li><strong>GDPR & CCPA:</strong> We will design our data handling practices to be compliant with major data privacy regulations, ensuring users have control over their personal information.</li>
+                <li><strong>Financial Regulations:</strong> While QuantumTrade is a tool and not a brokerage, we will remain aware of regulations concerning financial advice and algorithmic trading. All AI-generated content will be clearly marked as such and will include disclaimers that it does not constitute financial advice.</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>
