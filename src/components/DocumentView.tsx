@@ -28,7 +28,7 @@ export default function DocumentView({ documentType }: DocumentViewProps) {
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentDocType, setCurrentDocType] = useState<DocumentType>('legal-privacy');
+  const [currentDocType, setCurrentDocType] = useState<DocumentType>('business-plan');
 
   // Escuchar eventos de navegación a documentos
   useEffect(() => {
@@ -45,8 +45,15 @@ export default function DocumentView({ documentType }: DocumentViewProps) {
     };
   }, []);
 
+  // Si se pasa documentType como prop, usarlo
+  useEffect(() => {
+    if (documentType && DOCUMENT_PATHS[documentType as DocumentType]) {
+      setCurrentDocType(documentType as DocumentType);
+    }
+  }, [documentType]);
+
   // Determinar el tipo de documento
-  const docType = (documentType || currentDocType) as DocumentType;
+  const docType = currentDocType;
   const docPath = DOCUMENT_PATHS[docType];
   const docTitle = DOCUMENT_TITLES[docType];
 
