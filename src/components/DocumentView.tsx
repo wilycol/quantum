@@ -120,9 +120,9 @@ export default function DocumentView({ documentType }: DocumentViewProps) {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-3xl mx-auto p-6 text-gray-200">
         <div 
-          className="prose prose-invert max-w-none"
+          className="space-y-6"
           dangerouslySetInnerHTML={{ __html: content }}
           style={{
             // Estilos para mejorar la presentación del HTML
