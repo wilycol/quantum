@@ -9,6 +9,7 @@ import { placeOrderBinance, getBalances } from '../services/api';
 import { IACoachPanel } from './IACoachPanel';
 import CandleChart from './CandleChart';
 import Card from './ui/Card';
+import { maxQtyByRisk, ensureQtyWithinRisk, getRiskStatus, validateSymbol } from '../lib/risk';
 
 // Helpers UI
 const fmt = (n:number) => isFinite(n) ? '$'+n.toFixed(2) : '-';
@@ -63,11 +64,15 @@ export default function TradingManualView() {
 
   useEffect(() => { fetchCandles(); }, [fetchCandles]);
 
-  // guardrails 5% equity
-  const riskOk = useMemo(() => {
-    const maxBase = equity > 0 ? (equity * 0.05) / Math.max(1, lastClose) : 0;
-    return qty <= maxBase + 1e-9;
+  // guardrails 5% equity con estado de riesgo
+  const riskStatus = useMemo(() => {
+    if (equity <= 0 || lastClose <= 0) {
+      return { percentage: 0, status: 'safe' as const, message: 'Sin datos' };
+    }
+    return getRiskStatus(Number(qty), lastClose, equity);
   }, [equity, lastClose, qty]);
+
+  const riskOk = riskStatus.status !== 'danger';
 
   // determina si ejecución real está habilitada
   const canReal = useMemo(() => {
@@ -84,8 +89,40 @@ export default function TradingManualView() {
     try {
       setLoading(true); setMsg(undefined);
 
-      // Disparar evento para el chart con precio actual y niveles TP/SL
+      // Validaciones de riesgo y compliance
       const currentPrice = lastClose;
+      const orderQty = Number(qty);
+      
+      // 1. Validar símbolo
+      if (!validateSymbol(selectedSymbol)) {
+        setMsg(`ERROR: Símbolo ${selectedSymbol} no permitido`);
+        return;
+      }
+
+      // 2. Validar cantidad mínima
+      if (orderQty <= 0) {
+        setMsg('ERROR: Cantidad debe ser mayor a 0');
+        return;
+      }
+
+      // 3. Calcular riesgo y validar límites
+      const maxQty = maxQtyByRisk({ 
+        equityUSD: equity, 
+        priceUSD: currentPrice, 
+        maxPct: 0.05 
+      });
+      
+      try {
+        ensureQtyWithinRisk(orderQty, maxQty);
+      } catch (riskError: any) {
+        setMsg(`RIESGO: ${riskError.message} (Máximo: ${maxQty.toFixed(6)})`);
+        return;
+      }
+
+      // 4. Obtener estado de riesgo para feedback
+      const riskStatus = getRiskStatus(orderQty, currentPrice, equity);
+
+      // Disparar evento para el chart con precio actual y niveles TP/SL
       const tp = takeProfit > 0 ? takeProfit : undefined;
       const sl = stopLoss > 0 ? stopLoss : undefined;
       
@@ -100,20 +137,19 @@ export default function TradingManualView() {
 
       if (!canReal) {
         // Paper
-        submit(side, Number(qty));
-        setMsg(`PAPER ${side} ${qty} @ ${fmt(currentPrice)}${tp ? ` TP:${fmt(tp)}` : ''}${sl ? ` SL:${fmt(sl)}` : ''}`);
+        submit(side, orderQty);
+        setMsg(`PAPER ${side} ${orderQty} @ ${fmt(currentPrice)} (${(riskStatus.percentage * 100).toFixed(1)}% riesgo)${tp ? ` TP:${fmt(tp)}` : ''}${sl ? ` SL:${fmt(sl)}` : ''}`);
         return;
       }
 
       // Live-Trading (Preview=Testnet)
-      if (!riskOk) { setMsg('ALERTA: qty > 5% equity'); return; }
       const res = await placeOrderBinance({
         symbol: selectedSymbol,
         side, type: 'MARKET',
-        quantity: Number(qty),
+        quantity: orderQty,
         test: false,
       });
-      setMsg(`TESTNET OK: ${side} ${qty} @ ${fmt(currentPrice)} -> ${JSON.stringify(res.data ?? {})}`);
+      setMsg(`TESTNET OK: ${side} ${orderQty} @ ${fmt(currentPrice)} (${(riskStatus.percentage * 100).toFixed(1)}% riesgo) -> ${JSON.stringify(res.data ?? {})}`);
     } catch (e: any) {
       setMsg(`ERROR: ${e?.message||e}`);
     } finally { setLoading(false); }
@@ -348,8 +384,12 @@ export default function TradingManualView() {
                 </div>
 
                 <div className="text-xs space-y-1">
-                  <div className={`${riskOk ? 'text-green-500' : 'text-red-500'}`}>
-                    Risk: {riskOk ? 'OK' : 'ALERT'}
+                  <div className={`${
+                    riskStatus.status === 'safe' ? 'text-green-500' : 
+                    riskStatus.status === 'warning' ? 'text-yellow-500' : 
+                    'text-red-500'
+                  }`}>
+                    Risk: {(riskStatus.percentage * 100).toFixed(1)}% - {riskStatus.message}
                   </div>
                   <div className="text-gray-500">
                     Exec: {canReal ? 'REAL (Testnet)' : 'PAPER'}

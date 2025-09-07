@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import SplashScreen from './components/SplashScreen';
 import LoginScreen from './components/LoginScreen';
+import LegalGuard from './components/LegalGuard';
 import { withBoundary } from './components/withBoundary';
 import { useSettings } from './contexts/SettingsContext';
 import { MainView, AppNotification } from './types';
@@ -166,6 +167,7 @@ const App: React.FC = () => {
     <div className={fontClass}>
         {renderContent()}
         <NotificationToaster notification={lastNotification} />
+        <LegalGuard />
     </div>
   );
 };
