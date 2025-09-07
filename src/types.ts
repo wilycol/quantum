@@ -1,4 +1,4 @@
-export type MainView = 'quantum_core' | 'manual_trading' | 'desk' | 'simulator' | 'portfolio' | 'settings' | 'news' | 'support' | 'notifications' | 'history';
+export type MainView = 'quantum_core' | 'manual_trading' | 'desk' | 'simulator' | 'portfolio' | 'settings' | 'news' | 'support' | 'notifications' | 'history' | 'legal';
 
 export interface WalletData {
   balance: number;

@@ -67,12 +67,18 @@ export default function TradingManualView() {
   // guardrails 5% equity con estado de riesgo
   const riskStatus = useMemo(() => {
     if (equity <= 0 || lastClose <= 0) {
-      return { percentage: 0, status: 'safe' as const, message: 'Sin datos' };
+      return { 
+        isWithinRisk: true, 
+        maxQty: 0, 
+        riskPercentage: 0, 
+        maxRiskPercentage: 5,
+        message: 'Sin datos' 
+      };
     }
-    return getRiskStatus(Number(qty), lastClose, equity);
+    return getRiskStatus(equity, lastClose, Number(qty));
   }, [equity, lastClose, qty]);
 
-  const riskOk = riskStatus.status !== 'danger';
+  const riskOk = riskStatus.isWithinRisk;
 
   // determina si ejecución real está habilitada
   const canReal = useMemo(() => {
@@ -106,21 +112,16 @@ export default function TradingManualView() {
       }
 
       // 3. Calcular riesgo y validar límites
-      const maxQty = maxQtyByRisk({ 
-        equityUSD: equity, 
-        priceUSD: currentPrice, 
-        maxPct: 0.05 
-      });
+      const maxQty = maxQtyByRisk(equity, currentPrice, 0.05);
       
-      try {
-        ensureQtyWithinRisk(orderQty, maxQty);
-      } catch (riskError: any) {
-        setMsg(`RIESGO: ${riskError.message} (Máximo: ${maxQty.toFixed(6)})`);
+      const riskValidation = ensureQtyWithinRisk(orderQty, equity, currentPrice);
+      if (!riskValidation.success) {
+        setMsg(`RIESGO: ${riskValidation.error} (Máximo: ${riskValidation.maxQty.toFixed(6)})`);
         return;
       }
 
       // 4. Obtener estado de riesgo para feedback
-      const riskStatus = getRiskStatus(orderQty, currentPrice, equity);
+      const currentRiskStatus = getRiskStatus(equity, currentPrice, orderQty);
 
       // Disparar evento para el chart con precio actual y niveles TP/SL
       const tp = takeProfit > 0 ? takeProfit : undefined;
@@ -138,7 +139,7 @@ export default function TradingManualView() {
       if (!canReal) {
         // Paper
         submit(side, orderQty);
-        setMsg(`PAPER ${side} ${orderQty} @ ${fmt(currentPrice)} (${(riskStatus.percentage * 100).toFixed(1)}% riesgo)${tp ? ` TP:${fmt(tp)}` : ''}${sl ? ` SL:${fmt(sl)}` : ''}`);
+        setMsg(`PAPER ${side} ${orderQty} @ ${fmt(currentPrice)} (${currentRiskStatus.riskPercentage.toFixed(1)}% riesgo)${tp ? ` TP:${fmt(tp)}` : ''}${sl ? ` SL:${fmt(sl)}` : ''}`);
         return;
       }
 
@@ -149,7 +150,7 @@ export default function TradingManualView() {
         quantity: orderQty,
         test: false,
       });
-      setMsg(`TESTNET OK: ${side} ${orderQty} @ ${fmt(currentPrice)} (${(riskStatus.percentage * 100).toFixed(1)}% riesgo) -> ${JSON.stringify(res.data ?? {})}`);
+      setMsg(`TESTNET OK: ${side} ${orderQty} @ ${fmt(currentPrice)} (${currentRiskStatus.riskPercentage.toFixed(1)}% riesgo) -> ${JSON.stringify(res.data ?? {})}`);
     } catch (e: any) {
       setMsg(`ERROR: ${e?.message||e}`);
     } finally { setLoading(false); }
@@ -385,14 +386,15 @@ export default function TradingManualView() {
 
                 <div className="text-xs space-y-1">
                   <div className={`${
-                    riskStatus.status === 'safe' ? 'text-green-500' : 
-                    riskStatus.status === 'warning' ? 'text-yellow-500' : 
-                    'text-red-500'
+                    riskStatus.isWithinRisk ? 'text-green-500' : 'text-red-500'
                   }`}>
-                    Risk: {(riskStatus.percentage * 100).toFixed(1)}% - {riskStatus.message}
+                    Risk: {riskStatus.riskPercentage.toFixed(1)}% / {riskStatus.maxRiskPercentage}%
                   </div>
                   <div className="text-gray-500">
                     Exec: {canReal ? 'REAL (Testnet)' : 'PAPER'}
+                  </div>
+                  <div className="text-gray-500">
+                    Max Qty: {riskStatus.maxQty.toFixed(6)}
                   </div>
                 </div>
               </div>
