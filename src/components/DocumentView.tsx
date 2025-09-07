@@ -28,7 +28,7 @@ export default function DocumentView({ documentType }: DocumentViewProps) {
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentDocType, setCurrentDocType] = useState<DocumentType>('business-plan');
+  const [currentDocType, setCurrentDocType] = useState<DocumentType>('legal-privacy');
 
   // Escuchar eventos de navegación a documentos
   useEffect(() => {
