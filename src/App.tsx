@@ -20,6 +20,7 @@ const SupportView = lazy(() => import('./components/SupportView'));
 const NotificationsView = lazy(() => import('./components/NotificationsView'));
 const HistoryView = lazy(() => import('./components/HistoryView'));
 const LegalView = lazy(() => import('./components/LegalView'));
+const DocumentView = lazy(() => import('./components/DocumentView'));
 
 // Componente de loading para Suspense
 const LoadingFallback: React.FC = () => (
@@ -59,6 +60,7 @@ const SupportSafe = withBoundary('SupportView', SupportView);
 const NotificationsSafe = withBoundary('NotificationsView', NotificationsView);
 const HistorySafe = withBoundary('HistoryView', HistoryView);
 const LegalSafe = withBoundary('LegalView', LegalView);
+const DocumentSafe = withBoundary('DocumentView', DocumentView);
 
 type AppState = 'splash' | 'login' | 'main';
 
@@ -154,6 +156,7 @@ const App: React.FC = () => {
                   {currentView === 'notifications' && <NotificationsSafe />}
                   {currentView === 'history' && <HistorySafe />}
                   {currentView === 'legal' && <LegalSafe />}
+                  {currentView === 'document' && <DocumentSafe />}
                 </Suspense>
               </main>
             </div>
