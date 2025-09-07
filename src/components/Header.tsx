@@ -26,6 +26,17 @@ const Header: React.FC<HeaderProps> = ({ view, setView }) => {
   const { enableAI, paper, mode, dataMode } = useEnvironment();
   const unreadCount = settings.notifications.filter(n => !n.isRead).length;
 
+  // Debug log para verificar variables (solo en desarrollo)
+  if (import.meta.env.DEV) {
+    console.log('[HEADER DEBUG]', {
+      dataMode,
+      enableAI,
+      paper,
+      mode,
+      importMetaEnv: (import.meta as any)?.env
+    });
+  }
+
   const titles: Record<MainView, { title: string; subtitle: string }> = {
       quantum_core: {
           title: t('quantumCore'),

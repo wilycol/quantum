@@ -8,7 +8,11 @@ export default defineConfig(({ mode }) => {
       plugins: [react()],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        // Exponer variables VITE_ al cliente
+        'import.meta.env.VITE_DATA_MODE': JSON.stringify(env.VITE_DATA_MODE),
+        'import.meta.env.VITE_SYMBOL': JSON.stringify(env.VITE_SYMBOL),
+        'import.meta.env.VITE_TIMEFRAME': JSON.stringify(env.VITE_TIMEFRAME)
       },
       resolve: {
         alias: {
