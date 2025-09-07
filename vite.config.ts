@@ -16,6 +16,16 @@ export default defineConfig(({ mode }) => {
           '@': fileURLToPath(new URL('.', import.meta.url)),
         }
       },
+      server: {
+        proxy: {
+          '/api/klines': {
+            target: 'https://api.binance.com',
+            changeOrigin: true,
+            secure: true,
+            rewrite: (path) => path.replace(/^\/api/, '/api/v3')
+          }
+        }
+      },
       build: {
         // subir el umbral del warning (opcional)
         chunkSizeWarningLimit: 1200,
