@@ -14,7 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const tryFetch = async (base: string) => {
     const url = `${base}${path}`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'QuantumTrade/1.0' } });
+    const r = await fetch(url, { headers: { 'User-Agent': 'QuantumTrade/1.0' }, cache: 'no-store' });
     return { r, base, url };
   };
 
@@ -31,26 +31,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const text = await r.text();
-    let data: any;
-    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    let raw: any;
+    try { raw = JSON.parse(text); } catch { raw = []; }
 
-    if (!r.ok) {
+    if (!r.ok || !Array.isArray(raw)) {
       console.error('[ERROR] klines non-200', { status: r.status, base, url, region });
       res.status(r.status)
         .setHeader('X-Data-Host', base)
+        .setHeader('X-QT-Host', base)
         .setHeader('X-Vercel-Region', region)
-        .json({ error: `binance_${r.status}`, source: base, url });
+        .json({ ok: false, error: `binance_${r.status}`, source: base, url });
       return;
     }
 
     res.status(200)
-      .setHeader('X-Data-Host', base)
+      .setHeader('X-Data-Host', base)    // para ver el host en Network
+      .setHeader('X-QT-Host', base)      // compat con dataFeed.ts
       .setHeader('X-Vercel-Region', region)
-      .json(data);
+      .json({ ok: true, data: raw });
   } catch (e: any) {
     console.error('[ERROR] klines exception', { err: String(e?.message || e), region });
     res.status(500)
       .setHeader('X-Vercel-Region', region)
-      .json({ error: 'server_error', detail: String(e?.message || e) });
+      .json({ ok: false, error: 'server_error', detail: String(e?.message || e) });
   }
 }

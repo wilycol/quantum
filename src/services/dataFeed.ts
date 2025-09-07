@@ -24,11 +24,11 @@ export async function fetchBinanceKlines(symbol: string, timeframe: string, limi
   const url = `/api/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
   const res = await fetch(url, { cache: 'no-store' });
 
-  // 👇 huella clara para que Wily lo vea en consola
-  console.info('[DATA FETCH]', url, '• host:', res.headers.get('x-qt-host'), '• status:', res.status);
+  const host = res.headers.get('x-qt-host') || res.headers.get('x-data-host') || '';
+  console.info('[DATA FETCH]', url, '• host:', host, '• status:', res.status);
 
-  if (!res.ok) throw new Error(`Proxy ${res.status}`);
-  const arr = await res.json() as any[];
+  const j = await res.json();
+  const arr = Array.isArray(j) ? j : (j?.data ?? []);
   return arr.map(k => ({ t:k.t, o:+k.o, h:+k.h, l:+k.l, c:+k.c, v:+k.v }));
 }
 

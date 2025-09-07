@@ -1,6 +1,6 @@
 // api/debug/where.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-export const config = { regions: ['cdg1', 'fra1', 'hnd1'] };
+// En plan free evita fijar múltiples regiones aquí:
 export default function handler(req: VercelRequest, res: VercelResponse) {
   res.status(200).json({
     ok: true,
