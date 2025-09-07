@@ -10,8 +10,13 @@ console.log('[CandleChart] Imported functions:', {
   ISeriesApi: typeof ISeriesApi
 });
 
-export default function CandleChart() {
-  const { candles, loading, error, mode } = usePriceFeed("BTCUSDT", "1m");
+interface CandleChartProps {
+  symbol?: string;
+  timeframe?: string;
+}
+
+export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: CandleChartProps) {
+  const { candles, loading, error, mode } = usePriceFeed(symbol, timeframe);
   const elRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
