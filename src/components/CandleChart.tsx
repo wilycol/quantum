@@ -28,8 +28,24 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
     isUserZoomed: boolean;
   }>({ visibleRange: null, isUserZoomed: false });
 
-  // Referencia para el event handler
+  // Referencias para los event handlers
   const handleWheelRef = useRef<((event: WheelEvent) => void) | null>(null);
+  const handleMouseDownRef = useRef<((event: MouseEvent) => void) | null>(null);
+  const handleMouseMoveRef = useRef<((event: MouseEvent) => void) | null>(null);
+  const handleMouseUpRef = useRef<((event: MouseEvent) => void) | null>(null);
+  
+  // Estado para el pan
+  const panStateRef = useRef<{
+    isPanning: boolean;
+    startX: number;
+    startTime: number;
+    startVisibleRange: { from: number; to: number } | null;
+  }>({
+    isPanning: false,
+    startX: 0,
+    startTime: 0,
+    startVisibleRange: null
+  });
 
   // ------- create chart once
   useEffect(() => {
@@ -130,11 +146,85 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           };
         };
         
-        // Guardar referencia para la limpieza
-        handleWheelRef.current = handleWheel;
+        // Control de pan con clic izquierdo y arrastrar
+        const handleMouseDown = (event: MouseEvent) => {
+          // Solo responder al clic izquierdo
+          if (event.button !== 0) return;
+          
+          const timeScale = chart.timeScale();
+          const visibleRange = timeScale.getVisibleRange();
+          if (!visibleRange) return;
+          
+          panStateRef.current = {
+            isPanning: true,
+            startX: event.clientX,
+            startTime: Date.now(),
+            startVisibleRange: {
+              from: Number(visibleRange.from),
+              to: Number(visibleRange.to)
+            }
+          };
+          
+          // Cambiar cursor para indicar que se puede arrastrar
+          el.style.cursor = 'grabbing';
+          
+          console.log('[PAN DEBUG] Mouse down:', { 
+            startX: event.clientX, 
+            visibleRange: { from: visibleRange.from, to: visibleRange.to } 
+          });
+        };
         
-        // Agregar listener solo en el elemento del chart
+        const handleMouseMove = (event: MouseEvent) => {
+          if (!panStateRef.current.isPanning) return;
+          
+          const deltaX = event.clientX - panStateRef.current.startX;
+          const timeScale = chart.timeScale();
+          const startRange = panStateRef.current.startVisibleRange;
+          
+          if (!startRange) return;
+          
+          // Calcular el desplazamiento en tiempo basado en el movimiento del mouse
+          const range = startRange.to - startRange.from;
+          const pixelsPerTime = el.clientWidth / range;
+          const timeDelta = deltaX / pixelsPerTime;
+          
+          const newFrom = startRange.from - timeDelta;
+          const newTo = startRange.to - timeDelta;
+          
+          timeScale.setVisibleRange({
+            from: newFrom as Time,
+            to: newTo as Time
+          });
+          
+          // Actualizar el estado del zoom del usuario
+          userZoomStateRef.current = {
+            visibleRange: { from: newFrom, to: newTo },
+            isUserZoomed: true
+          };
+        };
+        
+        const handleMouseUp = (event: MouseEvent) => {
+          if (!panStateRef.current.isPanning) return;
+          
+          panStateRef.current.isPanning = false;
+          el.style.cursor = 'crosshair';
+          
+          console.log('[PAN DEBUG] Mouse up');
+        };
+        
+        // Guardar referencias para la limpieza
+        handleWheelRef.current = handleWheel;
+        handleMouseDownRef.current = handleMouseDown;
+        handleMouseMoveRef.current = handleMouseMove;
+        handleMouseUpRef.current = handleMouseUp;
+        
+        // Agregar listeners
         el.addEventListener('wheel', handleWheel, { passive: false });
+        el.addEventListener('mousedown', handleMouseDown);
+        el.addEventListener('mousemove', handleMouseMove);
+        el.addEventListener('mouseup', handleMouseUp);
+        // También escuchar mouseup en el documento para cuando se suelta fuera del elemento
+        document.addEventListener('mouseup', handleMouseUp);
         
         // Listener para detectar cuando el usuario cambia el zoom manualmente
         const handleVisibleRangeChange = (timeRange: any) => {
@@ -180,8 +270,20 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
       if (chartRef.current) {
         // Remover listeners personalizados
         const el = elRef.current;
-        if (el && handleWheelRef.current) {
-          el.removeEventListener('wheel', handleWheelRef.current);
+        if (el) {
+          if (handleWheelRef.current) {
+            el.removeEventListener('wheel', handleWheelRef.current);
+          }
+          if (handleMouseDownRef.current) {
+            el.removeEventListener('mousedown', handleMouseDownRef.current);
+          }
+          if (handleMouseMoveRef.current) {
+            el.removeEventListener('mousemove', handleMouseMoveRef.current);
+          }
+          if (handleMouseUpRef.current) {
+            el.removeEventListener('mouseup', handleMouseUpRef.current);
+            document.removeEventListener('mouseup', handleMouseUpRef.current);
+          }
         }
         chartRef.current.remove();
       }
@@ -349,10 +451,16 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
         position: "relative"
       }}
     >
-      {/* Indicador de zoom */}
-      <div className="absolute top-2 right-2 z-10 bg-gray-800/80 text-white text-xs px-2 py-1 rounded-md border border-gray-600">
-        <span className="text-gray-300">Zoom: </span>
-        <span className="text-yellow-400 font-mono">Ctrl + Scroll</span>
+      {/* Indicadores de controles */}
+      <div className="absolute top-2 right-2 z-10 bg-gray-800/80 text-white text-xs px-2 py-1 rounded-md border border-gray-600 space-y-1">
+        <div>
+          <span className="text-gray-300">Zoom: </span>
+          <span className="text-yellow-400 font-mono">Ctrl + Scroll</span>
+        </div>
+        <div>
+          <span className="text-gray-300">Pan: </span>
+          <span className="text-blue-400 font-mono">Click + Drag</span>
+        </div>
       </div>
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-2xl">
