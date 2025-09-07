@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createChart, CrosshairMode, IChartApi, ISeriesApi, Time } from "lightweight-charts";
 import { usePriceFeed } from "../hooks/usePriceFeed";
+import { maxQtyByRisk } from "../lib/risk";
 
 type Marker = { time: Time; position: "aboveBar" | "belowBar"; color: string; shape: "arrowUp" | "arrowDown"; text: string };
 type LineRef = ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>;
@@ -15,12 +16,17 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
   const elRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const volRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const roRef = useRef<ResizeObserver | null>(null);
   const [chartReady, setChartReady] = useState(false);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const entryLineRef = useRef<LineRef | null>(null);
   const tpLineRef = useRef<LineRef | null>(null);
   const slLineRef = useRef<LineRef | null>(null);
+  
+  // Trade from Chart states
+  const [armed, setArmed] = useState(false);
+  const lastPxRef = useRef<number | null>(null);
   
   // Estado para mantener el zoom del usuario
   const userZoomStateRef = useRef<{
@@ -89,6 +95,14 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           wickUpColor: "#22c55e", wickDownColor: "#ef4444",
           borderVisible: false,
         });
+
+        // Agregar serie de volumen
+        const vol = chart.addHistogramSeries({
+          priceScaleId: "", // escala separada
+          priceFormat: { type: "volume" },
+          baseLineVisible: false
+        });
+        chart.priceScale("").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
         // responsive
         const ro = new ResizeObserver(() => {
@@ -238,8 +252,17 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
         
         chart.timeScale().subscribeVisibleTimeRangeChange(handleVisibleRangeChange);
 
+        // Crosshair: guardar último precio bajo cursor
+        const unsubCrosshair = chart.subscribeCrosshairMove((p) => {
+          const sd = p.seriesData.get(series) as any;
+          if (sd && typeof sd.close === "number") {
+            lastPxRef.current = sd.close;
+          }
+        });
+
         chartRef.current = chart;
         seriesRef.current = series;
+        volRef.current = vol;
         roRef.current = ro;
         setChartReady(true);
         
@@ -289,13 +312,14 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
       }
       chartRef.current = null;
       seriesRef.current = null;
+      volRef.current = null;
       setChartReady(false);
     };
   }, []);
 
   // ------- set data when candles change
   useEffect(() => {
-    if (!seriesRef.current || !candles?.length || !chartReady) return;
+    if (!seriesRef.current || !volRef.current || !candles?.length || !chartReady) return;
     
     const data = candles.map(c => ({ 
       time: Math.floor(c.t/1000) as Time, 
@@ -304,11 +328,19 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
       low: c.l, 
       close: c.c 
     }));
+
+    // Datos de volumen
+    const volData = candles.map((c, i) => ({
+      time: Math.floor(c.t / 1000) as Time,
+      value: c.v,
+      color: (i === 0 ? "#64748b" : (c.c >= candles[i-1].c ? "#22c55e" : "#ef4444"))
+    }));
     
     // Guardar el estado actual del zoom antes de actualizar datos
     const currentZoomState = userZoomStateRef.current;
     
     seriesRef.current.setData(data);
+    volRef.current.setData(volData);
     
     // Si el usuario tenía un zoom personalizado, restaurarlo
     if (currentZoomState.isUserZoomed && currentZoomState.visibleRange) {
@@ -323,6 +355,87 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
       chartRef.current?.timeScale().fitContent();
     }
   }, [candles, chartReady]);
+
+  // ------- click en chart cuando está "armed"
+  useEffect(() => {
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    if (!chart || !series) return;
+
+    const onClick = () => {
+      if (!armed) return;
+      const px = lastPxRef.current;
+      if (!px) return;
+
+      // dibujar línea de entrada (reemplaza si existía)
+      if (entryLineRef.current) { 
+        series.removePriceLine(entryLineRef.current); 
+      }
+      entryLineRef.current = series.createPriceLine({ 
+        price: px, 
+        color: "#93c5fd", 
+        lineStyle: 2, 
+        title: `Entry ${px.toFixed(2)}` 
+      });
+
+      // abrir confirm mini (DOM simple)
+      openMiniConfirm(px);
+      setArmed(false);
+    };
+
+    const sub = chart.subscribeClick(onClick);
+    return () => chart.unsubscribeClick(sub);
+  }, [armed, candles]);
+
+  // ------- mini confirm
+  function openMiniConfirm(price: number) {
+    const root = elRef.current!;
+    const el = document.createElement("div");
+    el.className = "absolute right-4 top-16 z-20 bg-neutral-900/95 border border-white/10 rounded-xl p-3 flex gap-2 items-center";
+    el.innerHTML = `
+      <span class="text-sm text-gray-200 mr-2">Entry: <b>${price.toFixed(2)}</b></span>
+      <input id="qtQty" type="number" min="0" step="0.000001" class="w-24 bg-neutral-800 text-gray-100 px-2 py-1 rounded-md outline-none border border-white/10" placeholder="qty">
+      <button id="qtBuy"  class="px-3 py-1 rounded-md bg-emerald-600 text-white">BUY</button>
+      <button id="qtSell" class="px-3 py-1 rounded-md bg-rose-600 text-white">SELL</button>
+      <button id="qtX"    class="px-2 py-1 rounded-md bg-neutral-800 text-gray-300 border border-white/10">×</button>
+    `;
+    root.appendChild(el);
+
+    // pre-rellenar qty por riesgo (5%)
+    try {
+      const equity = (window as any).__QT_EQUITY__ ?? 10000; // reemplaza por tu estado real
+      const maxQty = maxQtyByRisk(equity, price, 0.05);
+      (el.querySelector("#qtQty") as HTMLInputElement).value = String(maxQty);
+    } catch {}
+
+    const close = () => { 
+      if (root.contains(el)) {
+        root.removeChild(el); 
+      }
+    };
+
+    (el.querySelector("#qtX") as HTMLButtonElement).onclick = close;
+    (el.querySelector("#qtBuy") as HTMLButtonElement).onclick = () => confirmTrade("buy");
+    (el.querySelector("#qtSell") as HTMLButtonElement).onclick = () => confirmTrade("sell");
+
+    const confirmTrade = (side: "buy" | "sell") => {
+      const qty = +(el.querySelector("#qtQty") as HTMLInputElement).value || 0;
+      // marcador visual
+      const time = (candles?.length ? Math.floor(candles[candles.length-1].t/1000) : Math.floor(Date.now()/1000)) as Time;
+      const m: Marker = side === "buy"
+        ? { time, position: "belowBar", color: "#22c55e", shape: "arrowUp", text: `BUY ${qty}` }
+        : { time, position: "aboveBar", color: "#ef4444", shape: "arrowDown", text: `SELL ${qty}` };
+      setMarkers(prev => {
+        const next = [...prev, m];
+        seriesRef.current?.setMarkers(next);
+        return next;
+      });
+
+      // evento para tu executor/paper-engine
+      window.dispatchEvent(new CustomEvent("qt:order", { detail: { side, symbol, price, qty } }));
+      close();
+    };
+  }
 
   // ------- OHLC tooltip (floating)
   useEffect(() => {
@@ -462,6 +575,19 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           <span className="text-blue-400 font-mono">Click + Drag</span>
         </div>
       </div>
+
+      {/* Botón Trade from Chart */}
+      <button
+        onClick={() => setArmed(v => !v)}
+        className={`absolute top-2 left-2 z-10 px-3 py-1 rounded-md border text-sm font-medium transition-colors ${
+          armed 
+            ? "bg-amber-600 text-white border-amber-500" 
+            : "bg-neutral-800 text-gray-200 border-white/10 hover:bg-neutral-700"
+        }`}
+        title="Trade from Chart"
+      >
+        {armed ? "Click price…" : "Trade from Chart"}
+      </button>
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-2xl">
           <div className="text-white">Cargando datos del chart...</div>
