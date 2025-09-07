@@ -94,3 +94,5 @@ curl "https://your-vercel-app.vercel.app/api/debug/feed"
 - **Trading**: Paper engine + Binance API integration
 - **AI Coach**: RSI/EMA signals + performance metrics
 - **Data**: Binance API with intelligent fallbacks
+
+WC
