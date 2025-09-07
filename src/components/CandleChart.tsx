@@ -23,6 +23,12 @@ export default function CandleChart() {
       
       console.log('[CandleChart] Creating chart on element:', el, 'dimensions:', el.clientWidth, 'x', el.clientHeight);
       
+      // Check if element has proper dimensions
+      if (el.clientWidth === 0 || el.clientHeight === 0) {
+        console.log('[CandleChart] Element has zero dimensions, retrying...');
+        return false;
+      }
+      
       try {
         const chart = createChart(el, {
           layout: { background: { color: "transparent" }, textColor: "#cbd5e1" },
@@ -62,12 +68,18 @@ export default function CandleChart() {
 
     // Try to create chart immediately
     if (!createChartInstance()) {
-      // If failed, try again after a short delay
+      // If failed, try again after a longer delay to allow element to get proper dimensions
       console.log('[CandleChart] First attempt failed, scheduling retry...');
       const timer = setTimeout(() => {
         console.log('[CandleChart] Retry attempt...');
-        createChartInstance();
-      }, 100);
+        if (!createChartInstance()) {
+          // If still failing, try one more time with even longer delay
+          console.log('[CandleChart] Second attempt failed, final retry...');
+          setTimeout(() => {
+            createChartInstance();
+          }, 500);
+        }
+      }, 200);
       
       return () => clearTimeout(timer);
     }
@@ -109,7 +121,12 @@ export default function CandleChart() {
     <div
       ref={elRef}
       className="w-full h-[420px] rounded-2xl"
-      style={{ cursor: "crosshair" }}
+      style={{ 
+        cursor: "crosshair",
+        minHeight: "420px",
+        minWidth: "100%",
+        position: "relative"
+      }}
     >
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-2xl">
