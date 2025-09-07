@@ -3,7 +3,7 @@ import { createChart, CrosshairMode, IChartApi, ISeriesApi } from "lightweight-c
 import { usePriceFeed } from "../hooks/usePriceFeed";
 
 export default function CandleChart() {
-  const { candles } = usePriceFeed("BTCUSDT", "1m");
+  const { candles, loading, error, mode } = usePriceFeed("BTCUSDT", "1m");
   const elRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -57,6 +57,40 @@ export default function CandleChart() {
     seriesRef.current.setData(data);
     chartRef.current?.timeScale().fitContent();
   }, [candles]);
+
+  // Debug info
+  console.log('[CandleChart]', { 
+    candlesCount: candles?.length, 
+    loading, 
+    error, 
+    mode,
+    firstCandle: candles?.[0],
+    lastCandle: candles?.[candles?.length - 1]
+  });
+
+  if (loading) {
+    return (
+      <div className="w-full h-[420px] rounded-2xl flex items-center justify-center bg-gray-900">
+        <div className="text-white">Cargando datos del chart...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-[420px] rounded-2xl flex items-center justify-center bg-red-900">
+        <div className="text-white">Error: {error}</div>
+      </div>
+    );
+  }
+
+  if (!candles?.length) {
+    return (
+      <div className="w-full h-[420px] rounded-2xl flex items-center justify-center bg-yellow-900">
+        <div className="text-white">Sin datos disponibles (modo: {mode})</div>
+      </div>
+    );
+  }
 
   return (
     <div
