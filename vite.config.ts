@@ -12,8 +12,6 @@ export default defineConfig(({ mode }) => {
         'import.meta.env.VITE_SYMBOL': JSON.stringify(env.VITE_SYMBOL),
         'import.meta.env.VITE_TIMEFRAME': JSON.stringify(env.VITE_TIMEFRAME),
         'import.meta.env.VITE_WS_URL': JSON.stringify(env.VITE_WS_URL),
-        // WebSocket URL para QuantumCore (compatible con Next.js)
-        'process.env.NEXT_PUBLIC_WS_URL': JSON.stringify(env.VITE_WS_URL || 'ws://localhost:8080/ws'),
         // Variables de entorno para APIs
         'import.meta.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
       },

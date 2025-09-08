@@ -148,10 +148,13 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
             to: newTo 
           });
           
-          timeScale.setVisibleRange({
-            from: newFrom as Time,
-            to: newTo as Time
-          });
+          // Validar que los valores no sean null/NaN antes de setVisibleRange
+          if (newFrom != null && newTo != null && Number.isFinite(newFrom) && Number.isFinite(newTo)) {
+            timeScale.setVisibleRange({
+              from: newFrom as Time,
+              to: newTo as Time
+            });
+          }
           
           // Guardar el estado del zoom del usuario
           userZoomStateRef.current = {
@@ -205,10 +208,13 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
           const newFrom = startRange.from - timeDelta;
           const newTo = startRange.to - timeDelta;
           
-          timeScale.setVisibleRange({
-            from: newFrom as Time,
-            to: newTo as Time
-          });
+          // Validar que los valores no sean null/NaN antes de setVisibleRange
+          if (newFrom != null && newTo != null && Number.isFinite(newFrom) && Number.isFinite(newTo)) {
+            timeScale.setVisibleRange({
+              from: newFrom as Time,
+              to: newTo as Time
+            });
+          }
           
           // Actualizar el estado del zoom del usuario
           userZoomStateRef.current = {
@@ -321,7 +327,22 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
   useEffect(() => {
     if (!seriesRef.current || !volRef.current || !candles?.length || !chartReady) return;
     
-    const data = candles.map(c => ({ 
+    // Sanitizar datos: saltar velas con NaN/null
+    const validCandles = candles.filter(c => 
+      Number.isFinite(c.o) && 
+      Number.isFinite(c.h) && 
+      Number.isFinite(c.l) && 
+      Number.isFinite(c.c) && 
+      Number.isFinite(c.t) &&
+      c.t > 0
+    );
+    
+    if (validCandles.length < 2) {
+      console.warn('[CandleChart] Not enough valid candles to display chart');
+      return;
+    }
+    
+    const data = validCandles.map(c => ({ 
       time: Math.floor(c.t/1000) as Time, 
       open: c.o, 
       high: c.h, 
@@ -330,10 +351,10 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
     }));
 
     // Datos de volumen
-    const volData = candles.map((c, i) => ({
+    const volData = validCandles.map((c, i) => ({
       time: Math.floor(c.t / 1000) as Time,
       value: c.v,
-      color: (i === 0 ? "#64748b" : (c.c >= candles[i-1].c ? "#22c55e" : "#ef4444"))
+      color: (i === 0 ? "#64748b" : (c.c >= validCandles[i-1].c ? "#22c55e" : "#ef4444"))
     }));
     
     // Guardar el estado actual del zoom antes de actualizar datos
@@ -346,8 +367,12 @@ export default function CandleChart({ symbol = "BTCUSDT", timeframe = "1m" }: Ca
     if (currentZoomState.isUserZoomed && currentZoomState.visibleRange) {
       // Pequeño delay para asegurar que los datos se hayan procesado
       setTimeout(() => {
-        if (chartRef.current) {
-          chartRef.current.timeScale().setVisibleRange(currentZoomState.visibleRange);
+        if (chartRef.current && currentZoomState.visibleRange) {
+          const { from, to } = currentZoomState.visibleRange;
+          // Validar que los valores no sean null/NaN antes de setVisibleRange
+          if (from != null && to != null && Number.isFinite(from) && Number.isFinite(to)) {
+            chartRef.current.timeScale().setVisibleRange({ from, to });
+          }
         }
       }, 50);
     } else {

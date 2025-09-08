@@ -28,21 +28,33 @@ export class EventBus {
   constructor(config: Partial<EventBusConfig> = {}) {
     this.config = {
       url: config.url || (() => {
-        // Check for Next.js compatible environment variable
-        if (process.env.NEXT_PUBLIC_WS_URL) {
-          return process.env.NEXT_PUBLIC_WS_URL;
+        const WS_URL = import.meta.env.VITE_WS_URL;
+        
+        // If no WS_URL defined, disable in production
+        if (!WS_URL) {
+          if (location.hostname !== 'localhost') {
+            console.warn('WS: No VITE_WS_URL defined, disabling WebSocket in production');
+            return null;
+          }
+          return 'ws://localhost:8080/ws';
         }
         
-        // Check for Vite environment variable
-        if (import.meta.env.VITE_WS_URL) {
-          return import.meta.env.VITE_WS_URL;
+        // If WS_URL contains localhost but we're not on localhost, disable
+        if (WS_URL.includes('localhost') && location.hostname !== 'localhost') {
+          console.warn('WS: localhost URL detected in production, disabling WebSocket');
+          return null;
         }
         
-        // Default to localhost for development
-        return 'ws://localhost:8080/ws';
+        // If site runs on HTTPS, ensure WS is WSS
+        if (location.protocol === 'https:' && WS_URL.startsWith('ws://')) {
+          console.warn('WS: HTTPS site with WS URL, should use WSS');
+          return null;
+        }
+        
+        return WS_URL;
       })(),
       reconnectInterval: config.reconnectInterval || 5000,
-      maxReconnectAttempts: config.maxReconnectAttempts || 10,
+      maxReconnectAttempts: config.maxReconnectAttempts || 5, // Reduced to 5
       heartbeatInterval: config.heartbeatInterval || 30000,
       debug: config.debug || false,
     };
@@ -51,6 +63,12 @@ export class EventBus {
   // Connect to WebSocket
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
+      // If no URL configured, reject connection
+      if (!this.config.url) {
+        reject(new Error('WebSocket URL not configured'));
+        return;
+      }
+
       try {
         this.ws = new WebSocket(this.config.url);
         
@@ -77,6 +95,13 @@ export class EventBus {
           this.stopHeartbeat();
           this.log('WebSocket closed:', event.code, event.reason);
           this.emit('disconnected', { code: event.code, reason: event.reason });
+          
+          // Close permanently on error codes 1006/1005
+          if (event.code === 1006 || event.code === 1005) {
+            this.log('WebSocket closed permanently due to error code:', event.code);
+            this.reconnectAttempts = this.config.maxReconnectAttempts; // Prevent reconnection
+            return;
+          }
           
           if (this.reconnectAttempts < this.config.maxReconnectAttempts) {
             this.scheduleReconnect();
