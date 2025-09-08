@@ -220,6 +220,10 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
 
     const confirm = (side:"buy"|"sell") => {
       const qty = +(el.querySelector("#qtQty") as HTMLInputElement).value || 0;
+      if (!price || !isFinite(price)) {
+        console.error('Invalid price for order:', price);
+        return;
+      }
       window.dispatchEvent(new CustomEvent("qt:order", { detail: { side, symbol, price, qty } }));
       close();
     };

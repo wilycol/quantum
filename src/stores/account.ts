@@ -27,13 +27,20 @@ export const useAccountStore = create<AccountState>((set, get) => ({
 
   onTick: (last) => {
     const { pos } = get();
-    if (!pos) return set({ unrealized: 0 });
+    if (!pos || !last || !isFinite(last)) return set({ unrealized: 0 });
     const pnl = (last - pos.avg) * pos.qty; // qty>0 long
     set({ unrealized: pnl });
   },
 
   onOrder: (side, symbol, price, qty) => {
     const s = get();
+    
+    // Validar parámetros
+    if (!price || !isFinite(price) || !qty || !isFinite(qty) || !symbol) {
+      console.error('Invalid order parameters:', { side, symbol, price, qty });
+      return;
+    }
+    
     const sign = side === "buy" ? 1 : -1;
     const deltaQty = sign * qty;
 

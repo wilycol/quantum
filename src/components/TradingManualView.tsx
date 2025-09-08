@@ -86,6 +86,12 @@ export default function TradingManualView() {
       const { side, symbol, price, qty } = (e as CustomEvent).detail;
       console.log('[TradingManualView] Order from chart:', { side, symbol, price, qty });
       
+      // Validar precio
+      if (!price || !isFinite(price)) {
+        setMsg(`ERROR: Precio inválido: ${price}`);
+        return;
+      }
+      
       // Validar símbolo
       if (!validateSymbol(symbol)) {
         setMsg(`ERROR: Símbolo ${symbol} no permitido`);
