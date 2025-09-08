@@ -21,15 +21,6 @@ export default function ChartArea() {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-3 mb-1">
-        <span className="text-xs text-gray-400">Volumen</span>
-        <button
-          onClick={() => setShowVolume(!showVolume)}
-          className={`px-2 py-1 rounded-md text-xs border ${showVolume? "bg-sky-600 text-white" : "bg-neutral-800 text-gray-200 border-white/10"}`}
-        >
-          {showVolume ? "ON" : "OFF"}
-        </button>
-      </div>
       <PricePane apiRef={priceApi as any} />
       {showVolume && <VolumePane apiRef={volApi as any} />}
     </div>

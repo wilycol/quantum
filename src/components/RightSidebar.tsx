@@ -33,9 +33,6 @@ export default function RightSidebar() {
   return (
     <aside className={`transition-all duration-300 ${rightOpen? "w-80" : "w-0"} overflow-hidden`}>
       <div className="sticky top-2 space-y-3 p-2">
-        <button onClick={toggleRight} className="w-full px-3 py-2 rounded-md bg-neutral-800 text-gray-200 border border-white/10">
-          {rightOpen ? "Ocultar panel" : "Mostrar panel"}
-        </button>
 
         {/* Market Watch - con búsqueda de símbolos */}
         <details open className="bg-neutral-900 border border-white/10 rounded-xl">

@@ -161,6 +161,21 @@ const Header: React.FC<HeaderProps> = ({
             </select>
           </div>
           
+          {/* Toggles */}
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={toggleRight}
+              className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
+            >
+              {rightOpen ? "Ocultar panel" : "Mostrar panel"}
+            </button>
+            <button 
+              onClick={() => setShowVolume?.(!showVolume)}
+              className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
+            >
+              Volumen {showVolume ? "ON" : "OFF"}
+            </button>
+          </div>
         </div>
       )}
       
