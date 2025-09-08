@@ -64,8 +64,18 @@ export function useEventBus(config?: {
   const eventBusRef = useRef<EventBus | null>(null);
   const configRef = useRef(config);
 
+  // Check if WS URL is valid for current environment
+  const wsUrl = import.meta.env.VITE_WS_URL as string | undefined;
+  const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  const canConnect = wsUrl && (!wsUrl.includes('localhost') || isLocal);
+
   // Initialize Event Bus
   useEffect(() => {
+    if (!canConnect) {
+      setError('WebSocket URL not valid for current environment');
+      return;
+    }
+
     const eventBus = getEventBus({
       url: config?.url || (() => {
         // Check if we're in browser environment

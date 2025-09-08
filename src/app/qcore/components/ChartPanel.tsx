@@ -20,6 +20,13 @@ interface ChartPanelProps {
 }
 
 export default function ChartPanel({ className = '' }: ChartPanelProps) {
+  // ALL HOOKS AT THE TOP - NO CONDITIONAL HOOKS
+  const [ready, setReady] = useState(false);
+  const [currentPrice, setCurrentPrice] = useState<number>(0);
+  const [markers, setMarkers] = useState<any[]>([]);
+  const [candlesSafe, setCandlesSafe] = useState<any[]>([]);
+  const [volumeSafe, setVolumeSafe] = useState<any[]>([]);
+
   // State from store
   const broker = useBroker();
   const strategy = useStrategy();
@@ -34,11 +41,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     onEvent: handleWebSocketEvent
   });
 
-  // Local state
-  const [currentPrice, setCurrentPrice] = useState<number>(0);
-  const [markers, setMarkers] = useState<any[]>([]);
-
-  // Handle WebSocket events
+  // Handle WebSocket events - MOVED AFTER HOOKS
   function handleWebSocketEvent(event: any) {
     console.log('[ChartPanel] WebSocket event received:', event);
     
@@ -54,6 +57,22 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       setMarkers(prev => [...prev.slice(-9), newMarker]); // Keep last 10 markers
     }
   }
+
+  // Normalize/filter data ALWAYS, even if empty (hook cannot be conditional)
+  useEffect(() => {
+    const candles = generateMockCandles();
+    const volume = generateMockVolume();
+    
+    const norm = (candles ?? [])
+      .filter(c => Number.isFinite(c.open) && Number.isFinite(c.high) && Number.isFinite(c.low) && Number.isFinite(c.close) && Number.isFinite(c.time))
+      .map(c => ({ ...c, time: c.time > 2e10 ? Math.floor(c.time/1000) : c.time }));
+    setCandlesSafe(norm);
+    
+    const vol = (volume ?? [])
+      .filter(v => Number.isFinite(v.value) && Number.isFinite(v.time))
+      .map(v => ({ ...v, time: v.time > 2e10 ? Math.floor(v.time/1000) : v.time }));
+    setVolumeSafe(vol);
+  }, []); // Empty dependency array - only run once
 
   // Mock data generators
   function generateMockCandles() {
@@ -131,18 +150,24 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
       {/* Main Chart */}
       <div className="mb-4">
-        <CandlesCore
-          candles={generateMockCandles()}
-          volume={generateMockVolume()}
-          showVolume={volumeOn}
-          mode={strategy === 'grid' ? 'grid' : 'binary'}
-          gridCfg={strategy === 'grid' ? grid : null}
-          binaryCfg={strategy === 'binary' ? { 
-            strike: currentPrice, 
-            expiry: binary.expiry 
-          } : null}
-          onReady={() => console.log('[QCore] chart ready')}
-        />
+        {!ready || candlesSafe.length < 2 ? (
+          <div className="flex items-center justify-center h-[420px] bg-gray-800 rounded-lg">
+            <div className="text-gray-400">Cargando velas...</div>
+          </div>
+        ) : (
+          <CandlesCore
+            candles={candlesSafe}
+            volume={volumeSafe}
+            showVolume={volumeOn}
+            mode={strategy === 'grid' ? 'grid' : 'binary'}
+            gridCfg={strategy === 'grid' ? grid : null}
+            binaryCfg={strategy === 'binary' ? { 
+              strike: currentPrice, 
+              expiry: binary.expiry 
+            } : null}
+            onReady={() => setReady(true)}
+          />
+        )}
       </div>
 
       {/* Strategy-specific Info */}
