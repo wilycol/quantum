@@ -26,7 +26,7 @@ export default function TradingManualView() {
 
   // ---- datos mercado
   const [candles, setCandles] = useState<Candle[]>([]);
-  const lastClose = candles && candles.length > 0 ? candles[candles.length - 1].c : 0;
+  const lastClose = candles && candles.length > 0 && candles[candles.length - 1]?.c ? candles[candles.length - 1].c : 0;
 
   // ---- paper
   const { state, unrealized, equity, submit, reset } = usePaper(lastClose);
@@ -46,7 +46,7 @@ export default function TradingManualView() {
 
   // ---- Market Watch data
   const marketWatchSymbols = [
-    { symbol: 'BTCUSDT', price: lastClose, change: '+2.5%', changeColor: 'text-green-500' },
+    { symbol: 'BTCUSDT', price: lastClose || 0, change: '+2.5%', changeColor: 'text-green-500' },
     { symbol: 'ETHUSDT', price: 3450.25, change: '+1.8%', changeColor: 'text-green-500' },
     { symbol: 'BNBUSDT', price: 320.45, change: '-0.5%', changeColor: 'text-red-500' },
     { symbol: 'ADAUSDT', price: 0.485, change: '+3.2%', changeColor: 'text-green-500' },

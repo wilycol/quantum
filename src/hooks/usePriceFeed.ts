@@ -35,8 +35,10 @@ export function usePriceFeed(symbol="BTCUSDT", interval="1m") {
   // Reportar último precio al store de cuenta
   useEffect(() => {
     if (!candles.length) return;
-    const last = candles[candles.length-1].c;
-    useAccountStore.getState().onTick(last);
+    const lastCandle = candles[candles.length-1];
+    if (lastCandle && lastCandle.c && isFinite(lastCandle.c)) {
+      useAccountStore.getState().onTick(lastCandle.c);
+    }
   }, [candles]);
 
   return { candles, loading, error, mode: DATA_MODE };
