@@ -189,15 +189,17 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
       const timeScale = chartRef.current?.timeScale();
       if (timeScale) {
         const currentRange = timeScale.getVisibleRange();
-        if (currentRange) {
+        if (currentRange && candles.length > 0) {
           const rangeSize = Number(currentRange.to) - Number(currentRange.from);
-          const latestTime = Math.floor(candles[candles.length - 1].t / 1000);
+          const latestCandle = candles[candles.length - 1];
+          if (!latestCandle || !latestCandle.t) return;
+          const latestTime = Math.floor(latestCandle.t / 1000);
           
                       // Solo ajustar si el rango actual no incluye los datos más recientes
                       if (Number(currentRange.to) < latestTime) {
                         const newFrom = latestTime - rangeSize;
                         const newTo = latestTime;
-                        if (newFrom && newTo && newFrom < newTo && isFinite(newFrom) && isFinite(newTo)) {
+                        if (newFrom != null && newTo != null && newFrom < newTo && isFinite(newFrom) && isFinite(newTo)) {
                           timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
                           userZoomStateRef.current.visibleRange = { from: newFrom, to: newTo };
                         }
@@ -215,7 +217,7 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
 
       // usar el tiempo de la última vela visible del feed para anclar
       const last = candles?.at(-1);
-      if (!last) return;
+      if (!last || !last.t || !isFinite(last.t)) return;
       const time = Math.floor(last.t / 1000) as Time;
       
       // Crear ID único para deduplicación
