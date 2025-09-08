@@ -3,7 +3,7 @@
 // Note: This is a simplified implementation for Vercel
 // In production, you'd use a dedicated WebSocket server
 
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // This is a placeholder for WebSocket functionality
 // Vercel doesn't support persistent WebSocket connections in serverless functions
@@ -12,7 +12,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 // - AWS API Gateway WebSocket
 // - Socket.io with a persistent server
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
