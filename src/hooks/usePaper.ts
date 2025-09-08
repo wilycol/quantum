@@ -4,24 +4,46 @@ import { load, save, placeOrder, markToMarket, PaperState, Side } from '../engin
 export function usePaper(lastPrice: number) {
   const [state, setState] = useState<PaperState>(() => load());
   
-  const unrealized = useMemo(() => markToMarket(state, lastPrice), [state, lastPrice]);
+  // Validar lastPrice
+  const safeLastPrice = lastPrice && isFinite(lastPrice) ? lastPrice : 0;
   
-  const equity = useMemo(() => 
-    state.cash + unrealized + (state.pos ? state.pos.avg * state.pos.qty : 0), 
-    [state, unrealized]
-  );
+  console.log('[usePaper] Hook called with:', { lastPrice, safeLastPrice, state });
+  
+  const unrealized = useMemo(() => markToMarket(state, safeLastPrice), [state, safeLastPrice]);
+  
+  const equity = useMemo(() => {
+    // El equity debe ser el valor total de la cuenta, no solo el cash
+    // Si hay posición, el equity es: cash + valor actual de la posición
+    const positionValue = state.pos ? state.pos.qty * safeLastPrice : 0;
+    const calculatedEquity = Math.max(0, state.cash + positionValue + unrealized);
+    
+    console.log('[usePaper] Equity calculation:', {
+      cash: state.cash,
+      positionValue,
+      unrealized,
+      calculatedEquity,
+      position: state.pos
+    });
+    
+    return calculatedEquity;
+  }, [state, safeLastPrice, unrealized]);
   
   const submit = useCallback((side: Side, qty: number) => {
+    if (!safeLastPrice || safeLastPrice <= 0) {
+      console.error('Invalid lastPrice for paper order:', safeLastPrice);
+      return;
+    }
+    
     const o = { 
       id: crypto.randomUUID(), 
       ts: Date.now(), 
       side, 
       qty, 
-      price: lastPrice 
+      price: safeLastPrice 
     };
     const next = placeOrder(state, o);
     setState(next);
-  }, [state, lastPrice]);
+  }, [state, safeLastPrice]);
   
   const reset = useCallback(() => {
     const blank: PaperState = { cash: 10000, pos: undefined, trades: [] };

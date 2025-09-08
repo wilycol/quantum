@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createChart, CrosshairMode, IChartApi, ISeriesApi, Time } from "lightweight-charts";
 import { usePriceFeed } from "../hooks/usePriceFeed";
 import { useMarketStore } from "../stores/market";
+import { useTradeMarkers } from "../stores/tradeMarkers";
 import { maxQtyByRisk } from "../lib/risk";
 import InfoDock from "./InfoDock";
 
@@ -41,7 +42,11 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
     const chart = createChart(el, {
       layout: { background: { color: "transparent" }, textColor: "#cbd5e1" },
       grid: { vertLines: { color:"rgba(255,255,255,0.06)" }, horzLines: { color:"rgba(255,255,255,0.06)" } },
-      crosshair: { mode: CrosshairMode.Normal },
+      crosshair: { 
+        mode: CrosshairMode.Normal,
+        vertLine: { color: "#94a3b8", width: 1, style: 0, visible: true, labelVisible: true },
+        horzLine: { color: "#94a3b8", width: 1, style: 0, visible: true, labelVisible: true },
+      },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.05, bottom: 0.28 } }, // deja espacio para volumen (cuando esté visible)
       timeScale: { 
         borderVisible: false, 
@@ -170,6 +175,12 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
     const data = candles.map(c=>({ time: Math.floor(c.t/1000) as Time, open:c.o, high:c.h, low:c.l, close:c.c }));
     seriesRef.current.setData(data);
     
+    // Re-pintar markers cuando cambien los datos o el símbolo/TF
+    const key = `${symbol}:${interval}`;
+    const markers = useTradeMarkers.getState().list(key);
+    const show = useTradeMarkers.getState().show;
+    seriesRef.current.setMarkers(show ? markers : []);
+    
     // Solo auto-ajustar si el usuario no ha hecho zoom manual
     if (!userZoomStateRef.current.isUserZoomed) {
       chartRef.current?.timeScale().fitContent();
@@ -178,15 +189,17 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
       const timeScale = chartRef.current?.timeScale();
       if (timeScale) {
         const currentRange = timeScale.getVisibleRange();
-        if (currentRange) {
+        if (currentRange && candles.length > 0) {
           const rangeSize = Number(currentRange.to) - Number(currentRange.from);
-          const latestTime = Math.floor(candles[candles.length - 1].t / 1000);
+          const latestCandle = candles[candles.length - 1];
+          if (!latestCandle || !latestCandle.t) return;
+          const latestTime = Math.floor(latestCandle.t / 1000);
           
                       // Solo ajustar si el rango actual no incluye los datos más recientes
                       if (Number(currentRange.to) < latestTime) {
                         const newFrom = latestTime - rangeSize;
                         const newTo = latestTime;
-                        if (newFrom && newTo && newFrom < newTo && isFinite(newFrom) && isFinite(newTo)) {
+                        if (newFrom != null && newTo != null && newFrom < newTo && isFinite(newFrom) && isFinite(newTo)) {
                           timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
                           userZoomStateRef.current.visibleRange = { from: newFrom, to: newTo };
                         }
@@ -195,6 +208,66 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
       }
     }
   }, [candles, symbol, interval]);
+
+  // Escuchar ejecuciones de órdenes y añadir markers
+  useEffect(() => {
+    function onExec(e: Event) {
+      const { side, symbol: sym, price, qty, ts, reason } = (e as CustomEvent).detail || {};
+      if (sym !== symbol || !seriesRef.current) return;
+
+      // usar el tiempo de la última vela visible del feed para anclar
+      const last = candles?.at(-1);
+      if (!last || !last.t || !isFinite(last.t)) return;
+      const time = Math.floor(last.t / 1000) as Time;
+      
+      // Crear ID único para deduplicación
+      const id = reason 
+        ? `${time}:exit:${reason}`
+        : `${time}:${side}:${(+qty).toFixed(6)}:${(+price).toFixed(2)}`;
+
+      const m = {
+        id,
+        time,
+        position: reason 
+          ? (reason === "TP" ? "aboveBar" : "belowBar")
+          : (side === "buy" ? "belowBar" : "aboveBar"),
+        color: reason
+          ? (reason === "TP" ? "#10b981" : "#f43f5e")
+          : (side === "buy" ? "#22c55e" : "#ef4444"),
+        shape: reason
+          ? (reason === "TP" ? "arrowDown" : "arrowUp")
+          : (side === "buy" ? "arrowUp" : "arrowDown"),
+        text: reason
+          ? `${reason} @ ${(+price).toFixed(2)}`
+          : `${side.toUpperCase()} ${(+qty).toFixed(4)} @ ${(+price).toFixed(2)}`
+      } as const;
+
+      const key = `${symbol}:${interval}`;
+      const store = useTradeMarkers.getState();
+      store.add(key, m);
+      if (store.show) {
+        seriesRef.current.setMarkers(store.list(key));
+      }
+    }
+    
+    window.addEventListener("qt:order:executed", onExec as EventListener);
+    return () => window.removeEventListener("qt:order:executed", onExec as EventListener);
+  }, [symbol, interval, candles]);
+
+  // Escuchar evento de limpiar markers
+  useEffect(() => {
+    function onCleared(e: Event) {
+      const { key } = (e as CustomEvent).detail || {};
+      const currentKey = `${symbol}:${interval}`;
+      if (key === currentKey && seriesRef.current) {
+        const show = useTradeMarkers.getState().show;
+        seriesRef.current.setMarkers(show ? [] : []);
+      }
+    }
+    
+    window.addEventListener("qt:markers:cleared", onCleared as EventListener);
+    return () => window.removeEventListener("qt:markers:cleared", onCleared as EventListener);
+  }, [symbol, interval]);
 
   function openTradeMini(price:number) {
     const root = wrapRef.current!;
@@ -220,6 +293,10 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
 
     const confirm = (side:"buy"|"sell") => {
       const qty = +(el.querySelector("#qtQty") as HTMLInputElement).value || 0;
+      if (!price || !isFinite(price)) {
+        console.error('Invalid price for order:', price);
+        return;
+      }
       window.dispatchEvent(new CustomEvent("qt:order", { detail: { side, symbol, price, qty } }));
       close();
     };
@@ -229,9 +306,10 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
 
   // Calcular estadísticas básicas
   const stats = {
-    changePct: candles.length > 1 ? ((candles[candles.length-1].c - candles[0].c) / candles[0].c) * 100 : 0,
+    changePct: candles.length > 1 && candles[0]?.c && candles[candles.length-1]?.c ? 
+      ((candles[candles.length-1].c - candles[0].c) / candles[0].c) * 100 : 0,
     rsi: 50, // Placeholder - podrías calcular RSI real aquí
-    vol: candles.length > 0 ? candles[candles.length-1].v : 0
+    vol: candles.length > 0 && candles[candles.length-1]?.v ? candles[candles.length-1].v : 0
   };
 
   return (

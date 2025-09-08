@@ -3,6 +3,8 @@ import { useMarketStore } from "../stores/market";
 import { useMarketWatch } from "../hooks/useMarketWatch";
 import SymbolSearch from "./SymbolSearch";
 import { useState } from "react";
+import Tip from "./ui/Tip";
+import { GLOSS } from "../content/glossary";
 
 const SYMBOLS = ["BTCUSDT","ETHUSDT","BNBUSDT","ADAUSDT","SOLUSDT"];
 const TFS = ["1m","5m","15m","1h","4h","1d"];
@@ -79,10 +81,12 @@ export default function RightSidebar() {
         <div className="bg-neutral-900 border border-white/10 rounded-xl p-2">
           <div className="grid grid-cols-6 gap-2">
             {TFS.map(tf => (
-              <button key={tf} onClick={()=> setInterval(tf)}
-                className={`px-2 py-1 rounded-md border text-xs ${tf===interval? "bg-sky-600 text-white" : "bg-neutral-800 text-gray-200 border-white/10"}`}>
-                {tf}
-              </button>
+              <Tip key={tf} label={GLOSS.timeframe}>
+                <button onClick={()=> setInterval(tf)}
+                  className={`px-2 py-1 rounded-md border text-xs ${tf===interval? "bg-sky-600 text-white" : "bg-neutral-800 text-gray-200 border-white/10"}`}>
+                  {tf}
+                </button>
+              </Tip>
             ))}
           </div>
         </div>
