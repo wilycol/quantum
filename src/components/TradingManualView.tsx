@@ -17,7 +17,7 @@ import { maxQtyByRisk, ensureQtyWithinRisk, getRiskStatus, validateSymbol } from
 import { useUiStore } from '../stores/ui';
 
 // Helpers UI
-const fmt = (n:number) => isFinite(n) ? '$'+n.toFixed(2) : '-';
+const fmt = (n:number) => n && isFinite(n) ? '$'+n.toFixed(2) : '-';
 
 export default function TradingManualView() {
   // ---- modo app

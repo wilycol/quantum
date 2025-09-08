@@ -6,7 +6,7 @@ import PNLHelp from "./help/PNLHelp";
 export default function AccountInfoCard() {
   const { equity, cash, pos, unrealized, resetPaper } = useAccountStore();
   const price = pos ? pos.avg : null;
-  const fmt = (n: number, p=2) => n.toLocaleString(undefined, { minimumFractionDigits: p, maximumFractionDigits: p });
+  const fmt = (n: number, p=2) => n && isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: p, maximumFractionDigits: p }) : '0.00';
 
   return (
     <div className="bg-neutral-900 rounded-xl border border-white/10 p-3">

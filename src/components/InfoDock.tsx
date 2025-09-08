@@ -7,7 +7,7 @@ import PNLHelp from "./help/PNLHelp";
 export default function InfoDock() {
   const { pos, unrealized } = useAccountStore();
   const symbol = useMarketStore(s => s.symbol);
-  const fmt = (n:number,p=2)=> n.toLocaleString(undefined,{minimumFractionDigits:p,maximumFractionDigits:p});
+  const fmt = (n:number,p=2)=> n && isFinite(n) ? n.toLocaleString(undefined,{minimumFractionDigits:p,maximumFractionDigits:p}) : '0.00';
 
   return (
     <div className="absolute right-3 bottom-3 z-10 bg-neutral-900/90 border border-white/10 rounded-lg px-3 py-2 text-xs text-gray-200 shadow-md">

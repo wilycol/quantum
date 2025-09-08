@@ -4,7 +4,7 @@ export const GLOSS = {
   cash: `Cash: efectivo disponible para abrir nuevas operaciones.`,
   position: `Position: tamaño y precio promedio de tu posición actual en el símbolo seleccionado.`,
   qty: `Qty: cantidad de activo a negociar. Consejo: usa fracciones pequeñas en paper para practicar gestión del riesgo.`,
-  qtyMax: (maxQty:number) => `Máx permitido por riesgo (5% equity): ${maxQty.toFixed(6)} unidades.`,
+  qtyMax: (maxQty:number) => `Máx permitido por riesgo (5% equity): ${maxQty && isFinite(maxQty) ? maxQty.toFixed(6) : '0.000000'} unidades.`,
   sl: `SL (Stop Loss): nivel de precio para cerrar la operación si el mercado va en contra. Protege tu capital.`,
   tp: `TP (Take Profit): nivel de precio para tomar beneficios.`,
   buy: `BUY: abre/aumenta una posición larga al precio de mercado (paper/testnet).`,
