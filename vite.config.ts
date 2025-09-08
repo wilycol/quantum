@@ -12,7 +12,10 @@ export default defineConfig(({ mode }) => {
         // Exponer variables VITE_ al cliente
         'import.meta.env.VITE_DATA_MODE': JSON.stringify(env.VITE_DATA_MODE),
         'import.meta.env.VITE_SYMBOL': JSON.stringify(env.VITE_SYMBOL),
-        'import.meta.env.VITE_TIMEFRAME': JSON.stringify(env.VITE_TIMEFRAME)
+        'import.meta.env.VITE_TIMEFRAME': JSON.stringify(env.VITE_TIMEFRAME),
+        // WebSocket URL para QuantumCore
+        'import.meta.env.VITE_WS_URL': JSON.stringify(env.VITE_WS_URL),
+        'process.env.NEXT_PUBLIC_WS_URL': JSON.stringify(env.VITE_WS_URL)
       },
       resolve: {
         alias: {
