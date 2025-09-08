@@ -158,7 +158,16 @@ const App: React.FC = () => {
          <div className={`${themeClass} font-sans flex h-screen overflow-hidden`}>
             <Sidebar activeView={currentView} setView={setCurrentView} />
             <div className="flex-1 flex flex-col overflow-hidden">
-              <Header view={currentView} setView={setCurrentView} />
+              <Header 
+                view={currentView} 
+                setView={setCurrentView}
+                showTradingControls={currentView === 'manual_trading'}
+                appMode="demo-hybrid"
+                onModeChange={(mode) => {
+                  // TODO: Implementar cambio de modo global
+                  console.log('Mode changed to:', mode);
+                }}
+              />
               <main className={`flex-1 overflow-y-auto ${needsPadding ? 'p-2 sm:p-4 lg:p-6' : ''}`}>
                 <Suspense fallback={<LoadingFallback />}>
                   {currentView === 'quantum_core' && <QuantumCoreSafe />}

@@ -233,37 +233,6 @@ export default function TradingManualView() {
 
   return (
     <div className="px-4 py-3">
-      {/* Header reorganizado */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between gap-4">
-          {/* Selector de modo */}
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-400">Modo:</span>
-            <CustomDropdown
-              options={modeOptions}
-              value={getModeValue(appMode)}
-              onChange={handleModeChange}
-              className="w-40"
-            />
-          </div>
-
-          {/* Toggles en columnas */}
-          <div className="flex flex-col gap-2">
-            <button 
-              onClick={toggleRight}
-              className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
-            >
-              {rightOpen ? "Ocultar panel" : "Mostrar panel"}
-            </button>
-            <button 
-              onClick={() => {/* TODO: implementar toggle de volumen */}}
-              className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
-            >
-              Volumen ON
-            </button>
-          </div>
-        </div>
-      </div>
 
       <div className="grid grid-cols-12 gap-4">
         {/* área de gráfico toma 12 o 9/10 columnas según sidebar */}
