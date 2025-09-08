@@ -36,25 +36,46 @@ function load(): CoachState {
 function save(s: CoachState) { localStorage.setItem(KEY, JSON.stringify(s)); }
 
 function rsi(values: number[], period = 14): number {
-  if (values.length < period + 1) return 50;
+  if (!values || values.length < period + 1) return 50;
   let gains = 0, losses = 0;
   for (let i = values.length - period; i < values.length; i++) {
-    const diff = values[i] - values[i-1];
+    const current = values[i];
+    const previous = values[i-1];
+    if (!current || !isFinite(current) || !previous || !isFinite(previous)) continue;
+    const diff = current - previous;
     if (diff > 0) gains += diff; else losses -= diff;
   }
   const rs = losses === 0 ? 100 : gains / (losses || 1e-9);
   return 100 - 100 / (1 + rs);
 }
 function ema(values: number[], period: number): number {
+  if (!values || values.length === 0) return 0;
   const k = 2 / (period + 1);
-  let e = values[0];
-  for (let i = 1; i < values.length; i++) e = values[i] * k + e * (1 - k);
+  let e = values[0] || 0;
+  for (let i = 1; i < values.length; i++) {
+    const value = values[i];
+    if (value && isFinite(value)) {
+      e = value * k + e * (1 - k);
+    }
+  }
   return e;
 }
 
 function pickSignal(candles: Candle[]): { signal: CoachSignal; reason: string } {
-  const closes = candles.map(c => c.c);
+  if (!candles || candles.length === 0) {
+    return { signal: 'HOLD', reason: 'Sin datos de velas' };
+  }
+  
+  const closes = candles.map(c => c?.c).filter(c => c && isFinite(c));
+  if (closes.length === 0) {
+    return { signal: 'HOLD', reason: 'Sin precios válidos' };
+  }
+  
   const last = closes[closes.length - 1];
+  if (!last || !isFinite(last)) {
+    return { signal: 'HOLD', reason: 'Precio actual inválido' };
+  }
+  
   const ema9 = ema(closes.slice(-60), 9);
   const ema21 = ema(closes.slice(-60), 21);
   const _rsi = rsi(closes, 14);
