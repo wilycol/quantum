@@ -233,33 +233,21 @@ export default function TradingManualView() {
 
   return (
     <div className="px-4 py-3">
-
-      <div className="grid grid-cols-12 gap-4">
-        {/* área de gráfico toma 12 o 9/10 columnas según sidebar */}
-        <div className={rightOpen ? "col-span-12 xl:col-span-9 2xl:col-span-10" : "col-span-12"}>
-          <ChartArea />
-        </div>
-        {/* sidebar derecha */}
-        <div className="hidden xl:block xl:col-span-3 2xl:col-span-2">
-          <RightSidebar />
-        </div>
-      </div>
-
-      {/* Panel de información adicional debajo del chart */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Paneles de información compactos arriba del gráfico */}
+      <div className="mb-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Información de la posición actual */}
-        <Card className="bg-neutral-900 border-neutral-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Estado de Trading</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
+        <Card className="bg-neutral-900 border-neutral-700 p-3">
+          <h3 className="text-sm font-semibold text-white mb-2">Estado de Trading</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs">
               <span className="text-gray-400">Precio Actual</span>
               <span className="text-white font-semibold">{fmt(lastClose)}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-xs">
               <span className="text-gray-400">Equity</span>
               <span className="text-white font-semibold">{fmt(equity)}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-xs">
               <span className="text-gray-400">P&L No Realizado</span>
               <span className={`font-semibold ${unrealized >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                 {fmt(unrealized)}
@@ -269,10 +257,10 @@ export default function TradingManualView() {
         </Card>
 
         {/* Estado de riesgo */}
-        <Card className="bg-neutral-900 border-neutral-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Gestión de Riesgo</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
+        <Card className="bg-neutral-900 border-neutral-700 p-3">
+          <h3 className="text-sm font-semibold text-white mb-2">Gestión de Riesgo</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs">
               <span className="text-gray-400">Riesgo Actual</span>
               <span className={`font-semibold ${
                 riskStatus.isWithinRisk ? 'text-emerald-400' : 'text-rose-400'
@@ -290,11 +278,11 @@ export default function TradingManualView() {
         </Card>
 
         {/* Posiciones y mensajes */}
-        <Card className="bg-neutral-900 border-neutral-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Posiciones</h3>
+        <Card className="bg-neutral-900 border-neutral-700 p-3">
+          <h3 className="text-sm font-semibold text-white mb-2">Posiciones</h3>
           {state.pos ? (
             <div className="space-y-2">
-              <div className="bg-neutral-800 p-2 rounded text-sm">
+              <div className="bg-neutral-800 p-2 rounded text-xs">
                 <div className="flex justify-between">
                   <span className="text-white">{state.pos.side.toUpperCase()}</span>
                   <span className="text-white">{state.pos.qty}</span>
@@ -305,22 +293,33 @@ export default function TradingManualView() {
               </div>
             </div>
           ) : (
-            <div className="text-gray-400 text-sm">Sin posiciones abiertas</div>
+            <div className="text-gray-400 text-xs">Sin posiciones abiertas</div>
           )}
           
           {msg && (
-            <div className="mt-3 p-2 bg-neutral-800 rounded text-sm text-gray-300">
+            <div className="mt-2 p-2 bg-neutral-800 rounded text-xs text-gray-300">
               {msg}
             </div>
           )}
           
           <button
             onClick={reset}
-            className="mt-3 w-full px-3 py-2 bg-neutral-700 text-white rounded hover:bg-neutral-600 text-sm"
+            className="mt-2 w-full px-2 py-1 bg-neutral-700 text-white rounded hover:bg-neutral-600 text-xs"
           >
             Reset Paper
           </button>
         </Card>
+      </div>
+
+      <div className="grid grid-cols-12 gap-4">
+        {/* área de gráfico toma 12 o 9/10 columnas según sidebar */}
+        <div className={rightOpen ? "col-span-12 xl:col-span-9 2xl:col-span-10" : "col-span-12"}>
+          <ChartArea />
+        </div>
+        {/* sidebar derecha */}
+        <div className="hidden xl:block xl:col-span-3 2xl:col-span-2">
+          <RightSidebar />
+        </div>
       </div>
 
       {/* Panel de IA Coach */}
