@@ -4,6 +4,8 @@ import { usePriceFeed } from '../hooks/usePriceFeed';
 import { useAccountStore } from '../stores/account';
 import { getAllowedRiskPct, getRiskConfig } from '../config/risk';
 import { maxQtyByRisk, clampQtyToMax } from '../lib/risk';
+import { toNum, fmt } from '../lib/num';
+import { useToast } from './ui/Toast';
 import Tip from './ui/Tip';
 import { GLOSS } from '../content/glossary';
 import QtyHelp from './help/QtyHelp';
@@ -15,38 +17,50 @@ export default function ExecutionPanel() {
   const interval = useMarketStore(s => s.interval);
   const { candles } = usePriceFeed(symbol, interval);
   const { equity } = useAccountStore();
+  const { toast, ToastContainer } = useToast();
   
-  // Configuración de riesgo
+  // Configuración de riesgo con coerción numérica segura
   const vercelEnv = import.meta.env.VITE_VERCEL_ENV || "development";
   const appMode = "demo_hibrido"; // TODO: obtener del estado de la app
   const riskConfig = getRiskConfig(vercelEnv, appMode);
   
-  // Estado de cantidad
+  // Estado de cantidad (siempre numérico)
   const [qty, setQty] = useState<number>(0.001);
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
   
-  // Calcular cantidad máxima permitida
+  // Calcular cantidad máxima permitida (siempre numérico)
+  const equityNum = toNum(equity);
   const currentPrice = candles && candles.length > 0 && candles[candles.length - 1]?.c;
-  const maxQty = currentPrice && equity > 0 ? maxQtyByRisk(equity, currentPrice, riskConfig.allowedPct) : 0;
+  const lastPrice = toNum(currentPrice);
+  const maxQty = maxQtyByRisk(equityNum, lastPrice, riskConfig.allowedPct);
   
   // Auto-ajustar cantidad cuando cambie el precio o equity
   useEffect(() => {
-    if (maxQty > 0) {
-      setQty(prev => clampQtyToMax(prev, maxQty));
+    if (Number.isFinite(maxQty) && maxQty > 0) {
+      setQty(prev => clampQtyToMax(toNum(prev), maxQty));
     }
-  }, [maxQty]);
+  }, [equityNum, lastPrice, riskConfig.allowedPct]);
+  
+  // Validaciones para botones blindados
+  const qtyInvalid = !Number.isFinite(qty) || qty <= 0;
+  const overMax = qty > maxQty;
 
-  const handleOrder = (side: 'buy' | 'sell') => {
-    const quantity = qty;
-    if (quantity <= 0) {
-      console.error('Invalid quantity:', quantity);
+  const handleOrder = async (side: 'buy' | 'sell') => {
+    // Validaciones blindadas
+    if (qtyInvalid) {
+      toast("Cantidad inválida", 'error');
+      return;
+    }
+    
+    if (overMax) {
+      toast(`Qty > Máx (${fmt(maxQty, 6)}) por el límite de riesgo`, 'error');
       return;
     }
 
     // Obtener el precio actual de la última vela
-    if (!currentPrice || !isFinite(currentPrice)) {
-      console.error('No valid price available for order. Candles:', candles?.length, 'Last candle:', candles?.[candles.length - 1]);
+    if (!Number.isFinite(lastPrice) || lastPrice <= 0) {
+      toast("Precio no disponible", 'error');
       return;
     }
 
@@ -54,9 +68,9 @@ export default function ExecutionPanel() {
     const needsConfirm = riskConfig.allowedPct > 0.05 && vercelEnv !== "production";
     if (needsConfirm) {
       const ok = window.confirm(
-        `Estás usando un límite de riesgo del ${(riskConfig.allowedPct * 100).toFixed(0)}% para fines EDUCATIVOS (paper/testnet).\n` +
-        `Máx Qty calculado: ${maxQty.toFixed(6)}\n` +
-        `Cantidad solicitada: ${quantity.toFixed(6)}\n` +
+        `Estás usando un límite de riesgo del ${Math.round(riskConfig.allowedPct * 100)}% para fines EDUCATIVOS (paper/testnet).\n` +
+        `Máx Qty calculado: ${fmt(maxQty, 6)}\n` +
+        `Cantidad solicitada: ${fmt(qty, 6)}\n` +
         `¿Deseas continuar?`
       );
       if (!ok) return;
@@ -65,24 +79,36 @@ export default function ExecutionPanel() {
       console.log('[ExecutionPanel] High risk order confirmed:', {
         side,
         symbol,
-        quantity,
+        quantity: qty,
         riskPct: riskConfig.allowedPct,
         maxQty,
         timestamp: new Date().toISOString()
       });
     }
 
-    const orderData = {
-      side,
-      symbol,
-      price: currentPrice,
-      qty: quantity,
-      stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
-      takeProfit: takeProfit ? parseFloat(takeProfit) : undefined
-    };
+    try {
+      const orderData = {
+        side,
+        symbol,
+        price: lastPrice,
+        qty,
+        stopLoss: stopLoss ? toNum(stopLoss) : undefined,
+        takeProfit: takeProfit ? toNum(takeProfit) : undefined
+      };
 
-    console.log('[ExecutionPanel] Dispatching order:', orderData);
-    window.dispatchEvent(new CustomEvent("qt:order", { detail: orderData }));
+      console.log('[ExecutionPanel] Dispatching order:', orderData);
+      window.dispatchEvent(new CustomEvent("qt:order", { detail: orderData }));
+      toast(`${side.toUpperCase()} enviado: ${fmt(qty, 6)}`, 'success');
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      if (msg.includes("risk_limit_exceeded")) {
+        const m = /risk_limit_exceeded:.*>([\d.]+)/.exec(msg);
+        const lim = m ? m[1] : fmt(maxQty, 6);
+        toast(`Bloqueado por riesgo. Máx: ${lim}`, 'error');
+      } else {
+        toast(`Error: ${msg}`, 'error');
+      }
+    }
   };
 
   return (
@@ -92,7 +118,7 @@ export default function ExecutionPanel() {
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-1 text-xs text-gray-200">
             Qty
-            <Tip label={`${GLOSS.qty}\n\nMáx (${(riskConfig.allowedPct * 100).toFixed(0)}%): ${maxQty.toFixed(6)}`}>
+            <Tip label={`${GLOSS.qty}\n\nMáx (${Math.round(riskConfig.allowedPct * 100)}%): ${fmt(maxQty, 6)}`}>
               <span className="inline-flex w-4 h-4 items-center justify-center rounded-full bg-sky-600 text-white text-[10px]">i</span>
             </Tip>
           </label>
@@ -100,8 +126,8 @@ export default function ExecutionPanel() {
             type="number"
             min="0"
             step="0.000001"
-            value={qty}
-            onChange={(e) => setQty(clampQtyToMax(+e.target.value || 0, maxQty))}
+            value={Number.isFinite(qty) ? qty : 0}
+            onChange={(e) => setQty(clampQtyToMax(toNum(e.target.value), maxQty))}
             className="w-20 bg-neutral-800 text-gray-100 px-2 py-1 rounded text-xs outline-none border border-white/10"
             placeholder="0.001"
           />
@@ -109,19 +135,19 @@ export default function ExecutionPanel() {
           {/* Quick percentage buttons */}
           <div className="flex gap-1">
             <button 
-              onClick={() => setQty(+((maxQty * 0.25).toFixed(6)))}
+              onClick={() => setQty(+(maxQty * 0.25).toPrecision(8))}
               className="px-2 py-1 rounded text-xs bg-neutral-700 text-gray-300 hover:bg-neutral-600 border border-white/10"
             >
               25%
             </button>
             <button 
-              onClick={() => setQty(+((maxQty * 0.5).toFixed(6)))}
+              onClick={() => setQty(+(maxQty * 0.50).toPrecision(8))}
               className="px-2 py-1 rounded text-xs bg-neutral-700 text-gray-300 hover:bg-neutral-600 border border-white/10"
             >
               50%
             </button>
             <button 
-              onClick={() => setQty(+((maxQty * 1.0).toFixed(6)))}
+              onClick={() => setQty(+(maxQty * 1.00).toPrecision(8))}
               className="px-2 py-1 rounded text-xs bg-neutral-700 text-gray-300 hover:bg-neutral-600 border border-white/10"
             >
               100%
@@ -130,7 +156,7 @@ export default function ExecutionPanel() {
               onClick={() => setQty(maxQty)}
               className="px-2 py-1 rounded text-xs bg-neutral-800 border border-white/10 text-gray-200 hover:bg-neutral-700"
             >
-              Set Max ({(riskConfig.allowedPct * 100).toFixed(0)}%)
+              Set Max ({Math.round(riskConfig.allowedPct * 100)}%)
             </button>
           </div>
         </div>
@@ -167,20 +193,30 @@ export default function ExecutionPanel() {
           />
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Blindados */}
         <div className="flex items-center gap-2">
           <Tip label={GLOSS.buy}>
             <button
+              disabled={qtyInvalid || overMax}
               onClick={() => handleOrder('buy')}
-              className="px-3 py-1 rounded bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors"
+              className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                qtyInvalid || overMax 
+                  ? 'bg-neutral-600 text-gray-400 cursor-not-allowed' 
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+              }`}
             >
               BUY
             </button>
           </Tip>
           <Tip label={GLOSS.sell}>
             <button
+              disabled={qtyInvalid || overMax}
               onClick={() => handleOrder('sell')}
-              className="px-3 py-1 rounded bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors"
+              className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                qtyInvalid || overMax 
+                  ? 'bg-neutral-600 text-gray-400 cursor-not-allowed' 
+                  : 'bg-rose-600 text-white hover:bg-rose-700'
+              }`}
             >
               SELL
             </button>
@@ -190,25 +226,26 @@ export default function ExecutionPanel() {
         {/* Quick Actions */}
         <div className="flex items-center gap-1 ml-2">
           <button
-            onClick={() => setQty('0.001')}
+            onClick={() => setQty(clampQtyToMax(0.001, maxQty))}
             className="px-2 py-1 rounded bg-neutral-700 text-gray-300 text-xs hover:bg-neutral-600 transition-colors"
           >
             0.001
           </button>
           <button
-            onClick={() => setQty('0.01')}
+            onClick={() => setQty(clampQtyToMax(0.01, maxQty))}
             className="px-2 py-1 rounded bg-neutral-700 text-gray-300 text-xs hover:bg-neutral-600 transition-colors"
           >
             0.01
           </button>
           <button
-            onClick={() => setQty('0.1')}
+            onClick={() => setQty(clampQtyToMax(0.1, maxQty))}
             className="px-2 py-1 rounded bg-neutral-700 text-gray-300 text-xs hover:bg-neutral-600 transition-colors"
           >
             0.1
           </button>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 }
