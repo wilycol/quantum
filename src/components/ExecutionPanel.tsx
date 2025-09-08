@@ -17,12 +17,15 @@ export default function ExecutionPanel() {
 
   const handleOrder = (side: 'buy' | 'sell') => {
     const quantity = parseFloat(qty) || 0;
-    if (quantity <= 0) return;
+    if (quantity <= 0) {
+      console.error('Invalid quantity:', quantity);
+      return;
+    }
 
     // Obtener el precio actual de la última vela
     const currentPrice = candles && candles.length > 0 && candles[candles.length - 1]?.c;
     if (!currentPrice || !isFinite(currentPrice)) {
-      console.error('No valid price available for order');
+      console.error('No valid price available for order. Candles:', candles?.length, 'Last candle:', candles?.[candles.length - 1]);
       return;
     }
 
@@ -35,6 +38,7 @@ export default function ExecutionPanel() {
       takeProfit: takeProfit ? parseFloat(takeProfit) : undefined
     };
 
+    console.log('[ExecutionPanel] Dispatching order:', orderData);
     window.dispatchEvent(new CustomEvent("qt:order", { detail: orderData }));
   };
 

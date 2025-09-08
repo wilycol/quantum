@@ -84,32 +84,38 @@ export default function TradingManualView() {
   useEffect(() => {
     const onOrder = (e: Event) => {
       const { side, symbol, price, qty } = (e as CustomEvent).detail;
-      console.log('[TradingManualView] Order from chart:', { side, symbol, price, qty });
+      console.log('[TradingManualView] Order received:', { side, symbol, price, qty, equity });
       
       // Validar precio
       if (!price || !isFinite(price)) {
+        console.error('[TradingManualView] Invalid price:', price);
         setMsg(`ERROR: Precio inválido: ${price}`);
         return;
       }
       
       // Validar símbolo
       if (!validateSymbol(symbol)) {
+        console.error('[TradingManualView] Invalid symbol:', symbol);
         setMsg(`ERROR: Símbolo ${symbol} no permitido`);
         return;
       }
       
       // Validar cantidad por riesgo
       const riskValidation = ensureQtyWithinRisk(qty, equity, price);
+      console.log('[TradingManualView] Risk validation:', riskValidation);
       if (!riskValidation.success) {
+        console.error('[TradingManualView] Risk validation failed:', riskValidation.error);
         setMsg(`RIESGO: ${riskValidation.error} (Máximo: ${riskValidation.maxQty.toFixed(6)})`);
         return;
       }
       
       // Ejecutar orden en paper mode
       try {
+        console.log('[TradingManualView] Executing paper trade:', { side, qty });
         submit(side, qty);
         setMsg(`PAPER ${side.toUpperCase()} ${qty} @ ${fmt(price)} (desde chart)`);
       } catch (error: any) {
+        console.error('[TradingManualView] Paper trade error:', error);
         setMsg(`ERROR: ${error?.message || error}`);
       }
     };
