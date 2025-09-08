@@ -7,6 +7,7 @@ import LegalGuard from './components/LegalGuard';
 import { withBoundary } from './components/withBoundary';
 import { useSettings } from './contexts/SettingsContext';
 import { MainView, AppNotification } from './types';
+import { bindOrderEvents } from './stores/account';
 
 // Carga perezosa de vistas pesadas
 const TradingManualView = lazy(() => import('./components/TradingManualView'));
@@ -125,6 +126,12 @@ const App: React.FC = () => {
       }
     }
   }, [settings.notifications, settings.notificationConfig.pushEnabled, lastNotification]);
+
+  // Bindear eventos de órdenes para el store de cuenta
+  useEffect(() => {
+    const cleanup = bindOrderEvents();
+    return cleanup;
+  }, []);
 
   // Listener para navegación desde SupportView
   useEffect(() => {

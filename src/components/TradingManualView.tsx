@@ -10,6 +10,7 @@ import { IACoachPanel } from './IACoachPanel';
 import ChartArea from './ChartArea';
 import RightSidebar from './RightSidebar';
 import ExecutionPanel from './ExecutionPanel';
+import AccountInfoCard from './AccountInfoCard';
 import Card from './ui/Card';
 import CustomDropdown from './ui/CustomDropdown';
 import { maxQtyByRisk, ensureQtyWithinRisk, getRiskStatus, validateSymbol } from '../lib/risk';
@@ -235,7 +236,7 @@ export default function TradingManualView() {
   return (
     <div className="px-4 py-3">
       {/* Paneles de información compactos arriba del gráfico */}
-      <div className="mb-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="mb-4 grid grid-cols-1 lg:grid-cols-4 gap-3">
         {/* Información de la posición actual */}
         <Card className="bg-neutral-900 border-neutral-700 p-3">
           <h3 className="text-sm font-semibold text-white mb-2">Estado de Trading</h3>
@@ -310,13 +311,18 @@ export default function TradingManualView() {
             Reset Paper
           </button>
         </Card>
+
+        {/* Account Info Card */}
+        <AccountInfoCard />
       </div>
 
       <div className="grid grid-cols-12 gap-4">
         {/* área de gráfico toma 12 o 9/10 columnas según sidebar */}
         <div className={rightOpen ? "col-span-12 xl:col-span-9 2xl:col-span-10" : "col-span-12"}>
-          {/* Panel de ejecución compacto encima del gráfico */}
-          <ExecutionPanel />
+          {/* Panel de ejecución sticky encima del gráfico */}
+          <div className="sticky top-[64px] z-20 bg-[#0b0b0b]/85 backdrop-blur supports-[backdrop-filter]:bg-[#0b0b0b]/60 border-b border-white/5">
+            <ExecutionPanel />
+          </div>
           <ChartArea />
         </div>
         {/* sidebar derecha */}

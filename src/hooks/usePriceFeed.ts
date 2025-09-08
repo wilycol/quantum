@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchKlines, genSimCandles, Candle } from "../lib/klines";
+import { useAccountStore } from "../stores/account";
 
 export function usePriceFeed(symbol="BTCUSDT", interval="1m") {
   const [candles, setCandles] = useState<Candle[]>([]);
@@ -30,6 +31,13 @@ export function usePriceFeed(symbol="BTCUSDT", interval="1m") {
     if (DATA_MODE === "live") timer = setInterval(load, 60_000);
     return () => clearInterval(timer);
   }, [symbol, interval, DATA_MODE]);
+
+  // Reportar último precio al store de cuenta
+  useEffect(() => {
+    if (!candles.length) return;
+    const last = candles[candles.length-1].c;
+    useAccountStore.getState().onTick(last);
+  }, [candles]);
 
   return { candles, loading, error, mode: DATA_MODE };
 }

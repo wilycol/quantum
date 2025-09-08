@@ -3,6 +3,7 @@ import { createChart, CrosshairMode, IChartApi, ISeriesApi, Time } from "lightwe
 import { usePriceFeed } from "../hooks/usePriceFeed";
 import { useMarketStore } from "../stores/market";
 import { maxQtyByRisk } from "../lib/risk";
+import InfoDock from "./InfoDock";
 
 export type PricePaneApi = { chart: IChartApi | null; series: ISeriesApi<"Candlestick"> | null };
 
@@ -266,6 +267,9 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
         <div><span className="text-gray-300">Zoom: </span><span className="text-yellow-400 font-mono">Ctrl + Scroll</span></div>
         <div><span className="text-gray-300">Pan: </span><span className="text-blue-400 font-mono">Click + Drag</span></div>
       </div>
+      
+      {/* InfoDock compacto siempre visible */}
+      <InfoDock />
     </div>
   );
 }
