@@ -1,5 +1,6 @@
 import { useUiStore } from "../stores/ui";
 import { useMarketStore } from "../stores/market";
+import { useMarketWatch } from "../hooks/useMarketWatch";
 
 const SYMBOLS = ["BTCUSDT","ETHUSDT","BNBUSDT","ADAUSDT","SOLUSDT"];
 const TFS = ["1m","5m","15m","1h","4h","1d"];
@@ -10,6 +11,14 @@ export default function RightSidebar() {
   const setSymbol = useMarketStore(s=>s.setSymbol);
   const interval = useMarketStore(s=>s.interval);
   const setInterval = useMarketStore(s=>s.setInterval);
+  const marketData = useMarketWatch();
+
+  // Helper para formatear precios
+  const formatPrice = (price: number) => {
+    if (price >= 1000) return `$${price.toFixed(2)}`;
+    if (price >= 1) return `$${price.toFixed(3)}`;
+    return `$${price.toFixed(4)}`;
+  };
 
   return (
     <aside className={`transition-all duration-300 ${rightOpen? "w-80" : "w-0"} overflow-hidden`}>
@@ -22,13 +31,27 @@ export default function RightSidebar() {
         <details open className="bg-neutral-900 border border-white/10 rounded-xl">
           <summary className="cursor-pointer px-3 py-2 text-gray-100">Market Watch</summary>
           <ul className="p-2 space-y-1">
-            {SYMBOLS.map(s => (
-              <li key={s}>
+            {marketData.map(item => (
+              <li key={item.symbol}>
                 <button
-                  onClick={()=> setSymbol(s)}
-                  className={`w-full text-left px-3 py-2 rounded-md ${s===symbol? "bg-yellow-500/10 border border-yellow-500/40 text-yellow-200" : "bg-neutral-800 text-gray-200 border border-white/10"}`}
+                  onClick={()=> setSymbol(item.symbol)}
+                  className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                    item.symbol === symbol 
+                      ? "bg-yellow-500/10 border border-yellow-500/40 text-yellow-200" 
+                      : "bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700"
+                  }`}
                 >
-                  {s}
+                  <div className="flex justify-between items-center">
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-sm">{item.symbol}</span>
+                      <span className="text-xs text-gray-400">{formatPrice(item.price)}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-sm font-semibold ${item.changeColor}`}>
+                        {item.change}
+                      </span>
+                    </div>
+                  </div>
                 </button>
               </li>
             ))}
