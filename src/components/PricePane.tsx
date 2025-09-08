@@ -16,6 +16,24 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
   const seriesRef = useRef<ISeriesApi<"Candlestick">|null>(null);
   const lastPxRef = useRef<number | null>(null);
   const [armed, setArmed] = useState(false);
+  
+  // Estado para zoom y pan personalizados
+  const userZoomStateRef = useRef<{
+    visibleRange: { from: number; to: number } | null;
+    isUserZoomed: boolean;
+  }>({ visibleRange: null, isUserZoomed: false });
+  
+  const panStateRef = useRef<{
+    isPanning: boolean;
+    startX: number;
+    startTime: number;
+    startVisibleRange: { from: number; to: number } | null;
+  }>({
+    isPanning: false,
+    startX: 0,
+    startTime: 0,
+    startVisibleRange: null
+  });
 
   useEffect(() => {
     const el = wrapRef.current!;
@@ -24,7 +42,15 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
       grid: { vertLines: { color:"rgba(255,255,255,0.06)" }, horzLines: { color:"rgba(255,255,255,0.06)" } },
       crosshair: { mode: CrosshairMode.Normal },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.05, bottom: 0.28 } }, // deja espacio para volumen (cuando esté visible)
-      timeScale: { borderVisible: false, timeVisible: true, minBarSpacing: 3 },
+      timeScale: { 
+        borderVisible: false, 
+        timeVisible: true, 
+        minBarSpacing: 3,
+        shiftVisibleRangeOnNewBar: false,
+        lockVisibleTimeRangeOnResize: false
+      },
+      handleScroll: false,
+      handleScale: false,
       autoSize: true,
     });
     const ks = chart.addCandlestickSeries({
@@ -44,12 +70,81 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
       setArmed(false);
     });
 
+    // Control de zoom personalizado con Ctrl + scroll
+    const handleWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      
+      const timeScale = chart.timeScale();
+      const visibleRange = timeScale.getVisibleRange();
+      if (!visibleRange) return;
+      
+      const delta = event.deltaY > 0 ? 1.1 : 0.9;
+      const range = Number(visibleRange.to) - Number(visibleRange.from);
+      const center = Number(visibleRange.from) + range / 2;
+      const newRange = range * delta;
+      const newFrom = center - newRange / 2;
+      const newTo = center + newRange / 2;
+      
+      timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
+      userZoomStateRef.current = { visibleRange: { from: newFrom, to: newTo }, isUserZoomed: true };
+    };
+
+    // Control de pan con clic izquierdo y arrastrar
+    const handleMouseDown = (event: MouseEvent) => {
+      if (event.button !== 0) return; // Solo responder al clic izquierdo
+      const timeScale = chart.timeScale();
+      const visibleRange = timeScale.getVisibleRange();
+      if (!visibleRange) return;
+      panStateRef.current = {
+        isPanning: true,
+        startX: event.clientX,
+        startTime: Date.now(),
+        startVisibleRange: { from: Number(visibleRange.from), to: Number(visibleRange.to) }
+      };
+      el.style.cursor = 'grabbing';
+    };
+    
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!panStateRef.current.isPanning) return;
+      const deltaX = event.clientX - panStateRef.current.startX;
+      const timeScale = chart.timeScale();
+      const startRange = panStateRef.current.startVisibleRange;
+      if (!startRange) return;
+      const range = startRange.to - startRange.from;
+      const pixelsPerTime = el.clientWidth / range;
+      const timeDelta = deltaX / pixelsPerTime;
+      const newFrom = startRange.from - timeDelta;
+      const newTo = startRange.to - timeDelta;
+      timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
+      userZoomStateRef.current = { visibleRange: { from: newFrom, to: newTo }, isUserZoomed: true };
+    };
+    
+    const handleMouseUp = (event: MouseEvent) => {
+      if (!panStateRef.current.isPanning) return;
+      panStateRef.current.isPanning = false;
+      el.style.cursor = 'crosshair';
+    };
+
+    // Agregar event listeners
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    el.addEventListener('mousedown', handleMouseDown);
+    el.addEventListener('mousemove', handleMouseMove);
+    el.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mouseup', handleMouseUp); // Para mouseup fuera del elemento
+
     chartRef.current = chart; seriesRef.current = ks;
     apiRef && (apiRef.current = { chart, series: ks });
 
     return () => {
       chart.unsubscribeCrosshairMove(unsubMove);
       chart.unsubscribeClick(unsubClick);
+      el.removeEventListener('wheel', handleWheel);
+      el.removeEventListener('mousedown', handleMouseDown);
+      el.removeEventListener('mousemove', handleMouseMove);
+      el.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mouseup', handleMouseUp);
       ro.disconnect();
       chart.remove();
       apiRef && (apiRef.current = { chart: null, series: null });
@@ -60,7 +155,17 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
     if (!seriesRef.current || !candles.length) return;
     const data = candles.map(c=>({ time: Math.floor(c.t/1000) as Time, open:c.o, high:c.h, low:c.l, close:c.c }));
     seriesRef.current.setData(data);
-    chartRef.current?.timeScale().fitContent();
+    
+    // Solo hacer fitContent si el usuario no ha hecho zoom
+    if (!userZoomStateRef.current.isUserZoomed) {
+      chartRef.current?.timeScale().fitContent();
+    } else if (userZoomStateRef.current.visibleRange) {
+      // Restaurar el zoom del usuario
+      chartRef.current?.timeScale().setVisibleRange({
+        from: userZoomStateRef.current.visibleRange.from as Time,
+        to: userZoomStateRef.current.visibleRange.to as Time
+      });
+    }
   }, [candles, symbol, interval]);
 
   function openTradeMini(price:number) {
@@ -127,6 +232,12 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
           className={`px-3 py-1 rounded-md border text-xs ${armed? "bg-amber-600 text-white" : "bg-neutral-800 text-gray-200 border-white/10"}`}>
           {armed? "Click price…" : "Trade from Chart"}
         </button>
+      </div>
+      
+      {/* Indicadores de zoom y pan */}
+      <div className="absolute top-2 right-2 z-10 bg-gray-800/80 text-white text-xs px-2 py-1 rounded-md border border-gray-600 space-y-1">
+        <div><span className="text-gray-300">Zoom: </span><span className="text-yellow-400 font-mono">Ctrl + Scroll</span></div>
+        <div><span className="text-gray-300">Pan: </span><span className="text-blue-400 font-mono">Click + Drag</span></div>
       </div>
     </div>
   );
