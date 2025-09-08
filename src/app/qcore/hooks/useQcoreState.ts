@@ -249,3 +249,15 @@ export const useQcoreActions = () => useQcoreState(state => ({
   clearTimeline: state.clearTimeline,
   reset: state.reset
 }));
+
+// Habilita pasar a Live: activos seleccionados, config válida, WS ok y sin kill-switch
+export const useCanSwitchToLive = () =>
+  useQcoreState(s => {
+    const hasAssets = (s.assets?.length ?? 0) > 0;
+    const valid =
+      s.strategy === 'grid'
+        ? (s.grid.upper > s.grid.lower && s.grid.size > 0 && s.grid.stepPct > 0)
+        : (s.binary.amount > 0 && !!s.binary.expiry && !!s.binary.direction);
+    const wsOk = s.wsStatus === 'connected';
+    return hasAssets && valid && wsOk && !s.killSwitchActive;
+  });
