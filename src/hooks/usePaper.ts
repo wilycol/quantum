@@ -9,10 +9,22 @@ export function usePaper(lastPrice: number) {
   
   const unrealized = useMemo(() => markToMarket(state, safeLastPrice), [state, safeLastPrice]);
   
-  const equity = useMemo(() => 
-    state.cash + unrealized + (state.pos ? state.pos.avg * state.pos.qty : 0), 
-    [state, unrealized]
-  );
+  const equity = useMemo(() => {
+    // El equity debe ser el valor total de la cuenta, no solo el cash
+    // Si hay posición, el equity es: cash + valor actual de la posición
+    const positionValue = state.pos ? state.pos.qty * safeLastPrice : 0;
+    const calculatedEquity = Math.max(0, state.cash + positionValue + unrealized);
+    
+    console.log('[usePaper] Equity calculation:', {
+      cash: state.cash,
+      positionValue,
+      unrealized,
+      calculatedEquity,
+      position: state.pos
+    });
+    
+    return calculatedEquity;
+  }, [state, safeLastPrice, unrealized]);
   
   const submit = useCallback((side: Side, qty: number) => {
     if (!safeLastPrice || safeLastPrice <= 0) {
