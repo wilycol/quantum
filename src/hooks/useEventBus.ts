@@ -68,6 +68,11 @@ export function useEventBus(config?: {
   useEffect(() => {
     const eventBus = getEventBus({
       url: config?.url || (() => {
+        // Check for Next.js compatible environment variable
+        if (process.env.NEXT_PUBLIC_WS_URL) {
+          return process.env.NEXT_PUBLIC_WS_URL;
+        }
+        
         // Check for Vite environment variable
         if (import.meta.env.VITE_WS_URL) {
           return import.meta.env.VITE_WS_URL;

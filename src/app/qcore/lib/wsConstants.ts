@@ -231,13 +231,18 @@ export function buildWsUrl(baseUrl: string, path: string = '/qcore'): string {
 
 // Default WebSocket URL
 export const DEFAULT_WS_URL = (() => {
+  // Check for Next.js compatible environment variable
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    return process.env.NEXT_PUBLIC_WS_URL;
+  }
+  
   // Check for Vite environment variable
   if (import.meta.env.VITE_WS_URL) {
     return import.meta.env.VITE_WS_URL;
   }
   
   // Default to localhost for development
-  return 'ws://localhost:8080/qcore';
+  return 'ws://localhost:8080/ws';
 })();
 
 // Event subscription helpers
