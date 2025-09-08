@@ -102,8 +102,8 @@ export default function VolumePane({ apiRef }: { apiRef?: React.MutableRefObject
     }));
     seriesRef.current.setData(data);
     
-    // Auto-ajustar al contenido
-    chartRef.current?.timeScale().fitContent();
+    // El volumen se sincroniza con el precio, no necesita auto-ajuste independiente
+    // La sincronización se maneja en ChartArea
   }, [candles, symbol, interval]);
 
   return (
