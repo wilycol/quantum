@@ -7,6 +7,8 @@ export function usePaper(lastPrice: number) {
   // Validar lastPrice
   const safeLastPrice = lastPrice && isFinite(lastPrice) ? lastPrice : 0;
   
+  console.log('[usePaper] Hook called with:', { lastPrice, safeLastPrice, state });
+  
   const unrealized = useMemo(() => markToMarket(state, safeLastPrice), [state, safeLastPrice]);
   
   const equity = useMemo(() => {

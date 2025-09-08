@@ -4,7 +4,7 @@ import { ModeSwitch } from './ModeSwitch';
 import { AppMode } from '../state/app';
 import { getKlinesLive, getKlinesMock } from '../services/market';
 import { Candle } from '../types/candle';
-import { usePaper } from '../hooks/usePaper';
+import { useAccountStore } from '../stores/account';
 import { placeOrderBinance, getBalances } from '../services/api';
 import { IACoachPanel } from './IACoachPanel';
 import ChartArea from './ChartArea';
@@ -28,8 +28,10 @@ export default function TradingManualView() {
   const [candles, setCandles] = useState<Candle[]>([]);
   const lastClose = candles && candles.length > 0 && candles[candles.length - 1]?.c ? candles[candles.length - 1].c : 0;
 
-  // ---- paper
-  const { state, unrealized, equity, submit, reset } = usePaper(lastClose);
+  // ---- account state
+  const { equity, cash, pos, unrealized, onOrder, resetPaper } = useAccountStore();
+  
+  console.log('[TradingManualView] Account state:', { lastClose, equity, cash, pos, unrealized });
 
   // ---- exec
   const [qty, setQty] = useState(0.001);
@@ -82,7 +84,7 @@ export default function TradingManualView() {
 
   // Listener para órdenes desde el chart
   useEffect(() => {
-    const onOrder = (e: Event) => {
+    const handleOrder = (e: Event) => {
       const { side, symbol, price, qty } = (e as CustomEvent).detail;
       console.log('[TradingManualView] Order received:', { side, symbol, price, qty, equity });
       
@@ -111,8 +113,8 @@ export default function TradingManualView() {
       
       // Ejecutar orden en paper mode
       try {
-        console.log('[TradingManualView] Executing paper trade:', { side, qty });
-        submit(side, qty);
+        console.log('[TradingManualView] Executing paper trade:', { side, qty, price, symbol });
+        onOrder(side, symbol, price, qty);
         setMsg(`PAPER ${side.toUpperCase()} ${qty} @ ${fmt(price)} (desde chart)`);
       } catch (error: any) {
         console.error('[TradingManualView] Paper trade error:', error);
@@ -120,9 +122,9 @@ export default function TradingManualView() {
       }
     };
     
-    window.addEventListener("qt:order", onOrder as EventListener);
-    return () => window.removeEventListener("qt:order", onOrder as EventListener);
-  }, [equity, submit]);
+    window.addEventListener("qt:order", handleOrder as EventListener);
+    return () => window.removeEventListener("qt:order", handleOrder as EventListener);
+  }, [equity, onOrder]);
 
   // guardrails 5% equity con estado de riesgo
   const riskStatus = useMemo(() => {
@@ -193,7 +195,7 @@ export default function TradingManualView() {
       // 5. Ejecutar orden
       if (!canReal) {
         // Paper
-        submit(side, orderQty);
+        onOrder(side, selectedSymbol, currentPrice, orderQty);
         setMsg(`PAPER ${side.toUpperCase()} ${orderQty} @ ${fmt(currentPrice)} (${currentRiskStatus.riskPercentage.toFixed(1)}% riesgo)${tp ? ` TP:${fmt(tp)}` : ''}${sl ? ` SL:${fmt(sl)}` : ''}`);
         return;
       }
@@ -294,15 +296,15 @@ export default function TradingManualView() {
         {/* Posiciones y mensajes */}
         <Card className="bg-neutral-900 border-neutral-700 p-3">
           <h3 className="text-sm font-semibold text-white mb-2">Posiciones</h3>
-          {state.pos ? (
+          {pos ? (
             <div className="space-y-2">
               <div className="bg-neutral-800 p-2 rounded text-xs">
                 <div className="flex justify-between">
-                  <span className="text-white">{state.pos.side.toUpperCase()}</span>
-                  <span className="text-white">{state.pos.qty}</span>
+                  <span className="text-white">{pos.qty > 0 ? 'LONG' : 'SHORT'}</span>
+                  <span className="text-white">{pos.qty}</span>
                 </div>
                 <div className="text-xs text-gray-400">
-                  Entry: {fmt(state.pos.avg)} | P&L: <span className={unrealized >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{fmt(unrealized)}</span>
+                  Entry: {fmt(pos.avg)} | P&L: <span className={unrealized >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{fmt(unrealized)}</span>
                 </div>
               </div>
             </div>
@@ -317,7 +319,7 @@ export default function TradingManualView() {
           )}
           
           <button
-            onClick={reset}
+            onClick={resetPaper}
             className="mt-2 w-full px-2 py-1 bg-neutral-700 text-white rounded hover:bg-neutral-600 text-xs"
           >
             Reset Paper
