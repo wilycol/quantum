@@ -6,6 +6,8 @@ import { getAllowedRiskPct, getRiskConfig } from '../config/risk';
 import { maxQtyByRisk, clampQtyToMax } from '../lib/risk';
 import { toNum, fmt } from '../lib/num';
 import { useToast } from './ui/Toast';
+import { validateTPSL } from '../utils/riskRules';
+import RRBadge from './RRBadge';
 import Tip from './ui/Tip';
 import { GLOSS } from '../content/glossary';
 import QtyHelp from './help/QtyHelp';
@@ -28,6 +30,7 @@ export default function ExecutionPanel() {
   const [qty, setQty] = useState<number>(0.001);
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
+  const [entryPrice, setEntryPrice] = useState<number>(0);
   
   // Calcular cantidad máxima permitida (siempre numérico)
   const equityNum = toNum(equity);
@@ -42,9 +45,29 @@ export default function ExecutionPanel() {
     }
   }, [equityNum, lastPrice, riskConfig.allowedPct]);
   
+  // Actualizar precio de entrada cuando cambie el precio actual
+  useEffect(() => {
+    if (Number.isFinite(lastPrice) && lastPrice > 0) {
+      setEntryPrice(lastPrice);
+    }
+  }, [lastPrice]);
+  
   // Validaciones para botones blindados
   const qtyInvalid = !Number.isFinite(qty) || qty <= 0;
   const overMax = qty > maxQty;
+  
+  // Validaciones TP/SL
+  const slNum = toNum(stopLoss);
+  const tpNum = toNum(takeProfit);
+  const entryNum = toNum(entryPrice);
+  
+  // Determinar lado de la operación (asumimos long por defecto, se puede mejorar)
+  const side = 'long' as const;
+  
+  // Validar TP/SL si están definidos
+  const tpSlValidation = (slNum > 0 && tpNum > 0 && entryNum > 0) 
+    ? validateTPSL({ side, entry: entryNum, tp: tpNum, sl: slNum, price: lastPrice })
+    : { ok: true };
 
   const handleOrder = async (side: 'buy' | 'sell') => {
     // Validaciones blindadas
@@ -61,6 +84,16 @@ export default function ExecutionPanel() {
     // Obtener el precio actual de la última vela
     if (!Number.isFinite(lastPrice) || lastPrice <= 0) {
       toast("Precio no disponible", 'error');
+      return;
+    }
+    
+    // Validar TP/SL si están definidos
+    if (!tpSlValidation.ok) {
+      if (tpSlValidation.error) {
+        toast(tpSlValidation.error, 'error');
+      } else if (tpSlValidation.warn) {
+        toast(tpSlValidation.warn, 'warning');
+      }
       return;
     }
 
@@ -161,9 +194,9 @@ export default function ExecutionPanel() {
           </div>
         </div>
 
-        {/* Stop Loss */}
+        {/* Stop Loss with Quick Chips */}
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1 text-xs text-gray-400">
+          <label className="flex items-center gap-1 text-xs text-gray-200">
             SL: <SLHelp />
           </label>
           <input
@@ -175,11 +208,25 @@ export default function ExecutionPanel() {
             className="w-16 bg-neutral-800 text-gray-100 px-2 py-1 rounded text-xs outline-none border border-white/10"
             placeholder="SL"
           />
+          <div className="flex gap-1">
+            <button 
+              onClick={() => setStopLoss((entryNum - lastPrice * 0.005).toFixed(2))}
+              className="px-2 py-1 rounded text-xs bg-neutral-700 text-gray-300 hover:bg-neutral-600 border border-white/10"
+            >
+              −0.5%
+            </button>
+            <button 
+              onClick={() => setStopLoss((entryNum - lastPrice * 0.010).toFixed(2))}
+              className="px-2 py-1 rounded text-xs bg-neutral-700 text-gray-300 hover:bg-neutral-600 border border-white/10"
+            >
+              −1%
+            </button>
+          </div>
         </div>
 
-        {/* Take Profit */}
+        {/* Take Profit with Quick Chips */}
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1 text-xs text-gray-400">
+          <label className="flex items-center gap-1 text-xs text-gray-200">
             TP: <TPHelp />
           </label>
           <input
@@ -191,7 +238,34 @@ export default function ExecutionPanel() {
             className="w-16 bg-neutral-800 text-gray-100 px-2 py-1 rounded text-xs outline-none border border-white/10"
             placeholder="TP"
           />
+          <div className="flex gap-1">
+            <button 
+              onClick={() => setTakeProfit((entryNum + lastPrice * 0.010).toFixed(2))}
+              className="px-2 py-1 rounded text-xs bg-neutral-700 text-gray-300 hover:bg-neutral-600 border border-white/10"
+            >
+              +1%
+            </button>
+            <button 
+              onClick={() => setTakeProfit((entryNum + lastPrice * 0.020).toFixed(2))}
+              className="px-2 py-1 rounded text-xs bg-neutral-700 text-gray-300 hover:bg-neutral-600 border border-white/10"
+            >
+              +2%
+            </button>
+          </div>
         </div>
+
+        {/* R:R Badge */}
+        {slNum > 0 && tpNum > 0 && entryNum > 0 && (
+          <div className="flex items-center">
+            <RRBadge 
+              side={side} 
+              entry={entryNum} 
+              tp={tpNum} 
+              sl={slNum}
+              className="bg-neutral-800 border border-white/10"
+            />
+          </div>
+        )}
 
         {/* Action Buttons - Blindados */}
         <div className="flex items-center gap-2">
