@@ -1,4 +1,4 @@
-import { useAccountStore } from "@/stores/account";
+import { useAccountStore } from "../stores/account";
 
 export default function AccountInfoCard() {
   const { equity, cash, pos, unrealized, resetPaper } = useAccountStore();

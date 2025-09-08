@@ -1,5 +1,5 @@
-import { useAccountStore } from "@/stores/account";
-import { useMarketStore } from "@/stores/market";
+import { useAccountStore } from "../stores/account";
+import { useMarketStore } from "../stores/market";
 
 export default function InfoDock() {
   const { pos, unrealized } = useAccountStore();
