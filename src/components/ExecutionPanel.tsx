@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMarketStore } from '../stores/market';
+import { usePriceFeed } from '../hooks/usePriceFeed';
 import Tip from './ui/Tip';
 import { GLOSS } from '../content/glossary';
 import QtyHelp from './help/QtyHelp';
@@ -8,6 +9,8 @@ import TPHelp from './help/TPHelp';
 
 export default function ExecutionPanel() {
   const symbol = useMarketStore(s => s.symbol);
+  const interval = useMarketStore(s => s.interval);
+  const { candles } = usePriceFeed(symbol, interval);
   const [qty, setQty] = useState('0.001');
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
@@ -16,9 +19,17 @@ export default function ExecutionPanel() {
     const quantity = parseFloat(qty) || 0;
     if (quantity <= 0) return;
 
+    // Obtener el precio actual de la última vela
+    const currentPrice = candles && candles.length > 0 && candles[candles.length - 1]?.c;
+    if (!currentPrice || !isFinite(currentPrice)) {
+      console.error('No valid price available for order');
+      return;
+    }
+
     const orderData = {
       side,
       symbol,
+      price: currentPrice,
       qty: quantity,
       stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
       takeProfit: takeProfit ? parseFloat(takeProfit) : undefined
