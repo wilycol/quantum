@@ -25,8 +25,12 @@ export default function VolumePane({ apiRef }: { apiRef?: React.MutableRefObject
         borderVisible:false, 
         timeVisible:true, 
         minBarSpacing: 3,
-        shiftVisibleRangeOnNewBar: false,
-        lockVisibleTimeRangeOnResize: false
+        shiftVisibleRangeOnNewBar: true,
+        lockVisibleTimeRangeOnResize: false,
+        rightOffset: 0,
+        barSpacing: 3,
+        fixLeftEdge: false,
+        fixRightEdge: false
       },
       handleScroll: false,
       handleScale: false,
@@ -97,6 +101,9 @@ export default function VolumePane({ apiRef }: { apiRef?: React.MutableRefObject
       color: i===0 ? "rgba(100,116,139,0.8)" : (c.c >= candles[i-1].c ? "rgba(34,197,94,0.8)" : "rgba(239,68,68,0.8)")
     }));
     seriesRef.current.setData(data);
+    
+    // Auto-ajustar al contenido
+    chartRef.current?.timeScale().fitContent();
   }, [candles, symbol, interval]);
 
   return (

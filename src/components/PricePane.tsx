@@ -46,8 +46,12 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
         borderVisible: false, 
         timeVisible: true, 
         minBarSpacing: 3,
-        shiftVisibleRangeOnNewBar: false,
-        lockVisibleTimeRangeOnResize: false
+        shiftVisibleRangeOnNewBar: true,
+        lockVisibleTimeRangeOnResize: false,
+        rightOffset: 0,
+        barSpacing: 3,
+        fixLeftEdge: false,
+        fixRightEdge: false
       },
       handleScroll: false,
       handleScale: false,
@@ -151,21 +155,18 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
     };
   }, []);
 
+  // Resetear zoom cuando cambie el símbolo o timeframe
+  useEffect(() => {
+    userZoomStateRef.current = { visibleRange: null, isUserZoomed: false };
+  }, [symbol, interval]);
+
   useEffect(() => {
     if (!seriesRef.current || !candles.length) return;
     const data = candles.map(c=>({ time: Math.floor(c.t/1000) as Time, open:c.o, high:c.h, low:c.l, close:c.c }));
     seriesRef.current.setData(data);
     
-    // Solo hacer fitContent si el usuario no ha hecho zoom
-    if (!userZoomStateRef.current.isUserZoomed) {
-      chartRef.current?.timeScale().fitContent();
-    } else if (userZoomStateRef.current.visibleRange) {
-      // Restaurar el zoom del usuario
-      chartRef.current?.timeScale().setVisibleRange({
-        from: userZoomStateRef.current.visibleRange.from as Time,
-        to: userZoomStateRef.current.visibleRange.to as Time
-      });
-    }
+    // Auto-ajustar siempre al contenido
+    chartRef.current?.timeScale().fitContent();
   }, [candles, symbol, interval]);
 
   function openTradeMini(price:number) {
