@@ -12,7 +12,7 @@ import {
   useKPIs
 } from '../hooks/useQcoreState';
 import { useEventBus } from '../../../hooks/useEventBus';
-import QcoreCandleChart from './QcoreCandleChart';
+import { CandlesCore } from './CandlesCore';
 import { formatPrice } from '../lib/formatters';
 
 interface ChartPanelProps {
@@ -55,6 +55,48 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     }
   }
 
+  // Mock data generators
+  function generateMockCandles() {
+    const now = Date.now();
+    const candles = [];
+    
+    for (let i = 100; i >= 0; i--) {
+      const time = (now - i * 60000) / 1000; // 1 minute intervals
+      const basePrice = 50000 + Math.sin(i * 0.1) * 1000;
+      const open = basePrice + (Math.random() - 0.5) * 100;
+      const close = open + (Math.random() - 0.5) * 200;
+      const high = Math.max(open, close) + Math.random() * 50;
+      const low = Math.min(open, close) - Math.random() * 50;
+
+      candles.push({
+        time,
+        open,
+        high,
+        low,
+        close
+      });
+    }
+
+    return candles;
+  }
+
+  function generateMockVolume() {
+    const now = Date.now();
+    const volume = [];
+    
+    for (let i = 100; i >= 0; i--) {
+      const time = (now - i * 60000) / 1000;
+      const vol = Math.random() * 1000;
+
+      volume.push({
+        time,
+        value: vol
+      });
+    }
+
+    return volume;
+  }
+
   // Mini Market Watch - limited to active assets
   const marketWatchData = assets.slice(0, 5).map(asset => ({
     symbol: asset,
@@ -89,7 +131,18 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
       {/* Main Chart */}
       <div className="mb-4">
-        <QcoreCandleChart className="w-full" />
+        <CandlesCore
+          candles={generateMockCandles()}
+          volume={generateMockVolume()}
+          showVolume={volumeOn}
+          mode={strategy === 'grid' ? 'grid' : 'binary'}
+          gridCfg={strategy === 'grid' ? grid : null}
+          binaryCfg={strategy === 'binary' ? { 
+            strike: currentPrice, 
+            expiry: binary.expiry 
+          } : null}
+          onReady={() => console.log('[QCore] chart ready')}
+        />
       </div>
 
       {/* Strategy-specific Info */}
