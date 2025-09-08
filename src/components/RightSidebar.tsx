@@ -1,6 +1,8 @@
 import { useUiStore } from "../stores/ui";
 import { useMarketStore } from "../stores/market";
 import { useMarketWatch } from "../hooks/useMarketWatch";
+import SymbolSearch from "./SymbolSearch";
+import { useState } from "react";
 
 const SYMBOLS = ["BTCUSDT","ETHUSDT","BNBUSDT","ADAUSDT","SOLUSDT"];
 const TFS = ["1m","5m","15m","1h","4h","1d"];
@@ -12,6 +14,11 @@ export default function RightSidebar() {
   const interval = useMarketStore(s=>s.interval);
   const setInterval = useMarketStore(s=>s.setInterval);
   const marketData = useMarketWatch();
+  
+  // Estado para los símbolos seleccionados en el Market Watch
+  const [selectedSymbols, setSelectedSymbols] = useState<string[]>([
+    "BTCUSDT", "ETHUSDT", "BNBUSDT", "ADAUSDT", "SOLUSDT"
+  ]);
 
   // Helper para formatear precios
   const formatPrice = (price: number) => {
@@ -20,6 +27,9 @@ export default function RightSidebar() {
     return `$${price.toFixed(4)}`;
   };
 
+  // Filtrar marketData para mostrar solo los símbolos seleccionados
+  const filteredMarketData = marketData.filter(item => selectedSymbols.includes(item.symbol));
+
   return (
     <aside className={`transition-all duration-300 ${rightOpen? "w-80" : "w-0"} overflow-hidden`}>
       <div className="sticky top-2 space-y-3 p-2">
@@ -27,35 +37,45 @@ export default function RightSidebar() {
           {rightOpen ? "Ocultar panel" : "Mostrar panel"}
         </button>
 
-        {/* Market Watch - desplegable simple */}
+        {/* Market Watch - con búsqueda de símbolos */}
         <details open className="bg-neutral-900 border border-white/10 rounded-xl">
           <summary className="cursor-pointer px-3 py-2 text-gray-100">Market Watch</summary>
-          <ul className="p-2 space-y-1">
-            {marketData.map(item => (
-              <li key={item.symbol}>
-                <button
-                  onClick={()=> setSymbol(item.symbol)}
-                  className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
-                    item.symbol === symbol 
-                      ? "bg-yellow-500/10 border border-yellow-500/40 text-yellow-200" 
-                      : "bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700"
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-sm">{item.symbol}</span>
-                      <span className="text-xs text-gray-400">{formatPrice(item.price)}</span>
+          <div className="p-2 space-y-3">
+            {/* Búsqueda de símbolos */}
+            <SymbolSearch
+              selectedSymbols={selectedSymbols}
+              onSymbolsChange={setSelectedSymbols}
+              maxSymbols={5}
+            />
+            
+            {/* Lista de símbolos seleccionados */}
+            <ul className="space-y-1">
+              {filteredMarketData.map(item => (
+                <li key={item.symbol}>
+                  <button
+                    onClick={()=> setSymbol(item.symbol)}
+                    className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                      item.symbol === symbol 
+                        ? "bg-yellow-500/10 border border-yellow-500/40 text-yellow-200" 
+                        : "bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700"
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-sm">{item.symbol}</span>
+                        <span className="text-xs text-gray-400">{formatPrice(item.price)}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-sm font-semibold ${item.changeColor}`}>
+                          {item.change}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className={`text-sm font-semibold ${item.changeColor}`}>
-                        {item.change}
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </details>
 
         {/* Timeframes */}

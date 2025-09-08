@@ -10,6 +10,7 @@ import { IACoachPanel } from './IACoachPanel';
 import ChartArea from './ChartArea';
 import RightSidebar from './RightSidebar';
 import Card from './ui/Card';
+import CustomDropdown from './ui/CustomDropdown';
 import { maxQtyByRisk, ensureQtyWithinRisk, getRiskStatus, validateSymbol } from '../lib/risk';
 import { useUiStore } from '../stores/ui';
 
@@ -210,19 +211,58 @@ export default function TradingManualView() {
     } finally { setLoading(false); }
   }
 
+  // Opciones para el dropdown de modo
+  const modeOptions = [
+    { value: 'demo-full', label: 'Demo Full' },
+    { value: 'demo-hybrid', label: 'Demo Híbrido' },
+    { value: 'live-trading', label: 'Live Trading' }
+  ];
+
+  const getModeValue = (mode: AppMode) => {
+    switch (mode) {
+      case 'demo-full': return 'demo-full';
+      case 'demo-hybrid': return 'demo-hybrid';
+      case 'live-trading': return 'live-trading';
+      default: return 'demo-hybrid';
+    }
+  };
+
+  const handleModeChange = (value: string) => {
+    setAppMode(value as AppMode);
+  };
+
   return (
     <div className="px-4 py-3">
-      {/* Header: selector de modo */}
+      {/* Header reorganizado */}
       <div className="mb-4">
-        <ModeSwitch onChange={setAppMode} />
-      </div>
+        <div className="flex items-center justify-between gap-4">
+          {/* Selector de modo */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-400">Modo:</span>
+            <CustomDropdown
+              options={modeOptions}
+              value={getModeValue(appMode)}
+              onChange={handleModeChange}
+              className="w-40"
+            />
+          </div>
 
-      {/* barra de acciones rápidas */}
-      <div className="flex items-center gap-2 mb-2">
-        <button onClick={toggleRight}
-          className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10">
-          {rightOpen ? "Ocultar panel" : "Mostrar panel"}
-        </button>
+          {/* Toggles en columnas */}
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={toggleRight}
+              className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
+            >
+              {rightOpen ? "Ocultar panel" : "Mostrar panel"}
+            </button>
+            <button 
+              onClick={() => {/* TODO: implementar toggle de volumen */}}
+              className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
+            >
+              Volumen ON
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-12 gap-4">
