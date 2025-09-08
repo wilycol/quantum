@@ -1,7 +1,8 @@
 // src/app/qcore/hooks/useWebsocket.ts
-// WebSocket hook for QuantumCore v2
+// WebSocket hook for QuantumCore v2 with backoff and cleanup
 
 import { useEffect, useRef, useCallback } from 'react';
+import { ENV, canConnect } from '../../lib/env';
 import { 
   WsEvent, 
   WSMessage, 
@@ -39,7 +40,7 @@ interface UseWebsocketReturn {
 
 export function useWebsocket(options: UseWebsocketOptions = {}): UseWebsocketReturn {
   const {
-    url = DEFAULT_WS_URL,
+    url = ENV.WS_URL || DEFAULT_WS_URL,
     autoConnect = true,
     debug = false,
     onEvent,
@@ -231,6 +232,13 @@ export function useWebsocket(options: UseWebsocketOptions = {}): UseWebsocketRet
 
   // Connect to WebSocket
   const connect = useCallback(() => {
+    if (!canConnect(url)) {
+      log('Cannot connect - URL not safe', 'WARN');
+      errorRef.current = 'Connection not allowed';
+      setWsStatus('disconnected');
+      return;
+    }
+    
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       log('Already connected', 'INFO');
       return;

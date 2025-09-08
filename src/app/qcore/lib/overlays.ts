@@ -2,19 +2,7 @@
 // Grid/strike/SLTP helpers for QuantumCore charts
 
 import { IChartApi } from 'lightweight-charts';
-
-export interface GridConfig {
-  size: number;
-  lower: number;
-  upper: number;
-  stepPct: number;
-}
-
-export interface BinaryConfig {
-  strike?: number;
-  expiry?: number;
-  direction?: 'CALL' | 'PUT';
-}
+import { GridConfig, BinaryConfig } from './types';
 
 export interface SLTPConfig {
   stopLoss?: number;
@@ -22,17 +10,22 @@ export interface SLTPConfig {
 }
 
 // Grid overlay helpers
+export function buildGridLines({ lower, upper, size }: { lower: number; upper: number; size: number }): number[] {
+  if (!(upper > lower) || size <= 0) return [];
+  const step = (upper - lower) / size;
+  return Array.from({ length: size + 1 }, (_, i) => lower + i * step);
+}
+
 export function createGridOverlay(chart: IChartApi, config: GridConfig): void {
   if (!isValidGridConfig(config)) {
     console.warn('[Overlays] Invalid grid config:', config);
     return;
   }
 
-  const stepSize = (config.upper - config.lower) / config.size;
+  const gridLines = buildGridLines(config);
   
-  for (let i = 0; i <= config.size; i++) {
-    const price = config.lower + (stepSize * i);
-    const isBoundary = i === 0 || i === config.size;
+  gridLines.forEach((price, i) => {
+    const isBoundary = i === 0 || i === gridLines.length - 1;
     
     chart.addPriceLine({
       price: price,
@@ -42,10 +35,14 @@ export function createGridOverlay(chart: IChartApi, config: GridConfig): void {
       axisLabelVisible: true,
       title: `Grid ${i}`
     });
-  }
+  });
 }
 
 // Binary strike line helper
+export function buildStrikeLine(strike: number | undefined): { price: number }[] {
+  return Number.isFinite(strike) ? [{ price: strike! }] : [];
+}
+
 export function createStrikeOverlay(chart: IChartApi, strike: number): void {
   if (!Number.isFinite(strike) || strike <= 0) {
     console.warn('[Overlays] Invalid strike price:', strike);

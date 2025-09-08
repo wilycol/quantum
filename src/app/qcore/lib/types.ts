@@ -1,17 +1,9 @@
 // src/app/qcore/lib/types.ts
-// QuantumCore v2 Types and Interfaces
+// Type definitions for QuantumCore v2
 
 export type Broker = 'binance' | 'zaffer';
 export type Mode = 'shadow' | 'live';
 export type Strategy = 'grid' | 'binary';
-export type BinaryDirection = 'CALL' | 'PUT';
-export type BinaryResult = 'WIN' | 'LOSE' | 'PENDING';
-export type WsStatus = 'disconnected' | 'connecting' | 'connected';
-
-export interface RiskConfig {
-  maxOrderPct: number;
-  dailyStopPct?: number;
-}
 
 export interface GridConfig {
   size: number;
@@ -23,7 +15,12 @@ export interface GridConfig {
 export interface BinaryConfig {
   amount: number;
   expiry: number;
-  direction: BinaryDirection;
+  direction: 'CALL' | 'PUT';
+}
+
+export interface RiskConfig {
+  maxOrderPct: number;
+  dailyStopPct: number;
 }
 
 export interface KPIs {
@@ -34,91 +31,36 @@ export interface KPIs {
   winRate: number;
 }
 
-export interface ConnectorStatus {
-  binance: boolean;
-  zaffer: boolean;
-}
-
 export interface QcoreState {
-  // Core configuration
+  // Core settings
   broker: Broker;
   strategy: Strategy;
   mode: Mode;
-  
-  // Assets and display
   assets: string[];
   volumeOn: boolean;
   
-  // Configuration objects
-  risk: RiskConfig;
+  // Configurations
   grid: GridConfig;
   binary: BinaryConfig;
+  risk: RiskConfig;
   
-  // State tracking
+  // KPIs
   kpis: KPIs;
-  connected: ConnectorStatus;
-  wsStatus: WsStatus;
   
-  // UI state
+  // WebSocket status
+  wsStatus: 'disconnected' | 'connecting' | 'connected';
+  connected: boolean;
+  
+  // Kill switch
   killSwitchActive: boolean;
-  showModeConfirmModal: boolean;
+  
+  // Logs
+  logs: LogEntry[];
+  
+  // Timeline
+  timeline: TimelineEntry[];
 }
 
-// WebSocket Event Types
-export interface PreviewEvent {
-  t: 'preview';
-  broker: Broker;
-  pair?: string;        // for spot trading
-  asset?: string;       // for binary trading
-  side?: 'BUY' | 'SELL'; // for spot
-  dir?: BinaryDirection; // for binary
-  price?: number;
-  strike?: number;
-  sl?: number;
-  tp?: number;
-  rr?: number;
-  conf?: number;
-  ts: number;
-}
-
-export interface ExecutedEvent {
-  t: 'executed' | 'binary_executed';
-  orderId?: string;
-  ticketId?: string;
-  pair?: string;
-  asset?: string;
-  side?: 'BUY' | 'SELL';
-  dir?: BinaryDirection;
-  fillPrice?: number;
-  amount?: number;
-  payout?: number;
-  pnl?: number;
-  net?: number;
-  result?: BinaryResult;
-  ts: number;
-}
-
-export type WsEvent = PreviewEvent | ExecutedEvent;
-
-// Chart overlay types
-export interface ChartOverlay {
-  id: string;
-  type: 'grid' | 'sl' | 'tp' | 'strike' | 'countdown';
-  data: any;
-  visible: boolean;
-}
-
-export interface ChartMarker {
-  id: string;
-  type: 'preview' | 'executed' | 'cancel';
-  time: number;
-  price: number;
-  side?: 'BUY' | 'SELL';
-  direction?: BinaryDirection;
-  data: any;
-}
-
-// Log entry types
 export interface LogEntry {
   id: string;
   timestamp: number;
@@ -127,94 +69,110 @@ export interface LogEntry {
   data?: any;
 }
 
-// IA Coach types
-export interface CoachMessage {
+export interface TimelineEntry {
   id: string;
   timestamp: number;
-  message: string;
-  confidence: number;
-  reactionTime?: number;
-  nextHintIn?: number;
+  type: 'preview' | 'executed' | 'binary_preview' | 'binary_executed';
+  data: any;
+  pnl?: number;
 }
 
-// API Response types
-export interface HealthResponse {
-  status: 'ok' | 'error';
-  latency?: number;
-  error?: string;
+// WebSocket event types
+export interface WsEvent {
+  t: string;
+  ts: number;
+  [key: string]: any;
 }
 
-export interface ConnectResponse {
-  success: boolean;
-  message: string;
-  data?: any;
-}
-
-// Form validation types
-export interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-}
-
-// Asset configuration
-export interface AssetConfig {
-  symbol: string;
-  name: string;
+export interface PreviewEvent extends WsEvent {
+  t: 'preview';
   broker: Broker;
-  type: 'spot' | 'binary';
-  minAmount?: number;
-  maxAmount?: number;
-  stepSize?: number;
+  pair: string;
+  side: 'BUY' | 'SELL';
+  price: number;
+  sl?: number;
+  tp?: number;
+  rr?: number;
+  conf: number;
 }
 
-// Default configurations
-export const DEFAULT_RISK_CONFIG: RiskConfig = {
-  maxOrderPct: 0.05,
-  dailyStopPct: 0.1
-};
+export interface ExecutedEvent extends WsEvent {
+  t: 'executed';
+  orderId: string;
+  pair: string;
+  side: 'BUY' | 'SELL';
+  fillPrice: number;
+  qty: number;
+  sl?: number;
+  tp?: number;
+  pnl?: number;
+}
 
-export const DEFAULT_GRID_CONFIG: GridConfig = {
-  size: 7,
-  lower: 11000,
-  upper: 11400,
-  stepPct: 0.4
-};
+export interface BinaryPreviewEvent extends WsEvent {
+  t: 'binary_preview';
+  asset: string;
+  dir: 'CALL' | 'PUT';
+  strike: number;
+  expiry: number;
+  amount: number;
+  payout: number;
+  conf: number;
+}
 
-export const DEFAULT_BINARY_CONFIG: BinaryConfig = {
-  amount: 50,
-  expiry: 60,
-  direction: 'CALL'
-};
+export interface BinaryExecutedEvent extends WsEvent {
+  t: 'binary_executed';
+  ticketId: string;
+  result: 'WIN' | 'LOSE' | 'PENDING';
+  amount: number;
+  payout: number;
+  net: number;
+}
 
-export const DEFAULT_KPIS: KPIs = {
-  elapsed: 0,
-  balance: 10000,
-  pnl: 0,
-  trades: 0,
-  winRate: 0
-};
+// Chart types
+export interface Candle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
 
-// Asset lists by broker
-export const BINANCE_ASSETS: AssetConfig[] = [
-  { symbol: 'BTCUSDT', name: 'Bitcoin', broker: 'binance', type: 'spot' },
-  { symbol: 'ETHUSDT', name: 'Ethereum', broker: 'binance', type: 'spot' },
-  { symbol: 'BNBUSDT', name: 'BNB', broker: 'binance', type: 'spot' },
-  { symbol: 'ADAUSDT', name: 'Cardano', broker: 'binance', type: 'spot' },
-  { symbol: 'SOLUSDT', name: 'Solana', broker: 'binance', type: 'spot' }
-];
+export interface Volume {
+  time: number;
+  value: number;
+}
 
-export const ZAFFER_ASSETS: AssetConfig[] = [
-  { symbol: 'BTCUSD', name: 'Bitcoin Binary', broker: 'zaffer', type: 'binary' },
-  { symbol: 'ETHUSD', name: 'Ethereum Binary', broker: 'zaffer', type: 'binary' },
-  { symbol: 'EURUSD', name: 'EUR/USD Binary', broker: 'zaffer', type: 'binary' },
-  { symbol: 'GBPUSD', name: 'GBP/USD Binary', broker: 'zaffer', type: 'binary' }
-];
+// Validation helpers
+export function isValidGridConfig(config: GridConfig): boolean {
+  return (
+    Number.isFinite(config.size) &&
+    config.size > 0 &&
+    Number.isFinite(config.lower) &&
+    Number.isFinite(config.upper) &&
+    config.upper > config.lower &&
+    Number.isFinite(config.stepPct) &&
+    config.stepPct > 0 &&
+    config.stepPct <= 1
+  );
+}
 
-// Binary expiry options
-export const BINARY_EXPIRY_OPTIONS = [
-  { value: 30, label: '30s' },
-  { value: 60, label: '1m' },
-  { value: 120, label: '2m' },
-  { value: 300, label: '5m' },
-  { value: 600, label: '10m' }
-];
+export function isValidBinaryConfig(config: BinaryConfig): boolean {
+  return (
+    Number.isFinite(config.amount) &&
+    config.amount > 0 &&
+    Number.isFinite(config.expiry) &&
+    config.expiry > 0 &&
+    (config.direction === 'CALL' || config.direction === 'PUT')
+  );
+}
+
+export function isValidRiskConfig(config: RiskConfig): boolean {
+  return (
+    Number.isFinite(config.maxOrderPct) &&
+    config.maxOrderPct > 0 &&
+    config.maxOrderPct <= 100 &&
+    Number.isFinite(config.dailyStopPct) &&
+    config.dailyStopPct > 0 &&
+    config.dailyStopPct <= 100
+  );
+}

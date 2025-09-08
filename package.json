@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "ws-mock": "node ws-mock.mjs"
+    "ws-mock": "node ws-mock.mjs",
+    "mock:ws": "node ws-mock.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.12.0",

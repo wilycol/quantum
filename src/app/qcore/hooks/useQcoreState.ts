@@ -1,205 +1,232 @@
 // src/app/qcore/hooks/useQcoreState.ts
-// Global state management for QuantumCore v2 using Zustand
+// Zustand store for QuantumCore v2 state management
 
 import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
 import { 
   QcoreState, 
   Broker, 
+  Strategy, 
   Mode, 
-  Strategy,
-  DEFAULT_RISK_CONFIG,
-  DEFAULT_GRID_CONFIG,
-  DEFAULT_BINARY_CONFIG,
-  DEFAULT_KPIS,
-  BINANCE_ASSETS,
-  ZAFFER_ASSETS
+  GridConfig, 
+  BinaryConfig, 
+  RiskConfig, 
+  KPIs,
+  LogEntry,
+  TimelineEntry,
+  isValidGridConfig,
+  isValidBinaryConfig,
+  isValidRiskConfig
 } from '../lib/types';
-
-// State interface with actions
-interface QcoreActions {
-  // Broker and strategy management
-  setBroker: (broker: Broker) => void;
-  setStrategy: (strategy: Strategy) => void;
-  setMode: (mode: Mode) => void;
-  
-  // Asset management
-  setAssets: (assets: string[]) => void;
-  addAsset: (asset: string) => void;
-  removeAsset: (asset: string) => void;
-  
-  // Configuration management
-  setRisk: (risk: Partial<QcoreState['risk']>) => void;
-  setGrid: (grid: Partial<QcoreState['grid']>) => void;
-  setBinary: (binary: Partial<QcoreState['binary']>) => void;
-  
-  // Display settings
-  setVolumeOn: (volumeOn: boolean) => void;
-  
-  // Connection management
-  setConnected: (broker: Broker, connected: boolean) => void;
-  setWsStatus: (status: QcoreState['wsStatus']) => void;
-  
-  // KPIs management
-  setKPIs: (kpis: Partial<QcoreState['kpis']>) => void;
-  updateKPIs: (updates: Partial<QcoreState['kpis']>) => void;
-  
-  // UI state management
-  setKillSwitchActive: (active: boolean) => void;
-  setShowModeConfirmModal: (show: boolean) => void;
-  
-  // Reset functions
-  resetState: () => void;
-  resetKPIs: () => void;
-  resetConnections: () => void;
-}
-
-// Combined state and actions type
-type QcoreStore = QcoreState & QcoreActions;
 
 // Initial state
 const initialState: QcoreState = {
+  // Core settings
   broker: 'binance',
   strategy: 'grid',
   mode: 'shadow',
   assets: ['BTCUSDT', 'ETHUSDT'],
   volumeOn: true,
-  risk: DEFAULT_RISK_CONFIG,
-  grid: DEFAULT_GRID_CONFIG,
-  binary: DEFAULT_BINARY_CONFIG,
-  kpis: DEFAULT_KPIS,
-  connected: { binance: false, zaffer: false },
+  
+  // Configurations
+  grid: { size: 7, lower: 11000, upper: 11400, stepPct: 0.4 },
+  binary: { amount: 50, expiry: 60, direction: 'CALL' },
+  risk: { maxOrderPct: 5, dailyStopPct: 10 },
+  
+  // KPIs
+  kpis: { elapsed: 0, balance: 10000, pnl: 0, trades: 0, winRate: 0 },
+  
+  // WebSocket status
   wsStatus: 'disconnected',
+  connected: false,
+  
+  // Kill switch
   killSwitchActive: false,
-  showModeConfirmModal: false
+  
+  // Logs
+  logs: [],
+  
+  // Timeline
+  timeline: []
 };
 
-// Create the store
-export const useQcoreState = create<QcoreStore>()(
-  subscribeWithSelector((set, get) => ({
-    ...initialState,
-    
-    // Broker and strategy management
-    setBroker: (broker: Broker) => {
-      const strategy: Strategy = broker === 'binance' ? 'grid' : 'binary';
-      const availableAssets = broker === 'binance' 
-        ? BINANCE_ASSETS.map(a => a.symbol)
-        : ZAFFER_ASSETS.map(a => a.symbol);
-      
-      set({
-        broker,
-        strategy,
-        assets: availableAssets.slice(0, 2), // Keep first 2 assets
-        connected: { binance: false, zaffer: false } // Reset connections
-      });
-    },
-    
-    setStrategy: (strategy: Strategy) => {
-      set({ strategy });
-    },
-    
-    setMode: (mode: Mode) => {
-      set({ mode });
-    },
-    
-    // Asset management
-    setAssets: (assets: string[]) => {
-      set({ assets });
-    },
-    
-    addAsset: (asset: string) => {
-      const { assets } = get();
-      if (!assets.includes(asset) && assets.length < 5) {
-        set({ assets: [...assets, asset] });
-      }
-    },
-    
-    removeAsset: (asset: string) => {
-      const { assets } = get();
-      if (assets.length > 1) { // Keep at least one asset
-        set({ assets: assets.filter(a => a !== asset) });
-      }
-    },
-    
-    // Configuration management
-    setRisk: (risk) => {
-      set(state => ({ risk: { ...state.risk, ...risk } }));
-    },
-    
-    setGrid: (grid) => {
-      set(state => ({ grid: { ...state.grid, ...grid } }));
-    },
-    
-    setBinary: (binary) => {
-      set(state => ({ binary: { ...state.binary, ...binary } }));
-    },
-    
-    // Display settings
-    setVolumeOn: (volumeOn: boolean) => {
-      set({ volumeOn });
-    },
-    
-    // Connection management
-    setConnected: (broker: Broker, connected: boolean) => {
-      set(state => ({
-        connected: { ...state.connected, [broker]: connected }
-      }));
-    },
-    
-    setWsStatus: (wsStatus) => {
-      set({ wsStatus });
-    },
-    
-    // KPIs management
-    setKPIs: (kpis) => {
-      set(state => ({ kpis: { ...state.kpis, ...kpis } }));
-    },
-    
-    updateKPIs: (updates) => {
-      set(state => ({ kpis: { ...state.kpis, ...updates } }));
-    },
-    
-    // UI state management
-    setKillSwitchActive: (killSwitchActive: boolean) => {
-      set({ killSwitchActive });
-    },
-    
-    setShowModeConfirmModal: (showModeConfirmModal: boolean) => {
-      set({ showModeConfirmModal });
-    },
-    
-    // Reset functions
-    resetState: () => {
-      set(initialState);
-    },
-    
-    resetKPIs: () => {
-      set({ kpis: DEFAULT_KPIS });
-    },
-    
-    resetConnections: () => {
-      set({
-        connected: { binance: false, zaffer: false },
-        wsStatus: 'disconnected'
-      });
-    }
-  }))
-);
+// Store actions interface
+interface QcoreActions {
+  // Broker and strategy
+  setBroker: (broker: Broker) => void;
+  setStrategy: (strategy: Strategy) => void;
+  setMode: (mode: Mode) => void;
+  
+  // Assets and volume
+  setAssets: (assets: string[]) => void;
+  setVolumeOn: (volumeOn: boolean) => void;
+  
+  // Configurations
+  setGrid: (grid: GridConfig) => void;
+  setBinary: (binary: BinaryConfig) => void;
+  setRisk: (risk: RiskConfig) => void;
+  
+  // KPIs
+  updateKPIs: (updates: Partial<KPIs>) => void;
+  resetKPIs: () => void;
+  
+  // WebSocket
+  setWsStatus: (status: 'disconnected' | 'connecting' | 'connected') => void;
+  setConnected: (broker: Broker, connected: boolean) => void;
+  
+  // Kill switch
+  setKillSwitchActive: (active: boolean) => void;
+  
+  // Logs
+  addLog: (log: LogEntry) => void;
+  clearLogs: () => void;
+  
+  // Timeline
+  addTimelineEntry: (entry: TimelineEntry) => void;
+  clearTimeline: () => void;
+  
+  // Reset
+  reset: () => void;
+}
 
-// Selector hooks for specific parts of state
+// Create store
+export const useQcoreState = create<QcoreState & QcoreActions>((set, get) => ({
+  ...initialState,
+  
+  // Broker and strategy
+  setBroker: (broker: Broker) => {
+    const state = get();
+    
+    // Auto-set strategy based on broker
+    let strategy: Strategy = 'grid';
+    let assets = state.assets;
+    
+    if (broker === 'binance') {
+      strategy = 'grid';
+      assets = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT'];
+    } else if (broker === 'zaffer') {
+      strategy = 'binary';
+      assets = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD'];
+    }
+    
+    set({ 
+      broker, 
+      strategy, 
+      assets,
+      // Reset mode to shadow when changing broker
+      mode: 'shadow'
+    });
+  },
+  
+  setStrategy: (strategy: Strategy) => {
+    set({ strategy });
+  },
+  
+  setMode: (mode: Mode) => {
+    set({ mode });
+  },
+  
+  // Assets and volume
+  setAssets: (assets: string[]) => {
+    set({ assets });
+  },
+  
+  setVolumeOn: (volumeOn: boolean) => {
+    set({ volumeOn });
+  },
+  
+  // Configurations
+  setGrid: (grid: GridConfig) => {
+    if (isValidGridConfig(grid)) {
+      set({ grid });
+    } else {
+      console.warn('Invalid grid configuration:', grid);
+    }
+  },
+  
+  setBinary: (binary: BinaryConfig) => {
+    if (isValidBinaryConfig(binary)) {
+      set({ binary });
+    } else {
+      console.warn('Invalid binary configuration:', binary);
+    }
+  },
+  
+  setRisk: (risk: RiskConfig) => {
+    if (isValidRiskConfig(risk)) {
+      set({ risk });
+    } else {
+      console.warn('Invalid risk configuration:', risk);
+    }
+  },
+  
+  // KPIs
+  updateKPIs: (updates: Partial<KPIs>) => {
+    set(state => ({
+      kpis: { ...state.kpis, ...updates }
+    }));
+  },
+  
+  resetKPIs: () => {
+    set({ kpis: initialState.kpis });
+  },
+  
+  // WebSocket
+  setWsStatus: (wsStatus: 'disconnected' | 'connecting' | 'connected') => {
+    set({ wsStatus });
+  },
+  
+  setConnected: (broker: Broker, connected: boolean) => {
+    set({ connected });
+  },
+  
+  // Kill switch
+  setKillSwitchActive: (killSwitchActive: boolean) => {
+    set({ killSwitchActive });
+  },
+  
+  // Logs
+  addLog: (log: LogEntry) => {
+    set(state => ({
+      logs: [...state.logs.slice(-99), log] // Keep last 100 logs
+    }));
+  },
+  
+  clearLogs: () => {
+    set({ logs: [] });
+  },
+  
+  // Timeline
+  addTimelineEntry: (entry: TimelineEntry) => {
+    set(state => ({
+      timeline: [...state.timeline.slice(-49), entry] // Keep last 50 entries
+    }));
+  },
+  
+  clearTimeline: () => {
+    set({ timeline: [] });
+  },
+  
+  // Reset
+  reset: () => {
+    set(initialState);
+  }
+}));
+
+// Selector hooks for better performance
 export const useBroker = () => useQcoreState(state => state.broker);
 export const useStrategy = () => useQcoreState(state => state.strategy);
 export const useMode = () => useQcoreState(state => state.mode);
 export const useAssets = () => useQcoreState(state => state.assets);
 export const useVolumeOn = () => useQcoreState(state => state.volumeOn);
-export const useRisk = () => useQcoreState(state => state.risk);
 export const useGrid = () => useQcoreState(state => state.grid);
 export const useBinary = () => useQcoreState(state => state.binary);
+export const useRisk = () => useQcoreState(state => state.risk);
 export const useKPIs = () => useQcoreState(state => state.kpis);
-export const useConnected = () => useQcoreState(state => state.connected);
 export const useWsStatus = () => useQcoreState(state => state.wsStatus);
+export const useConnected = () => useQcoreState(state => state.connected);
 export const useKillSwitchActive = () => useQcoreState(state => state.killSwitchActive);
-export const useShowModeConfirmModal = () => useQcoreState(state => state.showModeConfirmModal);
+export const useLogs = () => useQcoreState(state => state.logs);
+export const useTimeline = () => useQcoreState(state => state.timeline);
 
 // Action hooks
 export const useQcoreActions = () => useQcoreState(state => ({
@@ -207,88 +234,18 @@ export const useQcoreActions = () => useQcoreState(state => ({
   setStrategy: state.setStrategy,
   setMode: state.setMode,
   setAssets: state.setAssets,
-  addAsset: state.addAsset,
-  removeAsset: state.removeAsset,
-  setRisk: state.setRisk,
+  setVolumeOn: state.setVolumeOn,
   setGrid: state.setGrid,
   setBinary: state.setBinary,
-  setVolumeOn: state.setVolumeOn,
-  setConnected: state.setConnected,
-  setWsStatus: state.setWsStatus,
-  setKPIs: state.setKPIs,
+  setRisk: state.setRisk,
   updateKPIs: state.updateKPIs,
-  setKillSwitchActive: state.setKillSwitchActive,
-  setShowModeConfirmModal: state.setShowModeConfirmModal,
-  resetState: state.resetState,
   resetKPIs: state.resetKPIs,
-  resetConnections: state.resetConnections
+  setWsStatus: state.setWsStatus,
+  setConnected: state.setConnected,
+  setKillSwitchActive: state.setKillSwitchActive,
+  addLog: state.addLog,
+  clearLogs: state.clearLogs,
+  addTimelineEntry: state.addTimelineEntry,
+  clearTimeline: state.clearTimeline,
+  reset: state.reset
 }));
-
-// Computed selectors
-export const useAvailableAssets = () => {
-  const broker = useBroker();
-  return broker === 'binance' ? BINANCE_ASSETS : ZAFFER_ASSETS;
-};
-
-export const useIsConnected = () => {
-  const broker = useBroker();
-  const connected = useConnected();
-  return connected[broker];
-};
-
-export const useCanStart = () => {
-  const broker = useBroker();
-  const connected = useConnected();
-  const killSwitchActive = useKillSwitchActive();
-  const assets = useAssets();
-  
-  return (
-    !killSwitchActive &&
-    connected[broker] &&
-    assets.length > 0
-  );
-};
-
-export const useCanSwitchToLive = () => {
-  const mode = useMode();
-  const broker = useBroker();
-  const connected = useConnected();
-  const risk = useRisk();
-  const assets = useAssets();
-  
-  return (
-    mode === 'shadow' &&
-    connected[broker] &&
-    risk.maxOrderPct <= 0.05 &&
-    assets.length > 0
-  );
-};
-
-// State subscription helpers
-export const subscribeToBroker = (callback: (broker: Broker) => void) => {
-  return useQcoreState.subscribe(
-    state => state.broker,
-    callback
-  );
-};
-
-export const subscribeToMode = (callback: (mode: Mode) => void) => {
-  return useQcoreState.subscribe(
-    state => state.mode,
-    callback
-  );
-};
-
-export const subscribeToKPIs = (callback: (kpis: QcoreState['kpis']) => void) => {
-  return useQcoreState.subscribe(
-    state => state.kpis,
-    callback
-  );
-};
-
-export const subscribeToConnections = (callback: (connected: QcoreState['connected']) => void) => {
-  return useQcoreState.subscribe(
-    state => state.connected,
-    callback
-  );
-};
