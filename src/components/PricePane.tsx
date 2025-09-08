@@ -233,9 +233,10 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
 
   // Calcular estadísticas básicas
   const stats = {
-    changePct: candles.length > 1 ? ((candles[candles.length-1].c - candles[0].c) / candles[0].c) * 100 : 0,
+    changePct: candles.length > 1 && candles[0]?.c && candles[candles.length-1]?.c ? 
+      ((candles[candles.length-1].c - candles[0].c) / candles[0].c) * 100 : 0,
     rsi: 50, // Placeholder - podrías calcular RSI real aquí
-    vol: candles.length > 0 ? candles[candles.length-1].v : 0
+    vol: candles.length > 0 && candles[candles.length-1]?.v ? candles[candles.length-1].v : 0
   };
 
   return (

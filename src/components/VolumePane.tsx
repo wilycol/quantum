@@ -98,7 +98,8 @@ export default function VolumePane({ apiRef }: { apiRef?: React.MutableRefObject
     const data = candles.map((c,i)=>({
       time: Math.floor(c.t/1000) as Time,
       value: c.v,
-      color: i===0 ? "rgba(100,116,139,0.8)" : (c.c >= candles[i-1].c ? "rgba(34,197,94,0.8)" : "rgba(239,68,68,0.8)")
+      color: i===0 ? "rgba(100,116,139,0.8)" : 
+        (c.c && candles[i-1]?.c && c.c >= candles[i-1].c ? "rgba(34,197,94,0.8)" : "rgba(239,68,68,0.8)")
     }));
     seriesRef.current.setData(data);
     
