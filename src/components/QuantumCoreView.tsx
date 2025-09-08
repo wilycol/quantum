@@ -1,10 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ResponsiveContainer, ComposedChart, Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Cell } from 'recharts';
 import { SimulationConfig, SimulatedTrade } from '../types';
 import { MOCK_POSITIONS } from '../constants';
 import Card from './ui/Card';
 import { useQuantumCore } from '../hooks/useQuantumCore';
 import QuantumCoreControls from './QuantumCoreControls';
+import EventBusStatus, { EventBusTest } from './EventBusStatus';
+import { useEventBus } from '../hooks/useEventBus';
+import { PreviewEvent, ExecutedEvent, StateEvent } from '../types/eventBus';
 
 const AVAILABLE_ASSETS = [...new Set(MOCK_POSITIONS.map(p => p.instrument))];
 const ASSET_COLORS = ['#34c759', '#ff9500', '#007aff', '#ff3b30', '#5856d6', '#ff2d55', '#af52de'];
@@ -62,8 +65,74 @@ const CustomConfidenceTooltip = ({ active, payload, label }: any) => {
 const QuantumCoreView: React.FC = () => {
     const [params, setParams] = useState(INITIAL_PARAMS);
     const { progress, status, start, stop, reset, emergencyStop } = useQuantumCore(params);
+    
+    // Event Bus integration
+    const { 
+        connected: eventBusConnected, 
+        sendPreview, 
+        sendExecuted, 
+        sendState,
+        onPreview,
+        onExecuted,
+        onState
+    } = useEventBus({
+        autoConnect: true,
+        debug: true
+    });
 
     const isRunning = status === 'running';
+
+    // Event Bus listeners
+    useEffect(() => {
+        const unsubscribePreview = onPreview((event: PreviewEvent) => {
+            console.log('[QuantumCore] Received preview event:', event);
+            // Handle preview events (shadow mode)
+        });
+
+        const unsubscribeExecuted = onExecuted((event: ExecutedEvent) => {
+            console.log('[QuantumCore] Received executed event:', event);
+            // Handle executed events (live mode)
+        });
+
+        const unsubscribeState = onState((state: StateEvent) => {
+            console.log('[QuantumCore] Received state event:', state);
+            // Handle state changes
+        });
+
+        return () => {
+            unsubscribePreview();
+            unsubscribeExecuted();
+            unsubscribeState();
+        };
+    }, [onPreview, onExecuted, onState]);
+
+    // Send state when params change
+    useEffect(() => {
+        if (eventBusConnected) {
+            const state: StateEvent = {
+                broker: 'binance',
+                mode: 'shadow', // Default to shadow mode
+                assets: params.assets,
+                volumeOn: true,
+                risk: {
+                    maxOrderPct: 0.05,
+                    dailyStopPct: 0.1
+                },
+                grid: {
+                    size: 7,
+                    lower: 11000,
+                    upper: 11400,
+                    stepPct: 0.4
+                },
+                binary: {
+                    amount: 50,
+                    expiry: 60,
+                    direction: 'CALL'
+                }
+            };
+            sendState(state);
+        }
+    }, [eventBusConnected, params.assets, sendState]);
 
     const handleExport = () => {
         if (typeof progress === 'number' || !progress?.snapshot?.trades || progress.snapshot.trades.length === 0) {
@@ -102,6 +171,9 @@ const QuantumCoreView: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
             {/* Config Panel */}
             <div className="lg:col-span-1 flex flex-col gap-6">
+                {/* Event Bus Status */}
+                <EventBusStatus showDetails={true} />
+                
                 <Card className="bg-brand-navy border border-gray-700/50 flex-grow flex flex-col">
                     <h3 className="text-xl font-bold text-brand-gold mb-4">Simulation Config</h3>
                     <div className="space-y-4 flex-grow">
@@ -149,6 +221,9 @@ const QuantumCoreView: React.FC = () => {
                         />
                     </div>
                 </Card>
+                
+                {/* Event Bus Test */}
+                <EventBusTest />
             </div>
 
             <div className="lg:col-span-3 flex flex-col gap-6">
