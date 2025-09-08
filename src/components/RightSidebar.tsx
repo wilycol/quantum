@@ -87,25 +87,6 @@ export default function RightSidebar() {
           </div>
         </div>
 
-        {/* Controles de ejecución (botones dentro del panel) */}
-        <div className="bg-neutral-900 border border-white/10 rounded-xl p-3 space-y-2">
-          <div className="text-gray-200 text-sm">Execution</div>
-          <div className="flex items-center gap-2">
-            <input id="execQty" type="number" min="0" step="0.000001"
-              className="w-28 bg-neutral-800 text-gray-100 px-2 py-1 rounded-md outline-none border border-white/10"
-              placeholder="qty" />
-            <button className="px-3 py-1 rounded-md bg-emerald-600 text-white text-xs"
-              onClick={()=>{
-                const qty = +((document.getElementById("execQty") as HTMLInputElement)?.value || 0);
-                window.dispatchEvent(new CustomEvent("qt:order", { detail: { side:"buy", symbol, qty } }));
-              }}>BUY</button>
-            <button className="px-3 py-1 rounded-md bg-rose-600 text-white text-xs"
-              onClick={()=>{
-                const qty = +((document.getElementById("execQty") as HTMLInputElement)?.value || 0);
-                window.dispatchEvent(new CustomEvent("qt:order", { detail: { side:"sell", symbol, qty } }));
-              }}>SELL</button>
-          </div>
-        </div>
       </div>
     </aside>
   );

@@ -9,6 +9,7 @@ import { placeOrderBinance, getBalances } from '../services/api';
 import { IACoachPanel } from './IACoachPanel';
 import ChartArea from './ChartArea';
 import RightSidebar from './RightSidebar';
+import ExecutionPanel from './ExecutionPanel';
 import Card from './ui/Card';
 import CustomDropdown from './ui/CustomDropdown';
 import { maxQtyByRisk, ensureQtyWithinRisk, getRiskStatus, validateSymbol } from '../lib/risk';
@@ -314,6 +315,8 @@ export default function TradingManualView() {
       <div className="grid grid-cols-12 gap-4">
         {/* área de gráfico toma 12 o 9/10 columnas según sidebar */}
         <div className={rightOpen ? "col-span-12 xl:col-span-9 2xl:col-span-10" : "col-span-12"}>
+          {/* Panel de ejecución compacto encima del gráfico */}
+          <ExecutionPanel />
           <ChartArea />
         </div>
         {/* sidebar derecha */}
