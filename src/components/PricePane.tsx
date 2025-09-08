@@ -91,8 +91,10 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
       const newFrom = center - newRange / 2;
       const newTo = center + newRange / 2;
       
-      timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
-      userZoomStateRef.current = { visibleRange: { from: newFrom, to: newTo }, isUserZoomed: true };
+      if (newFrom && newTo && newFrom < newTo && isFinite(newFrom) && isFinite(newTo)) {
+        timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
+        userZoomStateRef.current = { visibleRange: { from: newFrom, to: newTo }, isUserZoomed: true };
+      }
     };
 
     // Control de pan con clic izquierdo y arrastrar
@@ -121,8 +123,10 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
       const timeDelta = deltaX / pixelsPerTime;
       const newFrom = startRange.from - timeDelta;
       const newTo = startRange.to - timeDelta;
-      timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
-      userZoomStateRef.current = { visibleRange: { from: newFrom, to: newTo }, isUserZoomed: true };
+      if (newFrom && newTo && newFrom < newTo && isFinite(newFrom) && isFinite(newTo)) {
+        timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
+        userZoomStateRef.current = { visibleRange: { from: newFrom, to: newTo }, isUserZoomed: true };
+      }
     };
     
     const handleMouseUp = (event: MouseEvent) => {
@@ -177,13 +181,15 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
           const rangeSize = Number(currentRange.to) - Number(currentRange.from);
           const latestTime = Math.floor(candles[candles.length - 1].t / 1000);
           
-          // Solo ajustar si el rango actual no incluye los datos más recientes
-          if (Number(currentRange.to) < latestTime) {
-            const newFrom = latestTime - rangeSize;
-            const newTo = latestTime;
-            timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
-            userZoomStateRef.current.visibleRange = { from: newFrom, to: newTo };
-          }
+                      // Solo ajustar si el rango actual no incluye los datos más recientes
+                      if (Number(currentRange.to) < latestTime) {
+                        const newFrom = latestTime - rangeSize;
+                        const newTo = latestTime;
+                        if (newFrom && newTo && newFrom < newTo && isFinite(newFrom) && isFinite(newTo)) {
+                          timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
+                          userZoomStateRef.current.visibleRange = { from: newFrom, to: newTo };
+                        }
+                      }
         }
       }
     }
