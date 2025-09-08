@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { useMarketStore } from '../stores/market';
+import Tip from './ui/Tip';
+import { GLOSS } from '../content/glossary';
+import QtyHelp from './help/QtyHelp';
+import SLHelp from './help/SLHelp';
+import TPHelp from './help/TPHelp';
 
 export default function ExecutionPanel() {
   const symbol = useMarketStore(s => s.symbol);
@@ -27,7 +32,9 @@ export default function ExecutionPanel() {
       <div className="flex items-center gap-3">
         {/* Quantity Input */}
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-400">Qty:</label>
+          <label className="flex items-center gap-1 text-xs text-gray-400">
+            Qty: <QtyHelp />
+          </label>
           <input
             type="number"
             min="0"
@@ -41,7 +48,9 @@ export default function ExecutionPanel() {
 
         {/* Stop Loss */}
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-400">SL:</label>
+          <label className="flex items-center gap-1 text-xs text-gray-400">
+            SL: <SLHelp />
+          </label>
           <input
             type="number"
             min="0"
@@ -55,7 +64,9 @@ export default function ExecutionPanel() {
 
         {/* Take Profit */}
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-400">TP:</label>
+          <label className="flex items-center gap-1 text-xs text-gray-400">
+            TP: <TPHelp />
+          </label>
           <input
             type="number"
             min="0"
@@ -69,18 +80,22 @@ export default function ExecutionPanel() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleOrder('buy')}
-            className="px-3 py-1 rounded bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors"
-          >
-            BUY
-          </button>
-          <button
-            onClick={() => handleOrder('sell')}
-            className="px-3 py-1 rounded bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors"
-          >
-            SELL
-          </button>
+          <Tip label={GLOSS.buy}>
+            <button
+              onClick={() => handleOrder('buy')}
+              className="px-3 py-1 rounded bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors"
+            >
+              BUY
+            </button>
+          </Tip>
+          <Tip label={GLOSS.sell}>
+            <button
+              onClick={() => handleOrder('sell')}
+              className="px-3 py-1 rounded bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors"
+            >
+              SELL
+            </button>
+          </Tip>
         </div>
 
         {/* Quick Actions */}

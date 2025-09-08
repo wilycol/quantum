@@ -4,6 +4,8 @@ import { useSettings } from '../contexts/SettingsContext';
 import { MainView } from '../types';
 import { useEnvironment } from '../hooks/useEnvironment';
 import { useUiStore } from '../stores/ui';
+import Tip from './ui/Tip';
+import { GLOSS } from '../content/glossary';
 
 const MagnifyingGlassIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -163,18 +165,22 @@ const Header: React.FC<HeaderProps> = ({
           
           {/* Toggles */}
           <div className="flex items-center gap-2">
-            <button 
-              onClick={toggleRight}
-              className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
-            >
-              {rightOpen ? "Ocultar panel" : "Mostrar panel"}
-            </button>
-            <button 
-              onClick={() => setShowVolume?.(!showVolume)}
-              className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
-            >
-              Volumen {showVolume ? "ON" : "OFF"}
-            </button>
+            <Tip label={GLOSS.marketToggle}>
+              <button 
+                onClick={toggleRight}
+                className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
+              >
+                {rightOpen ? "Ocultar panel" : "Mostrar panel"}
+              </button>
+            </Tip>
+            <Tip label={GLOSS.volumeToggle}>
+              <button 
+                onClick={() => setShowVolume?.(!showVolume)}
+                className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
+              >
+                Volumen {showVolume ? "ON" : "OFF"}
+              </button>
+            </Tip>
           </div>
         </div>
       )}

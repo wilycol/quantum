@@ -1,0 +1,18 @@
+export const GLOSS = {
+  pnl: `PnL (Profit & Loss) no realizado. Se calcula con: (Precio actual − Precio medio de entrada) × Cantidad. Puede ser negativo.`,
+  equity: `Equity: valor total estimado de la cuenta = efectivo + PnL no realizado.`,
+  cash: `Cash: efectivo disponible para abrir nuevas operaciones.`,
+  position: `Position: tamaño y precio promedio de tu posición actual en el símbolo seleccionado.`,
+  qty: `Qty: cantidad de activo a negociar. Consejo: usa fracciones pequeñas en paper para practicar gestión del riesgo.`,
+  qtyMax: (maxQty:number) => `Máx permitido por riesgo (5% equity): ${maxQty.toFixed(6)} unidades.`,
+  sl: `SL (Stop Loss): nivel de precio para cerrar la operación si el mercado va en contra. Protege tu capital.`,
+  tp: `TP (Take Profit): nivel de precio para tomar beneficios.`,
+  buy: `BUY: abre/aumenta una posición larga al precio de mercado (paper/testnet).`,
+  sell: `SELL: reduce/cierra posición larga o abre corta si se habilita el modo short.`,
+  tradeFromChart: `Trade from Chart: activa el modo para hacer click en el gráfico y fijar el precio de entrada.`,
+  volumeToggle: `Volumen ON/OFF: muestra u oculta el pane de volumen para ganar espacio visual.`,
+  marketToggle: `Ocultar/Mostrar Market Watch: colapsa la lista de símbolos.`,
+  timeframe: `Timeframe: intervalo de cada vela (1m, 5m, 15m, 1h, ...).`,
+  riskGauge: `Gestión de Riesgo: el tamaño por operación no debe exceder el 5% del equity (regla de este simulador).`,
+  resetPaper: `Reset Paper: restablece efectivo, posición y PnL del simulador.`,
+};
