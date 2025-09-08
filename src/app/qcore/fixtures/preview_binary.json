@@ -1,0 +1,12 @@
+{
+  "t": "binary_preview",
+  "broker": "zaffer",
+  "asset": "BTCUSD",
+  "dir": "CALL",
+  "strike": 111840,
+  "expiry": 60,
+  "amount": 50,
+  "payout": 0.93,
+  "conf": 0.58,
+  "ts": 1694176220000
+}

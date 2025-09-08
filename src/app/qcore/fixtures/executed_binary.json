@@ -1,0 +1,10 @@
+{
+  "t": "binary_executed",
+  "ticketId": "Z9",
+  "asset": "BTCUSD",
+  "result": "WIN",
+  "amount": 50,
+  "payout": 0.93,
+  "net": 46.5,
+  "ts": 1694176280000
+}
