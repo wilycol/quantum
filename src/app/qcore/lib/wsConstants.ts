@@ -231,11 +231,16 @@ export function buildWsUrl(baseUrl: string, path: string = '/qcore'): string {
 
 // Default WebSocket URL with production safety
 export const DEFAULT_WS_URL = (() => {
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') {
+    return null; // SSR - no WebSocket
+  }
+  
   const WS_URL = import.meta.env.VITE_WS_URL;
   
   // If no WS_URL defined, disable in production
   if (!WS_URL) {
-    if (location.hostname !== 'localhost') {
+    if (window.location.hostname !== 'localhost') {
       console.warn('WS: No VITE_WS_URL defined, disabling WebSocket in production');
       return null;
     }
@@ -243,13 +248,13 @@ export const DEFAULT_WS_URL = (() => {
   }
   
   // If WS_URL contains localhost but we're not on localhost, disable
-  if (WS_URL.includes('localhost') && location.hostname !== 'localhost') {
+  if (WS_URL.includes('localhost') && window.location.hostname !== 'localhost') {
     console.warn('WS: localhost URL detected in production, disabling WebSocket');
     return null;
   }
   
   // If site runs on HTTPS, ensure WS is WSS
-  if (location.protocol === 'https:' && WS_URL.startsWith('ws://')) {
+  if (window.location.protocol === 'https:' && WS_URL.startsWith('ws://')) {
     console.warn('WS: HTTPS site with WS URL, should use WSS');
     return null;
   }
