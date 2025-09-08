@@ -14,6 +14,7 @@ import AccountInfoCard from './AccountInfoCard';
 import Card from './ui/Card';
 import CustomDropdown from './ui/CustomDropdown';
 import { maxQtyByRisk, ensureQtyWithinRisk, getRiskStatus, validateSymbol } from '../lib/risk';
+import { getAllowedRiskPct, getRiskConfig } from '../config/risk';
 import { useUiStore } from '../stores/ui';
 
 // Helpers UI
@@ -31,7 +32,11 @@ export default function TradingManualView() {
   // ---- account state
   const { equity, cash, pos, unrealized, onOrder, resetPaper } = useAccountStore();
   
-  console.log('[TradingManualView] Account state:', { lastClose, equity, cash, pos, unrealized });
+  // Configuración de riesgo
+  const vercelEnv = import.meta.env.VITE_VERCEL_ENV || "development";
+  const riskConfig = getRiskConfig(vercelEnv, appMode);
+  
+  console.log('[TradingManualView] Account state:', { lastClose, equity, cash, pos, unrealized, riskConfig });
 
   // ---- exec
   const [qty, setQty] = useState(0.001);
@@ -102,12 +107,18 @@ export default function TradingManualView() {
         return;
       }
       
-      // Validar cantidad por riesgo
-      const riskValidation = ensureQtyWithinRisk(qty, equity, price);
-      console.log('[TradingManualView] Risk validation:', riskValidation);
+      // Validar cantidad por riesgo usando la configuración dinámica
+      const maxQty = maxQtyByRisk(equity, price, riskConfig.allowedPct);
+      const riskValidation = ensureQtyWithinRisk(qty, equity, price, riskConfig.allowedPct);
+      console.log('[TradingManualView] Risk validation:', { 
+        riskValidation, 
+        maxQty, 
+        allowedPct: riskConfig.allowedPct,
+        isConfigurable: riskConfig.isConfigurable 
+      });
       if (!riskValidation.success) {
         console.error('[TradingManualView] Risk validation failed:', riskValidation.error);
-        setMsg(`RIESGO: ${riskValidation.error} (Máximo: ${riskValidation.maxQty.toFixed(6)})`);
+        setMsg(`RIESGO: ${riskValidation.error} (Máximo: ${riskValidation.maxQty.toFixed(6)} - ${(riskConfig.allowedPct * 100).toFixed(0)}%)`);
         return;
       }
       
@@ -137,8 +148,8 @@ export default function TradingManualView() {
         message: 'Sin datos' 
       };
     }
-    return getRiskStatus(equity, lastClose, Number(qty));
-  }, [equity, lastClose, qty]);
+    return getRiskStatus(equity, lastClose, Number(qty), riskConfig.allowedPct);
+  }, [equity, lastClose, qty, riskConfig.allowedPct]);
 
   // determina si ejecución real está habilitada
   const canReal = useMemo(() => {
@@ -172,17 +183,17 @@ export default function TradingManualView() {
         return;
       }
 
-      // 3. Calcular riesgo y validar límites
-      const maxQty = maxQtyByRisk(equity, currentPrice, 0.05); // Usar el valor por defecto o de COMPLIANCE_CONFIG
+      // 3. Calcular riesgo y validar límites usando configuración dinámica
+      const maxQty = maxQtyByRisk(equity, currentPrice, riskConfig.allowedPct);
       
-      const riskValidation = ensureQtyWithinRisk(orderQty, equity, currentPrice);
+      const riskValidation = ensureQtyWithinRisk(orderQty, equity, currentPrice, riskConfig.allowedPct);
       if (!riskValidation.success) {
-        setMsg(`RIESGO: ${riskValidation.error} (Máximo: ${riskValidation.maxQty.toFixed(6)})`);
+        setMsg(`RIESGO: ${riskValidation.error} (Máximo: ${riskValidation.maxQty.toFixed(6)} - ${(riskConfig.allowedPct * 100).toFixed(0)}%)`);
         return;
       }
 
       // 4. Obtener estado de riesgo para feedback
-      const currentRiskStatus = getRiskStatus(equity, currentPrice, orderQty);
+      const currentRiskStatus = getRiskStatus(equity, currentPrice, orderQty, riskConfig.allowedPct);
 
       // Disparar evento para el chart con precio actual y niveles TP/SL
       const tp = takeProfit > 0 ? takeProfit : undefined;
