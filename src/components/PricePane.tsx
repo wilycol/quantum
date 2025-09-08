@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createChart, CrosshairMode, IChartApi, ISeriesApi, Time } from "lightweight-charts";
 import { usePriceFeed } from "../hooks/usePriceFeed";
 import { useMarketStore } from "../stores/market";
+import { useTradeMarkers } from "../stores/tradeMarkers";
 import { maxQtyByRisk } from "../lib/risk";
 import InfoDock from "./InfoDock";
 
@@ -170,6 +171,12 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
     const data = candles.map(c=>({ time: Math.floor(c.t/1000) as Time, open:c.o, high:c.h, low:c.l, close:c.c }));
     seriesRef.current.setData(data);
     
+    // Re-pintar markers cuando cambien los datos o el símbolo/TF
+    const key = `${symbol}:${interval}`;
+    const markers = useTradeMarkers.getState().list(key);
+    const show = useTradeMarkers.getState().show;
+    seriesRef.current.setMarkers(show ? markers : []);
+    
     // Solo auto-ajustar si el usuario no ha hecho zoom manual
     if (!userZoomStateRef.current.isUserZoomed) {
       chartRef.current?.timeScale().fitContent();
@@ -195,6 +202,52 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
       }
     }
   }, [candles, symbol, interval]);
+
+  // Escuchar ejecuciones de órdenes y añadir markers
+  useEffect(() => {
+    function onExec(e: Event) {
+      const { side, symbol: sym, price, qty } = (e as CustomEvent).detail || {};
+      if (sym !== symbol || !seriesRef.current) return;
+
+      // usar el tiempo de la última vela visible del feed para anclar
+      const last = candles?.[candles.length - 1];
+      if (!last) return;
+      const time = Math.floor(last.t / 1000) as Time;
+
+      const m = {
+        time,
+        position: side === "buy" ? "belowBar" : "aboveBar",
+        color:    side === "buy" ? "#22c55e" : "#ef4444",
+        shape:    side === "buy" ? "arrowUp" : "arrowDown",
+        text: `${side.toUpperCase()} ${Number(qty).toFixed(4)} @ ${Number(price).toFixed(2)}`
+      } as const;
+
+      const key = `${symbol}:${interval}`;
+      const store = useTradeMarkers.getState();
+      store.add(key, m);
+      if (store.show) {
+        seriesRef.current.setMarkers(store.list(key));
+      }
+    }
+    
+    window.addEventListener("qt:order:executed", onExec as EventListener);
+    return () => window.removeEventListener("qt:order:executed", onExec as EventListener);
+  }, [symbol, interval, candles]);
+
+  // Escuchar evento de limpiar markers
+  useEffect(() => {
+    function onCleared(e: Event) {
+      const { key } = (e as CustomEvent).detail || {};
+      const currentKey = `${symbol}:${interval}`;
+      if (key === currentKey && seriesRef.current) {
+        const show = useTradeMarkers.getState().show;
+        seriesRef.current.setMarkers(show ? [] : []);
+      }
+    }
+    
+    window.addEventListener("qt:markers:cleared", onCleared as EventListener);
+    return () => window.removeEventListener("qt:markers:cleared", onCleared as EventListener);
+  }, [symbol, interval]);
 
   function openTradeMini(price:number) {
     const root = wrapRef.current!;

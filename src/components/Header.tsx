@@ -4,6 +4,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { MainView } from '../types';
 import { useEnvironment } from '../hooks/useEnvironment';
 import { useUiStore } from '../stores/ui';
+import { useTradeMarkers } from '../stores/tradeMarkers';
 import Tip from './ui/Tip';
 import { GLOSS } from '../content/glossary';
 
@@ -181,6 +182,9 @@ const Header: React.FC<HeaderProps> = ({
                 Volumen {showVolume ? "ON" : "OFF"}
               </button>
             </Tip>
+            <Tip label="Mostrar/ocultar markers de trades ejecutados">
+              <TradeToggleButton />
+            </Tip>
           </div>
         </div>
       )}
@@ -201,5 +205,23 @@ const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+
+// Componente para el toggle de trades
+function TradeToggleButton() {
+  const { show, toggle } = useTradeMarkers();
+  
+  return (
+    <button 
+      onClick={toggle}
+      className={`px-3 py-1 rounded-md border text-sm transition-colors ${
+        show 
+          ? "bg-indigo-600 text-white border-indigo-500" 
+          : "bg-neutral-800 text-gray-200 border-white/10 hover:bg-neutral-700"
+      }`}
+    >
+      Trades {show ? "ON" : "OFF"}
+    </button>
+  );
+}
 
 export default Header;

@@ -131,6 +131,18 @@ export default function ExecutionPanel() {
 
       console.log('[ExecutionPanel] Dispatching order:', orderData);
       window.dispatchEvent(new CustomEvent("qt:order", { detail: orderData }));
+      
+      // Disparar evento de ejecución exitosa para markers
+      window.dispatchEvent(new CustomEvent("qt:order:executed", {
+        detail: { 
+          side, 
+          symbol, 
+          price: lastPrice, 
+          qty, 
+          ts: Date.now() 
+        }
+      }));
+      
       toast(`${side.toUpperCase()} enviado: ${fmt(qty, 6)}`, 'success');
     } catch (e: any) {
       const msg = String(e?.message || e);

@@ -16,6 +16,7 @@ import CustomDropdown from './ui/CustomDropdown';
 import { maxQtyByRisk, ensureQtyWithinRisk, getRiskStatus, validateSymbol } from '../lib/risk';
 import { getAllowedRiskPct, getRiskConfig } from '../config/risk';
 import { useUiStore } from '../stores/ui';
+import { useTradeMarkers } from '../stores/tradeMarkers';
 
 // Helpers UI
 const fmt = (n:number) => n && isFinite(n) ? '$'+n.toFixed(2) : '-';
@@ -126,6 +127,18 @@ export default function TradingManualView() {
       try {
         console.log('[TradingManualView] Executing paper trade:', { side, qty, price, symbol });
         onOrder(side, symbol, price, qty);
+        
+        // Disparar evento de ejecución exitosa para markers
+        window.dispatchEvent(new CustomEvent("qt:order:executed", {
+          detail: { 
+            side, 
+            symbol, 
+            price, 
+            qty, 
+            ts: Date.now() 
+          }
+        }));
+        
         setMsg(`PAPER ${side.toUpperCase()} ${qty} @ ${fmt(price)} (desde chart)`);
       } catch (error: any) {
         console.error('[TradingManualView] Paper trade error:', error);
@@ -207,6 +220,18 @@ export default function TradingManualView() {
       if (!canReal) {
         // Paper
         onOrder(side, selectedSymbol, currentPrice, orderQty);
+        
+        // Disparar evento de ejecución exitosa para markers
+        window.dispatchEvent(new CustomEvent("qt:order:executed", {
+          detail: { 
+            side, 
+            symbol: selectedSymbol, 
+            price: currentPrice, 
+            qty: orderQty, 
+            ts: Date.now() 
+          }
+        }));
+        
         setMsg(`PAPER ${side.toUpperCase()} ${orderQty} @ ${fmt(currentPrice)} (${currentRiskStatus.riskPercentage.toFixed(1)}% riesgo)${tp ? ` TP:${fmt(tp)}` : ''}${sl ? ` SL:${fmt(sl)}` : ''}`);
         return;
       }
@@ -329,12 +354,29 @@ export default function TradingManualView() {
             </div>
           )}
           
-          <button
-            onClick={resetPaper}
-            className="mt-2 w-full px-2 py-1 bg-neutral-700 text-white rounded hover:bg-neutral-600 text-xs"
-          >
-            Reset Paper
-          </button>
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={resetPaper}
+              className="flex-1 px-2 py-1 bg-neutral-700 text-white rounded hover:bg-neutral-600 text-xs"
+            >
+              Reset Paper
+            </button>
+            <button
+              onClick={() => {
+                const key = `${selectedSymbol}:${selectedTimeframe}`;
+                useTradeMarkers.getState().clear(key);
+                // Re-pintar markers vacíos
+                const chartElement = document.querySelector('[data-chart="price"]');
+                if (chartElement) {
+                  // Disparar evento para re-pintar markers
+                  window.dispatchEvent(new CustomEvent("qt:markers:cleared", { detail: { key } }));
+                }
+              }}
+              className="px-2 py-1 bg-neutral-800 border border-white/10 text-gray-200 rounded hover:bg-neutral-700 text-xs"
+            >
+              Clear Trades
+            </button>
+          </div>
         </Card>
 
         {/* Account Info Card */}
