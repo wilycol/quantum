@@ -23,7 +23,7 @@ export default function TradingManualView() {
 
   // ---- datos mercado
   const [candles, setCandles] = useState<Candle[]>([]);
-  const lastClose = candles.length ? candles[candles.length - 1].c : 0;
+  const lastClose = candles && candles.length > 0 ? candles[candles.length - 1].c : 0;
 
   // ---- paper
   const { state, unrealized, equity, submit, reset } = usePaper(lastClose);
@@ -57,9 +57,21 @@ export default function TradingManualView() {
       const data = appMode === 'demo-hybrid' 
         ? getKlinesMock()
         : await getKlinesLive(selectedSymbol, selectedTimeframe);
-      setCandles(data);
+      
+      // Validar que data sea un array
+      if (Array.isArray(data)) {
+        setCandles(data);
+      } else {
+        console.error('Data is not an array:', data);
+        setCandles([]);
+        setMsg('ERROR: Datos de velas no válidos');
+      }
     } catch (e:any) {
+      console.error('Error fetching candles:', e);
+      setCandles([]);
       setMsg(`ERROR klines: ${e?.message||e}`);
+    } finally {
+      setLoading(false);
     }
   }, [appMode, selectedSymbol, selectedTimeframe]);
 
@@ -271,19 +283,17 @@ export default function TradingManualView() {
         {/* Posiciones y mensajes */}
         <Card className="bg-neutral-900 border-neutral-700">
           <h3 className="text-lg font-semibold text-white mb-4">Posiciones</h3>
-          {state.positions.length > 0 ? (
+          {state.pos ? (
             <div className="space-y-2">
-              {state.positions.map((pos, index) => (
-                <div key={index} className="bg-neutral-800 p-2 rounded text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-white">{pos.side.toUpperCase()}</span>
-                    <span className="text-white">{pos.qty}</span>
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    Entry: {fmt(pos.entry)} | P&L: <span className={pos.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{fmt(pos.pnl)}</span>
-                  </div>
+              <div className="bg-neutral-800 p-2 rounded text-sm">
+                <div className="flex justify-between">
+                  <span className="text-white">{state.pos.side.toUpperCase()}</span>
+                  <span className="text-white">{state.pos.qty}</span>
                 </div>
-              ))}
+                <div className="text-xs text-gray-400">
+                  Entry: {fmt(state.pos.avg)} | P&L: <span className={unrealized >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{fmt(unrealized)}</span>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="text-gray-400 text-sm">Sin posiciones abiertas</div>
@@ -307,7 +317,7 @@ export default function TradingManualView() {
       {/* Panel de IA Coach */}
       <div className="mt-6">
         <IACoachPanel 
-          candles={candles}
+          candles={candles || []}
           onAction={(side) => {
             if (side === 'BUY') {
               onBuy();
