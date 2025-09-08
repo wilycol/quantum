@@ -28,14 +28,9 @@ export class EventBus {
   constructor(config: Partial<EventBusConfig> = {}) {
     this.config = {
       url: config.url || (() => {
-        // Check for Vite environment variable first
+        // Check for Vite environment variable
         if (import.meta.env.VITE_WS_URL) {
           return import.meta.env.VITE_WS_URL;
-        }
-        
-        // Check for Next.js environment variable
-        if (process.env.NEXT_PUBLIC_WS_URL) {
-          return process.env.NEXT_PUBLIC_WS_URL;
         }
         
         // Default to localhost for development
