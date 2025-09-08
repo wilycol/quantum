@@ -7,6 +7,7 @@ import LegalGuard from './components/LegalGuard';
 import { withBoundary } from './components/withBoundary';
 import { useSettings } from './contexts/SettingsContext';
 import { MainView, AppNotification } from './types';
+import { bindOrderEvents } from './stores/account';
 
 // Carga perezosa de vistas pesadas
 const TradingManualView = lazy(() => import('./components/TradingManualView'));
@@ -126,6 +127,12 @@ const App: React.FC = () => {
     }
   }, [settings.notifications, settings.notificationConfig.pushEnabled, lastNotification]);
 
+  // Bindear eventos de órdenes para el store de cuenta
+  useEffect(() => {
+    const cleanup = bindOrderEvents();
+    return cleanup;
+  }, []);
+
   // Listener para navegación desde SupportView
   useEffect(() => {
     const handleNavigate = (event: CustomEvent) => {
@@ -158,7 +165,16 @@ const App: React.FC = () => {
          <div className={`${themeClass} font-sans flex h-screen overflow-hidden`}>
             <Sidebar activeView={currentView} setView={setCurrentView} />
             <div className="flex-1 flex flex-col overflow-hidden">
-              <Header view={currentView} setView={setCurrentView} />
+              <Header 
+                view={currentView} 
+                setView={setCurrentView}
+                showTradingControls={currentView === 'manual_trading'}
+                appMode="demo-hybrid"
+                onModeChange={(mode) => {
+                  // TODO: Implementar cambio de modo global
+                  console.log('Mode changed to:', mode);
+                }}
+              />
               <main className={`flex-1 overflow-y-auto ${needsPadding ? 'p-2 sm:p-4 lg:p-6' : ''}`}>
                 <Suspense fallback={<LoadingFallback />}>
                   {currentView === 'quantum_core' && <QuantumCoreSafe />}

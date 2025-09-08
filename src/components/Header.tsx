@@ -3,6 +3,7 @@ import React from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import { MainView } from '../types';
 import { useEnvironment } from '../hooks/useEnvironment';
+import { useUiStore } from '../stores/ui';
 
 const MagnifyingGlassIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -19,11 +20,26 @@ const BellIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 interface HeaderProps {
     view: MainView;
     setView: (view: MainView) => void;
+    // Props adicionales para Manual Trading
+    showTradingControls?: boolean;
+    rightOpen?: boolean;
+    toggleRight?: () => void;
+    showVolume?: boolean;
+    setShowVolume?: (show: boolean) => void;
+    appMode?: string;
+    onModeChange?: (mode: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ view, setView }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  view, 
+  setView, 
+  showTradingControls = false,
+  appMode = 'demo-hybrid',
+  onModeChange
+}) => {
   const { settings, t } = useSettings();
   const { enableAI, paper, mode, dataMode } = useEnvironment();
+  const { rightOpen, toggleRight, showVolume, setShowVolume } = useUiStore();
   const unreadCount = settings.notifications.filter(n => !n.isRead).length;
 
   // Debug log para verificar variables (solo en desarrollo)
@@ -127,15 +143,43 @@ const Header: React.FC<HeaderProps> = ({ view, setView }) => {
           </div>
         </div>
       </div>
-      <div className="flex items-center space-x-2 sm:space-x-4">
-        <div className="relative hidden md:block">
-          <MagnifyingGlassIcon className="h-5 w-5 text-brand-gold/70 absolute top-1/2 left-3 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder={t('searchAssets')}
-            className="bg-gray-800 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-gold"
-          />
+      
+      {/* Controles de Trading (solo en Manual Trading) */}
+      {showTradingControls && (
+        <div className="flex items-center gap-4">
+          {/* Selector de modo */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">Modo:</span>
+            <select
+              value={appMode}
+              onChange={(e) => onModeChange?.(e.target.value)}
+              className="px-3 py-1 bg-neutral-800 text-gray-200 border border-white/10 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
+            >
+              <option value="demo-full">Demo Full</option>
+              <option value="demo-hybrid">Demo Híbrido</option>
+              <option value="live-trading">Live Trading</option>
+            </select>
+          </div>
+          
+          {/* Toggles */}
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={toggleRight}
+              className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
+            >
+              {rightOpen ? "Ocultar panel" : "Mostrar panel"}
+            </button>
+            <button 
+              onClick={() => setShowVolume?.(!showVolume)}
+              className="px-3 py-1 rounded-md bg-neutral-800 text-gray-200 border border-white/10 hover:bg-neutral-700 transition-colors text-sm"
+            >
+              Volumen {showVolume ? "ON" : "OFF"}
+            </button>
+          </div>
         </div>
+      )}
+      
+      <div className="flex items-center space-x-2 sm:space-x-4">
         <button onClick={() => setView('notifications')} className="p-2 rounded-full hover:bg-gray-800 relative group" title={settings.tooltips ? t('notifications') : undefined}>
           <BellIcon className="h-6 w-6 text-brand-gold/70 group-hover:text-brand-gold transition-colors" />
           {unreadCount > 0 && (
