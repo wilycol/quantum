@@ -4,6 +4,8 @@ type Position = {
   symbol: string;
   qty: number;       // >0 long, <0 short (si lo habilitas luego)
   avg: number;       // precio promedio
+  sl?: number | null; // stop loss
+  tp?: number | null; // take profit
 };
 
 type AccountState = {
@@ -13,7 +15,7 @@ type AccountState = {
   unrealized: number;  // PnL no realizado (USD)
   setEquityCash: (equity: number, cash: number) => void;
   onTick: (lastPrice: number) => void;
-  onOrder: (side: "buy"|"sell", symbol: string, price: number, qty: number) => void;
+  onOrder: (side: "buy"|"sell", symbol: string, price: number, qty: number, sl?: number, tp?: number) => void;
   resetPaper: () => void;
 };
 
@@ -28,11 +30,31 @@ export const useAccountStore = create<AccountState>((set, get) => ({
   onTick: (last) => {
     const { pos } = get();
     if (!pos || !last || !isFinite(last)) return set({ unrealized: 0 });
+    
+    // PnL
     const pnl = (last - pos.avg) * pos.qty; // qty>0 long
     set({ unrealized: pnl });
+
+    // Auto close por SL/TP
+    if (pos.qty > 0) { // long
+      if (pos.sl && last <= pos.sl) return closeNow("SL");
+      if (pos.tp && last >= pos.tp) return closeNow("TP");
+    } else { // short
+      if (pos.sl && last >= pos.sl) return closeNow("SL");
+      if (pos.tp && last <= pos.tp) return closeNow("TP");
+    }
+
+    function closeNow(reason: "SL" | "TP") {
+      // genera orden contraria por la qty total
+      const side = pos.qty > 0 ? "sell" : "buy";
+      const qty = Math.abs(pos.qty);
+      window.dispatchEvent(new CustomEvent("qt:order", { 
+        detail: { side, symbol: pos.symbol, price: last, qty, reason } 
+      }));
+    }
   },
 
-  onOrder: (side, symbol, price, qty) => {
+  onOrder: (side, symbol, price, qty, sl, tp) => {
     const s = get();
     
     // Validar parámetros
@@ -47,7 +69,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     let pos = s.pos;
     let cash = s.cash - (price * deltaQty); // comprar disminuye cash, vender aumenta
     if (!pos || pos.symbol !== symbol || pos.qty === 0) {
-      pos = { symbol, qty: deltaQty, avg: price };
+      pos = { symbol, qty: deltaQty, avg: price, sl: sl || null, tp: tp || null };
     } else {
       const newQty = pos.qty + deltaQty;
       if (Math.sign(pos.qty) === Math.sign(newQty) && newQty !== 0) {

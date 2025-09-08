@@ -42,7 +42,11 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
     const chart = createChart(el, {
       layout: { background: { color: "transparent" }, textColor: "#cbd5e1" },
       grid: { vertLines: { color:"rgba(255,255,255,0.06)" }, horzLines: { color:"rgba(255,255,255,0.06)" } },
-      crosshair: { mode: CrosshairMode.Normal },
+      crosshair: { 
+        mode: CrosshairMode.Normal,
+        vertLine: { color: "#94a3b8", width: 1, style: 0, visible: true, labelVisible: true },
+        horzLine: { color: "#94a3b8", width: 1, style: 0, visible: true, labelVisible: true },
+      },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.05, bottom: 0.28 } }, // deja espacio para volumen (cuando esté visible)
       timeScale: { 
         borderVisible: false, 
@@ -206,20 +210,34 @@ export default function PricePane({ apiRef }: { apiRef?: React.MutableRefObject<
   // Escuchar ejecuciones de órdenes y añadir markers
   useEffect(() => {
     function onExec(e: Event) {
-      const { side, symbol: sym, price, qty } = (e as CustomEvent).detail || {};
+      const { side, symbol: sym, price, qty, ts, reason } = (e as CustomEvent).detail || {};
       if (sym !== symbol || !seriesRef.current) return;
 
       // usar el tiempo de la última vela visible del feed para anclar
-      const last = candles?.[candles.length - 1];
+      const last = candles?.at(-1);
       if (!last) return;
       const time = Math.floor(last.t / 1000) as Time;
+      
+      // Crear ID único para deduplicación
+      const id = reason 
+        ? `${time}:exit:${reason}`
+        : `${time}:${side}:${(+qty).toFixed(6)}:${(+price).toFixed(2)}`;
 
       const m = {
+        id,
         time,
-        position: side === "buy" ? "belowBar" : "aboveBar",
-        color:    side === "buy" ? "#22c55e" : "#ef4444",
-        shape:    side === "buy" ? "arrowUp" : "arrowDown",
-        text: `${side.toUpperCase()} ${Number(qty).toFixed(4)} @ ${Number(price).toFixed(2)}`
+        position: reason 
+          ? (reason === "TP" ? "aboveBar" : "belowBar")
+          : (side === "buy" ? "belowBar" : "aboveBar"),
+        color: reason
+          ? (reason === "TP" ? "#10b981" : "#f43f5e")
+          : (side === "buy" ? "#22c55e" : "#ef4444"),
+        shape: reason
+          ? (reason === "TP" ? "arrowDown" : "arrowUp")
+          : (side === "buy" ? "arrowUp" : "arrowDown"),
+        text: reason
+          ? `${reason} @ ${(+price).toFixed(2)}`
+          : `${side.toUpperCase()} ${(+qty).toFixed(4)} @ ${(+price).toFixed(2)}`
       } as const;
 
       const key = `${symbol}:${interval}`;

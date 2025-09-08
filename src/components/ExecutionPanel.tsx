@@ -139,7 +139,9 @@ export default function ExecutionPanel() {
           symbol, 
           price: lastPrice, 
           qty, 
-          ts: Date.now() 
+          ts: Date.now(),
+          sl: stopLoss ? toNum(stopLoss) : undefined,
+          tp: takeProfit ? toNum(takeProfit) : undefined
         }
       }));
       

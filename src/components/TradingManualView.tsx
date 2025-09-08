@@ -135,7 +135,9 @@ export default function TradingManualView() {
             symbol, 
             price, 
             qty, 
-            ts: Date.now() 
+            ts: Date.now(),
+            sl: stopLoss > 0 ? stopLoss : undefined,
+            tp: takeProfit > 0 ? takeProfit : undefined
           }
         }));
         
@@ -228,7 +230,9 @@ export default function TradingManualView() {
             symbol: selectedSymbol, 
             price: currentPrice, 
             qty: orderQty, 
-            ts: Date.now() 
+            ts: Date.now(),
+            sl: sl || undefined,
+            tp: tp || undefined
           }
         }));
         
@@ -342,6 +346,13 @@ export default function TradingManualView() {
                 <div className="text-xs text-gray-400">
                   Entry: {fmt(pos.avg)} | P&L: <span className={unrealized >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{fmt(unrealized)}</span>
                 </div>
+                {(pos.sl || pos.tp) && (
+                  <div className="text-xs text-gray-400 mt-1">
+                    {pos.sl && <span className="text-rose-400">SL: {fmt(pos.sl)}</span>}
+                    {pos.sl && pos.tp && <span className="mx-2">|</span>}
+                    {pos.tp && <span className="text-emerald-400">TP: {fmt(pos.tp)}</span>}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -354,28 +365,61 @@ export default function TradingManualView() {
             </div>
           )}
           
-          <div className="mt-2 flex gap-2">
-            <button
-              onClick={resetPaper}
-              className="flex-1 px-2 py-1 bg-neutral-700 text-white rounded hover:bg-neutral-600 text-xs"
-            >
-              Reset Paper
-            </button>
-            <button
-              onClick={() => {
-                const key = `${selectedSymbol}:${selectedTimeframe}`;
-                useTradeMarkers.getState().clear(key);
-                // Re-pintar markers vacíos
-                const chartElement = document.querySelector('[data-chart="price"]');
-                if (chartElement) {
-                  // Disparar evento para re-pintar markers
-                  window.dispatchEvent(new CustomEvent("qt:markers:cleared", { detail: { key } }));
-                }
-              }}
-              className="px-2 py-1 bg-neutral-800 border border-white/10 text-gray-200 rounded hover:bg-neutral-700 text-xs"
-            >
-              Clear Trades
-            </button>
+          <div className="mt-2 space-y-2">
+            {/* Botones de cierre de posición */}
+            {pos && pos.qty !== 0 && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const side = pos.qty > 0 ? "sell" : "buy";
+                    const qty = Math.abs(pos.qty);
+                    window.dispatchEvent(new CustomEvent("qt:order", { 
+                      detail: { side, symbol: selectedSymbol, price: lastClose, qty } 
+                    }));
+                  }}
+                  className="flex-1 px-2 py-1 bg-rose-600 text-white rounded hover:bg-rose-700 text-xs"
+                >
+                  Close Position
+                </button>
+                <button
+                  onClick={() => {
+                    const side = pos.qty > 0 ? "sell" : "buy";
+                    const qty = Math.abs(pos.qty) * 0.5;
+                    window.dispatchEvent(new CustomEvent("qt:order", { 
+                      detail: { side, symbol: selectedSymbol, price: lastClose, qty } 
+                    }));
+                  }}
+                  className="flex-1 px-2 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 text-xs"
+                >
+                  Close 50%
+                </button>
+              </div>
+            )}
+            
+            {/* Botones de control */}
+            <div className="flex gap-2">
+              <button
+                onClick={resetPaper}
+                className="flex-1 px-2 py-1 bg-neutral-700 text-white rounded hover:bg-neutral-600 text-xs"
+              >
+                Reset Paper
+              </button>
+              <button
+                onClick={() => {
+                  const key = `${selectedSymbol}:${selectedTimeframe}`;
+                  useTradeMarkers.getState().clear(key);
+                  // Re-pintar markers vacíos
+                  const chartElement = document.querySelector('[data-chart="price"]');
+                  if (chartElement) {
+                    // Disparar evento para re-pintar markers
+                    window.dispatchEvent(new CustomEvent("qt:markers:cleared", { detail: { key } }));
+                  }
+                }}
+                className="px-2 py-1 bg-neutral-800 border border-white/10 text-gray-200 rounded hover:bg-neutral-700 text-xs"
+              >
+                Clear Trades
+              </button>
+            </div>
           </div>
         </Card>
 

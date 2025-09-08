@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { Time } from "lightweight-charts";
 
 export type TradeMarker = {
+  id: string; // nuevo
   time: Time; // seconds epoch
   position: "aboveBar" | "belowBar";
   color: string;
@@ -26,6 +27,7 @@ export const useTradeMarkers = create(
       show: true,
       add: (key, m) => {
         const cur = get().byKey[key] || [];
+        if (cur.some(x => x.id === m.id)) return; // dedupe
         set({ byKey: { ...get().byKey, [key]: [...cur, m] } });
       },
       list: (key) => get().byKey[key] || [],
