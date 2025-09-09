@@ -24,9 +24,10 @@ export const useMarket = create<State>((set, get) => ({
   binanceConnected: false,
   loading: true,
 
-  async init(symbol = get().symbol, interval = get().interval) {
-    // Backfill
-    set({ loading: true, error: undefined, symbol, interval });
+         async init(symbol = get().symbol, interval = get().interval) {
+           console.log('[MARKET STORE] init() called with:', { symbol, interval });
+           // Backfill
+           set({ loading: true, error: undefined, symbol, interval });
     const res = await fetch(`/api/klines?symbol=${symbol}&interval=${interval}&limit=500`, { cache: 'no-store' });
     if (!res.ok) {
       set({ loading: false, error: `klines ${res.status}` }); 
@@ -41,10 +42,12 @@ export const useMarket = create<State>((set, get) => ({
     const last = candles.at(-1);
     set({ candles, loading: false, lastPrice: last ? last[4] : undefined });
 
-    // Feed en vivo
-    console.log('[MARKET STORE] Starting live feed for:', symbol, interval);
-    if (unsub) unsub();
-    unsub = subscribeKline(symbol, interval, (msg) => {
+           // Feed en vivo
+           console.log('[MARKET STORE] Starting live feed for:', symbol, interval);
+           console.log('[MARKET STORE] About to call subscribeKline...');
+           if (unsub) unsub();
+           try {
+             unsub = subscribeKline(symbol, interval, (msg) => {
       console.log('[MARKET STORE] Received live data:', msg);
       // kline payload
       const k = msg.k;
@@ -86,7 +89,11 @@ export const useMarket = create<State>((set, get) => ({
         }, 2000);
       }
     }, 8000);
-  },
+           } catch (error) {
+             console.error('[MARKET STORE] Error in subscribeKline:', error);
+             set({ error: `WebSocket error: ${error}` });
+           }
+         },
 
   setSymbol(s: string) {
     const interval = get().interval;
