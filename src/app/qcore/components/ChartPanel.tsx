@@ -173,20 +173,20 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
       {/* Main Chart */}
       <div className="mb-4">
-        {loading || !ready || candles.length < 2 ? (
+        {loading || !ready || !candles || candles.length < 2 ? (
           <div className="flex items-center justify-center h-[420px] bg-gray-800 rounded-lg">
             <div className="text-gray-400">Cargando velas...</div>
           </div>
         ) : (
           <CandlesCore
-            candles={candles.map(c => ({
+            candles={(candles || []).map(c => ({
               time: c[0] / 1000, // Convert ms to seconds
               open: c[1],
               high: c[2],
               low: c[3],
               close: c[4]
             }))}
-            volume={candles.map(c => ({
+            volume={(candles || []).map(c => ({
               time: c[0] / 1000,
               value: c[5]
             }))}

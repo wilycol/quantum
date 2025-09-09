@@ -41,7 +41,7 @@ export class EventBus {
             console.warn('WS: No VITE_WS_URL defined, disabling WebSocket in production');
             return null;
           }
-          return 'ws://localhost:8080/ws';
+          return null; // Disable EventBus in localhost too for now
         }
         
         // If WS_URL contains localhost but we're not on localhost, disable
