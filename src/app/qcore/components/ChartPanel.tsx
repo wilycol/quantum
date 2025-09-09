@@ -204,7 +204,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
             </div>
             <div>
               <span className="text-gray-400">Step:</span>
-              <span className="text-white ml-2">{(grid.stepPct * 100).toFixed(1)}%</span>
+              <span className="text-white ml-2">{((grid.stepPct || 0) * 100).toFixed(1)}%</span>
             </div>
           </div>
         </div>
@@ -241,7 +241,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
                 {formatPrice(item.price)}
               </div>
               <div className={`${item.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {item.change >= 0 ? '+' : ''}{item.changePercent.toFixed(2)}%
+                {item.change >= 0 ? '+' : ''}{(item.changePercent || 0).toFixed(2)}%
               </div>
             </div>
           ))}
@@ -280,17 +280,17 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
           </div>
           <div>
             <span className="text-gray-400">Win Rate:</span>
-            <span className="text-white ml-2">{kpis.winRate.toFixed(1)}%</span>
+            <span className="text-white ml-2">{(kpis.winRate || 0).toFixed(1)}%</span>
           </div>
           <div>
             <span className="text-gray-400">P&L:</span>
-            <span className={`ml-2 ${kpis.totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {kpis.totalPnL >= 0 ? '+' : ''}{kpis.totalPnL.toFixed(2)}
+            <span className={`ml-2 ${(kpis.totalPnL || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {(kpis.totalPnL || 0) >= 0 ? '+' : ''}{(kpis.totalPnL || 0).toFixed(2)}
             </span>
           </div>
           <div>
             <span className="text-gray-400">Volume:</span>
-            <span className="text-white ml-2">{kpis.totalVolume.toFixed(0)}</span>
+            <span className="text-white ml-2">{(kpis.totalVolume || 0).toFixed(0)}</span>
           </div>
         </div>
       </div>
