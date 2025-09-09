@@ -7,7 +7,7 @@ import {
   useStrategy,
   useAssets
 } from '../hooks/useQcoreState';
-import { useWebsocket } from '../hooks/useWebsocket';
+import { useEventBus } from '../../../hooks/useEventBus';
 import { WsEvent } from '../lib/types';
 import { formatTimestamp, formatCurrency } from '../lib/formatters';
 
@@ -39,9 +39,26 @@ export default function ExecutedTimeline({ className = '' }: ExecutedTimelinePro
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
 
   // WebSocket connection
-  const { connected: wsConnected } = useWebsocket({
-    onEvent: handleWebSocketEvent
+  const { connected: wsConnected, onPreview, onExecuted } = useEventBus({
+    autoConnect: true,
+    debug: false
   });
+
+  // Set up event listeners
+  useEffect(() => {
+    const unsubscribePreview = onPreview((event) => {
+      handleWebSocketEvent(event as any);
+    });
+    
+    const unsubscribeExecuted = onExecuted((event) => {
+      handleWebSocketEvent(event as any);
+    });
+    
+    return () => {
+      unsubscribePreview();
+      unsubscribeExecuted();
+    };
+  }, [onPreview, onExecuted]);
 
   // Initialize with mock data
   useEffect(() => {
