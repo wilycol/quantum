@@ -11,7 +11,16 @@ interface EventBusStatusProps {
 }
 
 export default function EventBusStatus({ className = '', showDetails = false }: EventBusStatusProps) {
-  const { connected, connecting, error, connect, disconnect } = useEventBus({
+  const { 
+    connected, 
+    connecting, 
+    error, 
+    connect, 
+    disconnect,
+    onPreview,
+    onExecuted,
+    onState
+  } = useEventBus({
     autoConnect: true,
     debug: true
   });
@@ -21,8 +30,6 @@ export default function EventBusStatus({ className = '', showDetails = false }: 
 
   // Listen to events for status display
   useEffect(() => {
-    const { onPreview, onExecuted, onState } = useEventBus();
-    
     const unsubscribePreview = onPreview((event) => {
       setLastEvent(`Preview: ${event.t} - ${event.broker || 'binary'}`);
       setEventCount(prev => prev + 1);
@@ -43,7 +50,7 @@ export default function EventBusStatus({ className = '', showDetails = false }: 
       unsubscribeExecuted();
       unsubscribeState();
     };
-  }, []);
+  }, [onPreview, onExecuted, onState]);
 
   const getStatusColor = () => {
     if (error) return 'text-red-500';
@@ -129,6 +136,7 @@ export function EventBusTest() {
     sendExecuted, 
     sendState,
     createPreview,
+    createBinaryPreview,
     createExecuted,
     createState
   } = useEventBus();
