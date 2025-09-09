@@ -6,7 +6,7 @@ export function subscribeKline(
   interval: '1m'|'3m'|'5m'|'15m'|'30m'|'1h'|'2h'|'4h'|'1d' = '1m',
   onMsg: (msg: any) => void
 ): Unsub {
-  const url = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${interval}`;
+  const url = `wss://stream.binance.com/ws/${symbol.toLowerCase()}@kline_${interval}`;
   console.log('[BINANCE FEED] Connecting to:', url);
   let ws: WebSocket;
   let retry = 0;
