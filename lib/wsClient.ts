@@ -8,8 +8,18 @@ let onClose: Array<() => void> = [];
 export function connectWS(path = '/api/ws') {
   if (ws && ws.readyState <= 1) return ws;
 
-  // Para desarrollo local, usar el servidor WebSocket dedicado
-  const url = 'ws://localhost:3001';
+  // Detectar si estamos en desarrollo local o producción
+  const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  
+  let url: string;
+  if (isLocalDev) {
+    // Para desarrollo local, usar el servidor WebSocket dedicado
+    url = 'ws://localhost:3001';
+  } else {
+    // Para producción (Vercel), usar el Edge WebSocket
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    url = `${proto}://${window.location.host}${path}`;
+  }
 
   ws = new WebSocket(url);
 
