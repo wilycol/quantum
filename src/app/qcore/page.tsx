@@ -24,8 +24,8 @@ export default function QuantumCorePage() {
       {/* Kill Switch Banner */}
       <KillSwitchModal />
 
-      {/* WebSocket Test - Temporal */}
-      <WebSocketTest />
+      {/* WebSocket Test - Temporal - DISABLED */}
+      {/* <WebSocketTest /> */}
 
       {/* Main Content */}
       <div className="p-4">
