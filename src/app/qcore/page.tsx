@@ -11,6 +11,8 @@ import ExecutedTimeline from './components/ExecutedTimeline';
 import ModeConfirmModal from './components/ModeConfirmModal';
 import KillSwitchModal from './components/KillSwitchModal';
 import WebSocketTest from '../../components/WebSocketTest';
+import RiskManager from './components/RiskManager';
+import PortfolioPanel from './components/PortfolioPanel';
 
 export default function QuantumCorePage() {
 
@@ -27,19 +29,21 @@ export default function QuantumCorePage() {
 
       {/* Main Content */}
       <div className="p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
-          {/* Left Column - Config Panel */}
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 h-full">
+          {/* Left Column - Config Panel + Risk Manager */}
+          <div className="lg:col-span-1 space-y-6">
             <ConfigPanel />
+            <RiskManager />
           </div>
 
           {/* Center Column - Chart Panel */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             <ChartPanel />
           </div>
 
-          {/* Right Column - IA Coach, Logs, Timeline */}
-          <div className="lg:col-span-1 space-y-6">
+          {/* Right Column - Portfolio, IA Coach, Logs, Timeline */}
+          <div className="lg:col-span-2 space-y-6">
+            <PortfolioPanel />
             <CoachPanel />
             <LogsPanel />
             <ExecutedTimeline />
