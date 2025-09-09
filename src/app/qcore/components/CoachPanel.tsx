@@ -8,7 +8,7 @@ import {
   useMode,
   useAssets
 } from '../hooks/useQcoreState';
-import { useWebsocket } from '../hooks/useWebsocket';
+import { useEventBus } from '../../../hooks/useEventBus';
 import { WsEvent, CoachMessage } from '../lib/types';
 import { formatConfidence, formatRelativeTime } from '../lib/formatters';
 
@@ -30,9 +30,32 @@ export default function CoachPanel({ className = '' }: CoachPanelProps) {
   const [reactionTime, setReactionTime] = useState<number>(0);
 
   // WebSocket connection
-  const { connected: wsConnected } = useWebsocket({
-    onEvent: handleWebSocketEvent
+  const { connected: wsConnected, onPreview, onExecuted, onState } = useEventBus({
+    autoConnect: true,
+    debug: false
   });
+
+  // Set up event listeners
+  useEffect(() => {
+    const unsubscribePreview = onPreview((event) => {
+      handleWebSocketEvent(event as any);
+    });
+    
+    const unsubscribeExecuted = onExecuted((event) => {
+      handleWebSocketEvent(event as any);
+    });
+    
+    const unsubscribeState = onState((state) => {
+      // Handle state changes for coach recommendations
+      console.log('State changed:', state);
+    });
+    
+    return () => {
+      unsubscribePreview();
+      unsubscribeExecuted();
+      unsubscribeState();
+    };
+  }, [onPreview, onExecuted, onState]);
 
   // Mock coach messages based on strategy
   const mockMessages: CoachMessage[] = [

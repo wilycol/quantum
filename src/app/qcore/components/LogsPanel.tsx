@@ -7,7 +7,7 @@ import {
   useStrategy,
   useMode
 } from '../hooks/useQcoreState';
-import { useWebsocket } from '../hooks/useWebsocket';
+import { useEventBus } from '../../../hooks/useEventBus';
 import { WsEvent, LogEntry } from '../lib/types';
 import { formatTimestamp, formatLogLevel } from '../lib/formatters';
 
@@ -27,10 +27,35 @@ export default function LogsPanel({ className = '' }: LogsPanelProps) {
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   // WebSocket connection
-  const { connected: wsConnected } = useWebsocket({
-    onEvent: handleWebSocketEvent,
-    onLog: handleLog
+  const { connected: wsConnected, onPreview, onExecuted, onState } = useEventBus({
+    autoConnect: true,
+    debug: false
   });
+
+  // Set up event listeners
+  useEffect(() => {
+    const unsubscribePreview = onPreview((event) => {
+      handleWebSocketEvent(event as any);
+    });
+    
+    const unsubscribeExecuted = onExecuted((event) => {
+      handleWebSocketEvent(event as any);
+    });
+    
+    const unsubscribeState = onState((state) => {
+      handleLog({
+        level: 'INFO',
+        message: 'State updated',
+        data: state
+      });
+    });
+    
+    return () => {
+      unsubscribePreview();
+      unsubscribeExecuted();
+      unsubscribeState();
+    };
+  }, [onPreview, onExecuted, onState]);
 
   // Auto-scroll effect
   useEffect(() => {
