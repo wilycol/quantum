@@ -40,13 +40,16 @@ export const useMarket = create<State>((set, get) => ({
     }
     const candles: Candle[] = rows.map((r: any[]) => [r[0], +r[1], +r[2], +r[3], +r[4], +r[5]]);
     const last = candles.at(-1);
+    console.log('[MARKET STORE] Processed candles:', { count: candles.length, first: candles[0], last: candles[candles.length - 1] });
+    console.log('[MARKET STORE] About to set candles in store...');
     set({ candles, loading: false, lastPrice: last ? last[4] : undefined });
+    console.log('[MARKET STORE] Candles set in store successfully');
 
-           // Feed en vivo
-           console.log('[MARKET STORE] Starting live feed for:', symbol, interval);
-           console.log('[MARKET STORE] About to call subscribeKline...');
-           if (unsub) unsub();
-           try {
+    // Feed en vivo
+    console.log('[MARKET STORE] Starting live feed for:', symbol, interval);
+    console.log('[MARKET STORE] About to call subscribeKline...');
+    if (unsub) unsub();
+    try {
              unsub = subscribeKline(symbol, interval, (msg) => {
       console.log('[MARKET STORE] Received live data:', msg);
       // kline payload
