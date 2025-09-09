@@ -10,6 +10,7 @@ import LogsPanel from './components/LogsPanel';
 import ExecutedTimeline from './components/ExecutedTimeline';
 import ModeConfirmModal from './components/ModeConfirmModal';
 import KillSwitchModal from './components/KillSwitchModal';
+import WebSocketTest from '../../components/WebSocketTest';
 import { connectWS } from '../../../lib/wsClient';
 
 export default function QuantumCorePage() {
@@ -26,6 +27,9 @@ export default function QuantumCorePage() {
       
       {/* Kill Switch Banner */}
       <KillSwitchModal />
+
+      {/* WebSocket Test - Temporal */}
+      <WebSocketTest />
 
       {/* Main Content */}
       <div className="p-4">
