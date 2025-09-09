@@ -64,7 +64,12 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
   // Convert candles to chart format when they change
   useEffect(() => {
-    if (candles.length > 0) {
+    console.log('[ChartPanel] Candles changed:', { 
+      length: candles?.length, 
+      first: candles?.[0], 
+      last: candles?.[candles?.length - 1] 
+    });
+    if (candles && candles.length > 0) {
       setReady(true);
     }
   }, [candles]);
@@ -179,13 +184,16 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
           </div>
         ) : (
           <CandlesCore
-            candles={(candles || []).map(c => ({
-              time: c[0] / 1000, // Convert ms to seconds
-              open: c[1],
-              high: c[2],
-              low: c[3],
-              close: c[4]
-            }))}
+            candles={(candles || []).map(c => {
+              console.log('[ChartPanel] Processing candle:', c);
+              return {
+                time: c[0] / 1000, // Convert ms to seconds
+                open: c[1],
+                high: c[2],
+                low: c[3],
+                close: c[4]
+              };
+            })}
             volume={(candles || []).map(c => ({
               time: c[0] / 1000,
               value: c[5]
