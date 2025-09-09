@@ -12,7 +12,7 @@ import { bindOrderEvents } from './stores/account';
 // Carga perezosa de vistas pesadas
 const TradingManualView = lazy(() => import('./components/TradingManualView'));
 const PortfolioView = lazy(() => import('./components/PortfolioView'));
-const QuantumCoreView = lazy(() => import('./components/QuantumCoreView'));
+const QuantumCoreView = lazy(() => import('./app/qcore/page'));
 const SimulatorView = lazy(() => import('./components/SimulatorView'));
 const QuantumDeskView = lazy(() => import('./components/QuantumDeskView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));

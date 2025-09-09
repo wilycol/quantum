@@ -1,0 +1,10 @@
+[33mf19433d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdev[m[33m, [m[1;31morigin/dev[m[33m)[m feat: Complete Vite migration with WebSocket safety and chart fixes
+[33m9b56cc6[m feat: Complete Vite configuration with WebSocket mock
+[33mb4059f0[m refactor: Optimize configuration for Vite project
+[33md9c7f41[m fix: Set Node.js version to 18.x for Vercel deployment
+[33m0470924[m fix: Correct Vercel function runtime configuration
+[33m3998d3a[m fix: Resolve WebSocket and React errors for Vercel deployment
+[33m8a0014d[m fix: Resolve TypeScript errors in Vercel deployment
+[33mb72ec76[m feat: Complete QuantumCore v2 Implementation
+[33m45a2a51[m feat: Implement QuantumCore v2 Foundation
+[33m9119fcf[m feat: Implement QuantumCore Event Bus WebSocket System

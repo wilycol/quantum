@@ -56,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 2. Validar símbolo permitido
-    if (!ALLOWED.has(body.symbol as string)) {
+    if (!ALLOWED.has(body.symbol as any)) {
       return res.status(400).json({ ok: false, error: 'symbol_not_allowed' });
     }
 

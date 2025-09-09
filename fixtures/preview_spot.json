@@ -1,0 +1,12 @@
+{
+  "t": "preview",
+  "broker": "binance",
+  "pair": "BTCUSDT",
+  "side": "BUY",
+  "price": 111842.8,
+  "sl": 11153,
+  "tp": 11315,
+  "rr": 4.3,
+  "conf": 0.62,
+  "ts": 1694176200000
+}
