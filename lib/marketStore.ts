@@ -49,8 +49,10 @@ export const useMarket = create<State>((set, get) => ({
     console.log('[MARKET STORE] Starting live feed for:', symbol, interval);
     console.log('[MARKET STORE] About to call subscribeKline...');
     if (unsub) unsub();
+    
+    // WebSocket feed (separate from candle processing)
     try {
-             unsub = subscribeKline(symbol, interval, (msg) => {
+      unsub = subscribeKline(symbol, interval, (msg) => {
       console.log('[MARKET STORE] Received live data:', msg);
       // kline payload
       const k = msg.k;
