@@ -62,8 +62,11 @@ export const useVolumeOn = () => useQcoreState(s => s.volumeOn);
 export const useGrid = () => useQcoreState(s => s.grid);
 export const useBinary = () => useQcoreState(s => s.binary);
 export const useRisk = () => useQcoreState(s => ({ grid: s.grid, binary: s.binary }));
+export const useKPIs = () => useQcoreState(s => s.kpis);
+export const useConnected = () => useQcoreState(s => s.wsStatus === 'connected');
 export const useKillSwitchActive = () => useQcoreState(s => s.killSwitchActive);
 export const useShowModeConfirmModal = () => useQcoreState(s => s.showModeConfirmModal);
+export const useAvailableAssets = () => useQcoreState(s => s.assets);
 
 export const useQcoreActions = () => useQcoreState(s => ({
   setMode: s.setMode,
