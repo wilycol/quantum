@@ -89,20 +89,32 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       .filter(v => Number.isFinite(v.value) && Number.isFinite(v.time))
       .map(v => ({ ...v, time: v.time > 2e10 ? Math.floor(v.time/1000) : v.time }));
     setVolumeSafe(vol);
+    
+    // Set ready to true after data is loaded
+    setReady(true);
   }, []); // Empty dependency array - only run once
 
   // Mock data generators
   function generateMockCandles() {
     const now = Date.now();
     const candles = [];
+    let basePrice = 50000; // Starting price
     
     for (let i = 100; i >= 0; i--) {
       const time = (now - i * 60000) / 1000; // 1 minute intervals
-      const basePrice = 50000 + Math.sin(i * 0.1) * 1000;
-      const open = basePrice + (Math.random() - 0.5) * 100;
-      const close = open + (Math.random() - 0.5) * 200;
-      const high = Math.max(open, close) + Math.random() * 50;
-      const low = Math.min(open, close) - Math.random() * 50;
+      
+      // More realistic price movement
+      const trend = Math.sin(i * 0.05) * 0.02; // Long-term trend
+      const volatility = (Math.random() - 0.5) * 0.01; // Random volatility
+      const priceChange = basePrice * (trend + volatility);
+      
+      const open = basePrice;
+      const close = basePrice + priceChange;
+      const high = Math.max(open, close) + Math.random() * Math.abs(priceChange) * 0.5;
+      const low = Math.min(open, close) - Math.random() * Math.abs(priceChange) * 0.5;
+      
+      // Update base price for next candle
+      basePrice = close;
 
       candles.push({
         time,
@@ -111,6 +123,11 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
         low,
         close
       });
+    }
+
+    // Set current price to the last candle's close
+    if (candles.length > 0) {
+      setCurrentPrice(candles[candles.length - 1].close);
     }
 
     return candles;
@@ -122,7 +139,10 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     
     for (let i = 100; i >= 0; i--) {
       const time = (now - i * 60000) / 1000;
-      const vol = Math.random() * 1000;
+      // More realistic volume with some correlation to price movement
+      const baseVolume = 500 + Math.random() * 1000;
+      const volatility = Math.random() * 0.5 + 0.5; // 0.5 to 1.0 multiplier
+      const vol = baseVolume * volatility;
 
       volume.push({
         time,
