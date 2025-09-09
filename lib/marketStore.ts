@@ -42,8 +42,10 @@ export const useMarket = create<State>((set, get) => ({
     set({ candles, loading: false, lastPrice: last ? last[4] : undefined });
 
     // Feed en vivo
+    console.log('[MARKET STORE] Starting live feed for:', symbol, interval);
     if (unsub) unsub();
     unsub = subscribeKline(symbol, interval, (msg) => {
+      console.log('[MARKET STORE] Received live data:', msg);
       // kline payload
       const k = msg.k;
       if (!k) return;
@@ -58,6 +60,7 @@ export const useMarket = create<State>((set, get) => ({
         return { candles: next, lastPrice: +k.c, binanceConnected: true };
       });
       if (isClose) {
+        console.log('[MARKET STORE] Candle closed, price:', +k.c);
         // aquí podrías emitir evento a IA Coach si quieres
       }
     });

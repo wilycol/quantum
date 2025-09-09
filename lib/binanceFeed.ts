@@ -7,18 +7,30 @@ export function subscribeKline(
   onMsg: (msg: any) => void
 ): Unsub {
   const url = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${interval}`;
+  console.log('[BINANCE FEED] Connecting to:', url);
   let ws: WebSocket;
   let retry = 0;
 
   const connect = () => {
+    console.log('[BINANCE FEED] Attempting connection...');
     ws = new WebSocket(url);
-    ws.addEventListener('open', () => { retry = 0; });
-    ws.addEventListener('message', e => { try { onMsg(JSON.parse(String(e.data))); } catch {} });
+    ws.addEventListener('open', () => { 
+      console.log('[BINANCE FEED] Connected successfully!');
+      retry = 0; 
+    });
+    ws.addEventListener('message', e => { 
+      console.log('[BINANCE FEED] Message received:', e.data);
+      try { onMsg(JSON.parse(String(e.data))); } catch {} 
+    });
     ws.addEventListener('close', () => {
+      console.log('[BINANCE FEED] Connection closed, retrying...');
       const delay = Math.min(1000 * 2 ** Math.min(retry++, 5), 30000);
       setTimeout(connect, delay);
     });
-    ws.addEventListener('error', () => ws.close());
+    ws.addEventListener('error', (error) => {
+      console.error('[BINANCE FEED] Connection error:', error);
+      ws.close();
+    });
   };
 
   connect();
