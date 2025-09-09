@@ -10,8 +10,8 @@ export default function WebSocketTest() {
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const url = `${proto}://${location.host}/api/ws`;
+    // Para desarrollo local, usar el servidor WebSocket dedicado
+    const url = 'ws://localhost:3001';
     
     console.log('[WebSocketTest] Connecting to:', url);
     

@@ -1,7 +1,7 @@
 // lib/wsClient.ts
 export function connectWS(path = '/api/ws') {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const url = `${proto}://${location.host}${path}`;
+  // Para desarrollo local, usar el servidor WebSocket dedicado
+  const url = 'ws://localhost:3001';
 
   let ws: WebSocket;
   let tries = 0;
