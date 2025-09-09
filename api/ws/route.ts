@@ -1,6 +1,6 @@
-export const config = { runtime: 'edge' };
+export const runtime = 'edge';
 
-export default async function handler(req: Request) {
+export async function GET(req: Request) {
   const upgrade = (req.headers.get('upgrade') || '').toLowerCase();
   if (upgrade !== 'websocket') {
     return new Response('Expected Upgrade: websocket', { status: 426 });
@@ -35,5 +35,9 @@ export default async function handler(req: Request) {
   // @ts-ignore
   server.addEventListener('close', () => clearInterval(hb));
 
-  return new Response(null, { status: 101, webSocket: client });
+  return new Response(null, { 
+    status: 101, 
+    // @ts-ignore
+    webSocket: client 
+  });
 }
