@@ -10,6 +10,8 @@ import {
   Broker,
   Mode
 } from '../hooks/useQcoreState';
+
+type Strategy = 'grid' | 'binary';
 import { formatStatus } from '../lib/formatters';
 
 interface TopbarProps {
@@ -30,7 +32,9 @@ export default function Topbar({ className = '' }: TopbarProps) {
     setBroker, 
     setStrategy, 
     setMode, 
-    toggleKill
+    toggleKill,
+    setShowModeConfirmModal,
+    setKillSwitchActive
   } = useQcoreActions();
 
   // Local state
