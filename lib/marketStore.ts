@@ -29,7 +29,8 @@ export const useMarket = create<State>((set, get) => ({
            // Backfill
            set({ loading: true, error: undefined, symbol, interval });
            console.log('[MARKET STORE] About to fetch klines...');
-    const res = await fetch(`/api/klines?symbol=${symbol}&interval=${interval}&limit=500`, { cache: 'no-store' });
+    const timestamp = Date.now();
+    const res = await fetch(`/api/klines?symbol=${symbol}&interval=${interval}&limit=500&t=${timestamp}`, { cache: 'no-store' });
     console.log('[MARKET STORE] Fetch response:', { ok: res.ok, status: res.status });
     if (!res.ok) {
       set({ loading: false, error: `klines ${res.status}` }); 

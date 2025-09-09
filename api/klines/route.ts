@@ -24,5 +24,6 @@ export async function GET(req: Request) {
   if (!r.ok) return new Response(`Upstream ${r.status}`, { status: r.status });
   const data = await r.json();
   console.log('[KLINES API] Data received:', { isArray: Array.isArray(data), length: data?.length, type: typeof data });
+  console.log('🚀 [KLINES API] RETURNING DATA!');
   return new Response(JSON.stringify(data), { status: 200, headers: { 'content-type': 'application/json' } });
 }
