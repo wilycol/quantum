@@ -17,6 +17,7 @@ type State = {
   binary: BinaryConfig;
   wsStatus: WsStatus;
   killSwitchActive: boolean;
+  showModeConfirmModal: boolean;
   kpis: { elapsed: number; balance: number; pnl: number; trades: number; winRate: number };
 };
 
@@ -26,6 +27,8 @@ type Actions = {
   setStrategy: (s: 'grid'|'binary') => void;
   setWsStatus: (s: WsStatus) => void;
   toggleKill: (on: boolean) => void;
+  setKillSwitchActive: (active: boolean) => void;
+  setShowModeConfirmModal: (show: boolean) => void;
 };
 
 export const useQcoreState = create<State & Actions>((set) => ({
@@ -38,6 +41,7 @@ export const useQcoreState = create<State & Actions>((set) => ({
   binary: { amount: 50, expiry: 60, direction: 'CALL' },
   wsStatus: 'disconnected',
   killSwitchActive: false,
+  showModeConfirmModal: false,
   kpis: { elapsed: 0, balance: 10000, pnl: 0, trades: 0, winRate: 0 },
 
   setMode: (m) => set({ mode: m }),
@@ -45,17 +49,32 @@ export const useQcoreState = create<State & Actions>((set) => ({
   setStrategy: (s) => set({ strategy: s }),
   setWsStatus: (s) => set({ wsStatus: s }),
   toggleKill: (on) => set({ killSwitchActive: on }),
+  setKillSwitchActive: (active) => set({ killSwitchActive: active }),
+  setShowModeConfirmModal: (show) => set({ showModeConfirmModal: show }),
 }));
 
-// ⤵️ Selectores que usa Topbar
+// ⤵️ Selectores que usan los componentes
+export const useBroker = () => useQcoreState(s => s.broker);
+export const useStrategy = () => useQcoreState(s => s.strategy);
+export const useMode = () => useQcoreState(s => s.mode);
+export const useAssets = () => useQcoreState(s => s.assets);
+export const useVolumeOn = () => useQcoreState(s => s.volumeOn);
+export const useGrid = () => useQcoreState(s => s.grid);
+export const useBinary = () => useQcoreState(s => s.binary);
+export const useRisk = () => useQcoreState(s => ({ grid: s.grid, binary: s.binary }));
 export const useKillSwitchActive = () => useQcoreState(s => s.killSwitchActive);
+export const useShowModeConfirmModal = () => useQcoreState(s => s.showModeConfirmModal);
+
 export const useQcoreActions = () => useQcoreState(s => ({
   setMode: s.setMode,
   setBroker: s.setBroker,
   setStrategy: s.setStrategy,
   setWsStatus: s.setWsStatus,
   toggleKill: s.toggleKill,
+  setKillSwitchActive: s.setKillSwitchActive,
+  setShowModeConfirmModal: s.setShowModeConfirmModal,
 }));
+
 export const useCanSwitchToLive = () =>
   useQcoreState(s => {
     const hasAssets = (s.assets?.length ?? 0) > 0;
