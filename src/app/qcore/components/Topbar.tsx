@@ -84,7 +84,7 @@ export default function Topbar({ className = '' }: TopbarProps) {
   const currentStrategy = strategyOptions.find(opt => opt.value === strategy);
 
   // Connection status
-  const isConnected = connected[broker];
+  const isConnected = wsStatus === 'connected';
   const wsStatusFormatted = formatStatus(wsStatus);
   const modeStatusFormatted = formatStatus(mode);
 
@@ -207,7 +207,7 @@ export default function Topbar({ className = '' }: TopbarProps) {
             <div className="flex items-center space-x-1">
               <span className="text-sm text-white">Binance API</span>
               <div className={`w-2 h-2 rounded-full ${
-                connected.binance ? 'bg-green-500' : 'bg-red-500'
+                broker === 'binance' && isConnected ? 'bg-green-500' : 'bg-red-500'
               }`} />
             </div>
             
@@ -215,7 +215,7 @@ export default function Topbar({ className = '' }: TopbarProps) {
             <div className="flex items-center space-x-1">
               <span className="text-sm text-white">Zaffer API</span>
               <div className={`w-2 h-2 rounded-full ${
-                connected.zaffer ? 'bg-green-500' : 'bg-red-500'
+                broker === 'zaffer' && isConnected ? 'bg-green-500' : 'bg-red-500'
               }`} />
             </div>
           </div>
