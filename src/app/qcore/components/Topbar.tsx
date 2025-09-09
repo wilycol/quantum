@@ -3,17 +3,14 @@
 
 import React, { useState } from 'react';
 import { 
-  useBroker, 
-  useStrategy, 
-  useMode, 
-  useConnected, 
-  useWsStatus,
+  useQcoreState,
   useKillSwitchActive,
   useQcoreActions,
-  useCanSwitchToLive
+  useCanSwitchToLive,
+  Broker,
+  Mode
 } from '../hooks/useQcoreState';
 import { formatStatus } from '../lib/formatters';
-import { Broker, Mode, Strategy } from '../lib/types';
 
 interface TopbarProps {
   className?: string;
@@ -21,11 +18,10 @@ interface TopbarProps {
 
 export default function Topbar({ className = '' }: TopbarProps) {
   // State from store
-  const broker = useBroker();
-  const strategy = useStrategy();
-  const mode = useMode();
-  const connected = useConnected();
-  const wsStatus = useWsStatus();
+  const broker = useQcoreState(s => s.broker);
+  const strategy = useQcoreState(s => s.strategy);
+  const mode = useQcoreState(s => s.mode);
+  const wsStatus = useQcoreState(s => s.wsStatus);
   const killSwitchActive = useKillSwitchActive();
   const canSwitchToLive = useCanSwitchToLive();
   
@@ -34,8 +30,7 @@ export default function Topbar({ className = '' }: TopbarProps) {
     setBroker, 
     setStrategy, 
     setMode, 
-    setKillSwitchActive,
-    setShowModeConfirmModal 
+    toggleKill
   } = useQcoreActions();
 
   // Local state
