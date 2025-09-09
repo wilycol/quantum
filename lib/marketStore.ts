@@ -33,6 +33,10 @@ export const useMarket = create<State>((set, get) => ({
       return;
     }
     const rows = await res.json(); // Binance格式
+    if (!Array.isArray(rows)) {
+      set({ loading: false, error: 'Invalid response format' });
+      return;
+    }
     const candles: Candle[] = rows.map((r: any[]) => [r[0], +r[1], +r[2], +r[3], +r[4], +r[5]]);
     const last = candles.at(-1);
     set({ candles, loading: false, lastPrice: last ? last[4] : undefined });
@@ -70,7 +74,7 @@ export const useMarket = create<State>((set, get) => ({
           fetch(`/api/klines?symbol=${symbol}&interval=${interval}&limit=1`, { cache: 'no-store' })
             .then(r => r.json())
             .then(rows => {
-              if (rows[0]) {
+              if (Array.isArray(rows) && rows[0]) {
                 const latest: Candle = [rows[0][0], +rows[0][1], +rows[0][2], +rows[0][3], +rows[0][4], +rows[0][5]];
                 set(s => ({ ...s, lastPrice: latest[4] }));
               }
