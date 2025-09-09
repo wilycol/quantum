@@ -1,7 +1,7 @@
 // src/app/qcore/components/ChartPanel.tsx
 // Chart panel with overlays and markers for QuantumCore v2
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   useBroker,
   useStrategy,
@@ -37,9 +37,26 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   const kpis = useKPIs();
 
   // WebSocket integration
-  const { connected: wsConnected, lastEvent } = useEventBus({
-    onEvent: handleWebSocketEvent
+  const { connected: wsConnected, onPreview, onExecuted } = useEventBus({
+    autoConnect: true,
+    debug: false
   });
+
+  // Set up event listeners
+  useEffect(() => {
+    const unsubscribePreview = onPreview((event) => {
+      handleWebSocketEvent(event as any);
+    });
+    
+    const unsubscribeExecuted = onExecuted((event) => {
+      handleWebSocketEvent(event as any);
+    });
+    
+    return () => {
+      unsubscribePreview();
+      unsubscribeExecuted();
+    };
+  }, [onPreview, onExecuted]);
 
   // Handle WebSocket events - MOVED AFTER HOOKS
   function handleWebSocketEvent(event: any) {
