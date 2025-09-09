@@ -75,3 +75,19 @@ export function formatConfidence(conf: number | undefined | null): string {
   }
   return `${(conf * 100).toFixed(1)}%`;
 }
+
+export function formatTimestamp(timestamp: number | undefined | null): string {
+  if (timestamp === undefined || timestamp === null || !Number.isFinite(timestamp)) {
+    return '—';
+  }
+  return new Date(timestamp).toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit' 
+  });
+}
+
+export function formatLogLevel(level: string | undefined | null): string {
+  if (!level) return 'INFO';
+  return level.toUpperCase();
+}
