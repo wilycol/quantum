@@ -178,7 +178,16 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
       {/* Main Chart */}
       <div className="mb-4">
-        {loading || !ready || !candles || candles.length < 2 ? (
+        {(() => {
+          console.log('[ChartPanel] Render condition:', { 
+            loading, 
+            ready, 
+            candlesLength: candles?.length, 
+            hasCandles: !!candles,
+            condition: loading || !ready || !candles || candles.length < 2
+          });
+          return loading || !ready || !candles || candles.length < 2;
+        })() ? (
           <div className="flex items-center justify-center h-[420px] bg-gray-800 rounded-lg">
             <div className="text-gray-400">Cargando velas...</div>
           </div>
