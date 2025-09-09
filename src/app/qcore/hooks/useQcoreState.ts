@@ -67,6 +67,14 @@ export const useConnected = () => useQcoreState(s => s.wsStatus === 'connected')
 export const useKillSwitchActive = () => useQcoreState(s => s.killSwitchActive);
 export const useShowModeConfirmModal = () => useQcoreState(s => s.showModeConfirmModal);
 export const useAvailableAssets = () => useQcoreState(s => s.assets);
+export const useCanStart = () => useQcoreState(s => {
+  const hasAssets = (s.assets?.length ?? 0) > 0;
+  const valid = s.strategy === 'grid' 
+    ? (s.grid.upper > s.grid.lower && s.grid.size > 0 && s.grid.stepPct > 0)
+    : (s.binary.amount > 0 && !!s.binary.expiry && !!s.binary.direction);
+  const wsOk = s.wsStatus === 'connected';
+  return hasAssets && valid && wsOk && !s.killSwitchActive;
+});
 
 export const useQcoreActions = () => useQcoreState(s => ({
   setMode: s.setMode,
