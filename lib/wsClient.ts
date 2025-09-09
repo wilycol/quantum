@@ -1,29 +1,44 @@
 // lib/wsClient.ts
+// Compartido por toda la app
+let ws: WebSocket | null = null;
+let listeners: ((msg: any) => void)[] = [];
+let onOpen: Array<() => void> = [];
+let onClose: Array<() => void> = [];
+
 export function connectWS(path = '/api/ws') {
+  if (ws && ws.readyState <= 1) return ws;
+
   // Para desarrollo local, usar el servidor WebSocket dedicado
   const url = 'ws://localhost:3001';
 
-  let ws: WebSocket;
-  let tries = 0;
+  ws = new WebSocket(url);
 
-  const connect = () => {
-    ws = new WebSocket(url);
-    ws.addEventListener('open', () => {
-      console.log('[WS] open');
-      tries = 0;
-      ws.send(JSON.stringify({ op: 'hello' }));
-      // opcional: latido cliente→server
-      setInterval(() => ws.readyState === 1 && ws.send(JSON.stringify({ op: 'ping' })), 15000);
-    });
-    ws.addEventListener('message', (e) => console.log('[WS] message', e.data));
-    ws.addEventListener('error', (e) => console.warn('[WS] error', e));
-    ws.addEventListener('close', () => {
-      const delay = Math.min(1000 * 2 ** Math.min(tries++, 5), 30000);
-      console.log(`[WS] closed, retry in ${delay}ms`);
-      setTimeout(connect, delay);
-    });
-  };
+  ws.addEventListener('open', () => {
+    onOpen.forEach(fn => fn());
+    send({ op: 'hello' });
+    // latido cliente→server
+    const iv = setInterval(() => {
+      if (!ws || ws.readyState !== 1) return clearInterval(iv);
+      send({ op: 'ping', t: Date.now() });
+    }, 15000);
+  });
 
-  connect();
-  return () => ws && ws.close();
+  ws.addEventListener('message', (e) => {
+    try { const msg = JSON.parse(String(e.data)); listeners.forEach(fn => fn(msg)); }
+    catch { listeners.forEach(fn => fn({ op: 'raw', data: e.data })); }
+  });
+
+  ws.addEventListener('close', () => {
+    onClose.forEach(fn => fn());
+    // reconexión exponencial
+    setTimeout(() => connectWS(path), 1500);
+  });
+
+  return ws;
 }
+
+export function send(obj: any) { ws?.readyState === 1 && ws.send(JSON.stringify(obj)); }
+export function onMessage(fn: (m:any)=>void) { listeners.push(fn); return () => { listeners = listeners.filter(f => f!==fn); }; }
+export function onConnected(fn: ()=>void) { onOpen.push(fn); return () => { onOpen = onOpen.filter(f=>f!==fn); }; }
+export function onDisconnected(fn: ()=>void) { onClose.push(fn); return () => { onClose = onClose.filter(f=>f!==fn); }; }
+export function isConnected() { return ws?.readyState === 1; }

@@ -11,7 +11,8 @@ import {
   useBinary,
   useKPIs
 } from '../hooks/useQcoreState';
-import { useEventBus } from '../../../hooks/useEventBus';
+import { useWS } from '../../providers/WSProvider';
+import { useMarket } from '../../../../lib/marketStore';
 import { CandlesCore } from './CandlesCore';
 import { formatPrice } from '../lib/formatters';
 
@@ -22,10 +23,7 @@ interface ChartPanelProps {
 export default function ChartPanel({ className = '' }: ChartPanelProps) {
   // ALL HOOKS AT THE TOP - NO CONDITIONAL HOOKS
   const [ready, setReady] = useState(false);
-  const [currentPrice, setCurrentPrice] = useState<number>(0);
   const [markers, setMarkers] = useState<any[]>([]);
-  const [candlesSafe, setCandlesSafe] = useState<any[]>([]);
-  const [volumeSafe, setVolumeSafe] = useState<any[]>([]);
 
   // State from store
   const broker = useBroker();
@@ -37,26 +35,10 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   const kpis = useKPIs();
 
   // WebSocket integration
-  const { connected: wsConnected, onPreview, onExecuted } = useEventBus({
-    autoConnect: true,
-    debug: false
-  });
-
-  // Set up event listeners
-  useEffect(() => {
-    const unsubscribePreview = onPreview((event) => {
-      handleWebSocketEvent(event as any);
-    });
-    
-    const unsubscribeExecuted = onExecuted((event) => {
-      handleWebSocketEvent(event as any);
-    });
-    
-    return () => {
-      unsubscribePreview();
-      unsubscribeExecuted();
-    };
-  }, [onPreview, onExecuted]);
+  const { connected: wsConnected, latencyMs } = useWS();
+  
+  // Market data integration
+  const { candles, lastPrice, binanceConnected, loading, init } = useMarket();
 
   // Handle WebSocket events - MOVED AFTER HOOKS
   function handleWebSocketEvent(event: any) {
@@ -75,24 +57,17 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     }
   }
 
-  // Normalize/filter data ALWAYS, even if empty (hook cannot be conditional)
+  // Initialize market data
   useEffect(() => {
-    const candles = generateMockCandles();
-    const volume = generateMockVolume();
-    
-    const norm = (candles ?? [])
-      .filter(c => Number.isFinite(c.open) && Number.isFinite(c.high) && Number.isFinite(c.low) && Number.isFinite(c.close) && Number.isFinite(c.time))
-      .map(c => ({ ...c, time: c.time > 2e10 ? Math.floor(c.time/1000) : c.time }));
-    setCandlesSafe(norm);
-    
-    const vol = (volume ?? [])
-      .filter(v => Number.isFinite(v.value) && Number.isFinite(v.time))
-      .map(v => ({ ...v, time: v.time > 2e10 ? Math.floor(v.time/1000) : v.time }));
-    setVolumeSafe(vol);
-    
-    // Set ready to true after data is loaded
-    setReady(true);
-  }, []); // Empty dependency array - only run once
+    init();
+  }, [init]);
+
+  // Convert candles to chart format when they change
+  useEffect(() => {
+    if (candles.length > 0) {
+      setReady(true);
+    }
+  }, [candles]);
 
   // Mock data generators
   function generateMockCandles() {
@@ -156,7 +131,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   // Mini Market Watch - limited to active assets
   const marketWatchData = assets.slice(0, 5).map(asset => ({
     symbol: asset,
-    price: currentPrice + (Math.random() - 0.5) * 100,
+    price: (lastPrice || 0) + (Math.random() - 0.5) * 100,
     change: (Math.random() - 0.5) * 5,
     changePercent: (Math.random() - 0.5) * 2
   }));
@@ -171,35 +146,55 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
           <div className="text-right">
             <div className="text-sm text-gray-400">Current Price</div>
             <div className="text-lg font-bold text-white">
-              {formatPrice(currentPrice)}
+              {formatPrice(lastPrice || 0)}
             </div>
           </div>
           
-          {/* WebSocket Status */}
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm text-gray-400">
-              WS: {wsConnected ? 'Connected' : 'Disconnected'}
-            </span>
+          {/* Status Indicators */}
+          <div className="flex items-center space-x-4 text-sm">
+            <div className="flex items-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-gray-400">
+                WS: {wsConnected ? 'Connected' : 'Disconnected'}
+              </span>
+              {wsConnected && latencyMs != null && (
+                <span className="text-xs text-gray-500">· {latencyMs}ms</span>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${binanceConnected ? 'bg-green-500' : 'bg-yellow-500'}`} />
+              <span className="text-gray-400">
+                Market: {binanceConnected ? 'Live' : 'Backfill'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Chart */}
       <div className="mb-4">
-        {!ready || candlesSafe.length < 2 ? (
+        {loading || !ready || candles.length < 2 ? (
           <div className="flex items-center justify-center h-[420px] bg-gray-800 rounded-lg">
             <div className="text-gray-400">Cargando velas...</div>
           </div>
         ) : (
           <CandlesCore
-            candles={candlesSafe}
-            volume={volumeSafe}
+            candles={candles.map(c => ({
+              time: c[0] / 1000, // Convert ms to seconds
+              open: c[1],
+              high: c[2],
+              low: c[3],
+              close: c[4]
+            }))}
+            volume={candles.map(c => ({
+              time: c[0] / 1000,
+              value: c[5]
+            }))}
             showVolume={volumeOn}
             mode={strategy === 'grid' ? 'grid' : 'binary'}
             gridCfg={strategy === 'grid' ? grid : null}
             binaryCfg={strategy === 'binary' ? { 
-              strike: currentPrice, 
+              strike: lastPrice || 0, 
               expiry: binary.expiry 
             } : null}
             onReady={() => setReady(true)}

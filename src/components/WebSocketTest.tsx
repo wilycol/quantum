@@ -2,55 +2,25 @@
 // Componente de prueba para WebSocket Edge
 
 import React, { useState, useEffect } from 'react';
-import { connectWS } from '../lib/wsClient';
+import { useWS } from '../app/providers/WSProvider';
+import { send } from '../../lib/wsClient';
 
 export default function WebSocketTest() {
   const [messages, setMessages] = useState<string[]>([]);
-  const [connected, setConnected] = useState(false);
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const { connected, latencyMs } = useWS();
 
   useEffect(() => {
-    // Para desarrollo local, usar el servidor WebSocket dedicado
-    const url = 'ws://localhost:3001';
-    
-    console.log('[WebSocketTest] Connecting to:', url);
-    
-    const websocket = new WebSocket(url);
-    setWs(websocket);
-
-    websocket.addEventListener('open', () => {
-      console.log('[WebSocketTest] Connected!');
-      setConnected(true);
-      addMessage('✅ Conectado al WebSocket Edge');
-      
-      // Enviar mensaje de prueba
-      websocket.send(JSON.stringify({ op: 'hello' }));
-    });
-
-    websocket.addEventListener('message', (event) => {
-      console.log('[WebSocketTest] Message received:', event.data);
-      try {
-        const data = JSON.parse(event.data);
-        addMessage(`📨 ${data.op}: ${JSON.stringify(data)}`);
-      } catch {
-        addMessage(`📨 Raw: ${event.data}`);
-      }
-    });
-
-    websocket.addEventListener('error', (error) => {
-      console.error('[WebSocketTest] Error:', error);
-      addMessage('❌ Error en WebSocket');
-    });
-
-    websocket.addEventListener('close', () => {
-      console.log('[WebSocketTest] Disconnected');
-      setConnected(false);
-      addMessage('🔌 Desconectado del WebSocket');
-    });
-
-    return () => {
-      websocket.close();
+    // Listen to WebSocket messages
+    const handleMessage = (msg: any) => {
+      console.log('[WebSocketTest] Message received:', msg);
+      addMessage(`📨 ${msg.op}: ${JSON.stringify(msg)}`);
     };
+
+    // Import onMessage dynamically to avoid circular dependency
+    import('../../lib/wsClient').then(({ onMessage }) => {
+      const unsubscribe = onMessage(handleMessage);
+      return unsubscribe;
+    });
   }, []);
 
   const addMessage = (message: string) => {
@@ -58,14 +28,14 @@ export default function WebSocketTest() {
   };
 
   const sendPing = () => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ op: 'ping' }));
+    if (connected) {
+      send({ op: 'ping', t: Date.now() });
       addMessage('📤 Enviando ping...');
     }
   };
 
   const sendTestMessage = () => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    if (connected) {
       const testMsg = { 
         op: 'test', 
         data: { 
@@ -73,7 +43,7 @@ export default function WebSocketTest() {
           timestamp: Date.now() 
         } 
       };
-      ws.send(JSON.stringify(testMsg));
+      send(testMsg);
       addMessage('📤 Enviando mensaje de prueba...');
     }
   };
@@ -92,6 +62,9 @@ export default function WebSocketTest() {
         }`}>
           {connected ? '🟢 Conectado' : '🔴 Desconectado'}
         </div>
+        {connected && latencyMs != null && (
+          <span className="text-xs text-gray-400">· {latencyMs}ms</span>
+        )}
         
         <button
           onClick={sendPing}

@@ -1,7 +1,7 @@
 // src/app/qcore/page.tsx
 // Main QuantumCore v2 page
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Topbar from './components/Topbar';
 import ConfigPanel from './components/ConfigPanel';
 import ChartPanel from './components/ChartPanel';
@@ -11,14 +11,8 @@ import ExecutedTimeline from './components/ExecutedTimeline';
 import ModeConfirmModal from './components/ModeConfirmModal';
 import KillSwitchModal from './components/KillSwitchModal';
 import WebSocketTest from '../../components/WebSocketTest';
-import { connectWS } from '../../../lib/wsClient';
 
 export default function QuantumCorePage() {
-  // WebSocket connection test
-  useEffect(() => {
-    const stop = connectWS('/api/ws');
-    return () => stop && stop();
-  }, []);
 
   return (
     <div className="min-h-screen bg-gray-900">
