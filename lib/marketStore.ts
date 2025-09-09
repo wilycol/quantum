@@ -34,7 +34,8 @@ export const useMarket = create<State>((set, get) => ({
     }
     const rows = await res.json(); // Binance格式
     const candles: Candle[] = rows.map((r: any[]) => [r[0], +r[1], +r[2], +r[3], +r[4], +r[5]]);
-    set({ candles, loading: false });
+    const last = candles.at(-1);
+    set({ candles, loading: false, lastPrice: last ? last[4] : undefined });
 
     // Feed en vivo
     if (unsub) unsub();
@@ -56,6 +57,28 @@ export const useMarket = create<State>((set, get) => ({
         // aquí podrías emitir evento a IA Coach si quieres
       }
     });
+
+    // Fallback amable: si en 8s no hay WS, hacer poll suave cada 2s
+    setTimeout(() => {
+      if (!get().binanceConnected) {
+        const poll = setInterval(() => {
+          if (get().binanceConnected) {
+            clearInterval(poll);
+            return;
+          }
+          // Poll suave cada 2s hasta que llegue el primer tick
+          fetch(`/api/klines?symbol=${symbol}&interval=${interval}&limit=1`, { cache: 'no-store' })
+            .then(r => r.json())
+            .then(rows => {
+              if (rows[0]) {
+                const latest: Candle = [rows[0][0], +rows[0][1], +rows[0][2], +rows[0][3], +rows[0][4], +rows[0][5]];
+                set(s => ({ ...s, lastPrice: latest[4] }));
+              }
+            })
+            .catch(() => {});
+        }, 2000);
+      }
+    }, 8000);
   },
 
   setSymbol(s: string) {

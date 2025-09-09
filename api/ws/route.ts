@@ -1,41 +1,32 @@
-// app/api/ws/route.ts
-export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
+export const config = { runtime: 'edge' };
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  if (url.searchParams.get('ping') === '1') {
-    return new Response('ok', { status: 200 });
-  }
-
-  if ((req.headers.get('upgrade') || '').toLowerCase() !== 'websocket') {
+export default async function handler(req: Request) {
+  const upgrade = (req.headers.get('upgrade') || '').toLowerCase();
+  if (upgrade !== 'websocket') {
     return new Response('Expected Upgrade: websocket', { status: 426 });
   }
 
-  // @ts-ignore - WebSocketPair está en Edge runtime
+  // @ts-ignore - disponible en Edge
   const { 0: client, 1: server } = new WebSocketPair();
   // @ts-ignore
   server.accept();
 
-  // Heartbeat cada 30s
+  const welcome = (msg: string) =>
+    server.send(JSON.stringify({ op: 'welcome', message: msg, timestamp: Date.now() }));
+
+  welcome('Connected to Quantum Core WebSocket');
+
   const hb = setInterval(() => {
-    try { server.send(JSON.stringify({ op: 'heartbeat', t: Date.now() })); } catch {}
+    try { server.send(JSON.stringify({ op: 'heartbeat', timestamp: Date.now() })); } catch {}
   }, 30000);
 
-  // Echo + rutas básicas
   // @ts-ignore
   server.addEventListener('message', (event: MessageEvent) => {
     try {
-      const msg = JSON.parse(String(event.data || '{}'));
-      if (msg.op === 'ping') {
-        server.send(JSON.stringify({ op: 'pong', t: Date.now() }));
-        return;
-      }
-      if (msg.op === 'hello') {
-        server.send(JSON.stringify({ op: 'welcome', t: Date.now() }));
-        return;
-      }
-      server.send(JSON.stringify({ op: 'echo', data: msg }));
+      const m = JSON.parse(String(event.data || '{}'));
+      if (m.op === 'ping') return server.send(JSON.stringify({ op: 'pong', t: m.t ?? Date.now() }));
+      if (m.op === 'hello') return welcome('Hello from Quantum Core!');
+      server.send(JSON.stringify({ op: 'echo', data: m, timestamp: Date.now() }));
     } catch {
       server.send(JSON.stringify({ op: 'echo', data: String(event.data) }));
     }

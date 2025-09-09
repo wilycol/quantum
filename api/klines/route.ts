@@ -1,10 +1,13 @@
-export const runtime = 'edge';
-const BASE = process.env.BINANCE_BASE || 'https://api.binance.com'; // fallback api1/api2 si rate limit
+export const config = { runtime: 'edge' };
+
+const BASE = process.env.BINANCE_BASE || 'https://api1.binance.com';
 
 function okSym(s?: string) { return !!s && /^[A-Z0-9]{6,}$/.test(s); }
-function okInt(i?: string) { return ['1m','3m','5m','15m','30m','1h','2h','4h','1d'].includes(String(i)); }
+function okInt(i?: string) {
+  return ['1m','3m','5m','15m','30m','1h','2h','4h','1d'].includes(String(i));
+}
 
-export async function GET(req: Request) {
+export default async function handler(req: Request) {
   const { searchParams } = new URL(req.url);
   const symbol = searchParams.get('symbol') || 'BTCUSDT';
   const interval = searchParams.get('interval') || '1m';
