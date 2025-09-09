@@ -16,8 +16,11 @@ export async function GET(req: Request) {
   if (!okSym(symbol) || !okInt(interval)) return new Response('Bad params', { status: 400 });
 
   const url = `${BASE}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  console.log('[KLINES API] Fetching from:', url);
   const r = await fetch(url, { cache: 'no-store' });
+  console.log('[KLINES API] Response status:', r.status);
   if (!r.ok) return new Response(`Upstream ${r.status}`, { status: r.status });
   const data = await r.json();
+  console.log('[KLINES API] Data received:', { isArray: Array.isArray(data), length: data?.length, type: typeof data });
   return new Response(JSON.stringify(data), { status: 200, headers: { 'content-type': 'application/json' } });
 }
