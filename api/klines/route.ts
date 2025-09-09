@@ -8,10 +8,12 @@ function okInt(i?: string) {
 }
 
 export async function GET(req: Request) {
+  console.log('🚀 [KLINES API] ENDPOINT CALLED!');
   const { searchParams } = new URL(req.url);
   const symbol = searchParams.get('symbol') || 'BTCUSDT';
   const interval = searchParams.get('interval') || '1m';
   const limit = Math.min(parseInt(searchParams.get('limit') || '500', 10), 1000);
+  console.log('🚀 [KLINES API] Params:', { symbol, interval, limit });
 
   if (!okSym(symbol) || !okInt(interval)) return new Response('Bad params', { status: 400 });
 
