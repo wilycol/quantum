@@ -1,5 +1,0 @@
-{
-  "functions": {
-    "api/qcore.ts": { "runtime": "edge" }
-  }
-}
