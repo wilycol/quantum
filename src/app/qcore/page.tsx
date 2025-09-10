@@ -38,15 +38,15 @@ export default function QuantumCorePage() {
       {/* Main Content */}
       <div className="p-4">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 h-full">
-          {/* Left Column - Simulation Config */}
-          <div className="lg:col-span-1">
-            <CollapsiblePanel id="sim-config" title="Simulation Config">
+          {/* Left Column - Core Config */}
+          <div className="lg:col-span-2">
+            <CollapsiblePanel id="core-config" title="Core Config">
               <ConfigPanel />
             </CollapsiblePanel>
           </div>
 
           {/* Center Column - Chart Panel */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <ChartPanel />
           </div>
 

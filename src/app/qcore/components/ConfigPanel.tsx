@@ -1,5 +1,5 @@
 // src/app/qcore/components/ConfigPanel.tsx
-// Configuration panel for QuantumCore v2
+// Core configuration panel for QuantumCore v2 - Bot parameters
 
 import React, { useState } from 'react';
 import { 
@@ -135,9 +135,9 @@ export default function ConfigPanel({ className = '' }: ConfigPanelProps) {
 
   return (
     <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 ${className}`}>
-      {/* Simulation Config */}
+      {/* Core Config */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Simulation Config</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Core Config</h3>
         
         <div className="space-y-4">
           {/* Initial Amount */}
