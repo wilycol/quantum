@@ -18,13 +18,19 @@
 - **Problema:** Chart en estado 'error', div no se mostraba
 - **Causa:** Lógica condicional impedía mostrar el div del chart
 - **Solución:** Cambiar a overlay system, div siempre visible
-- **Estado:** 🔄 EN PROGRESO - Chart div visible pero no se crea
+- **Estado:** ✅ RESUELTO - Chart renderizando correctamente
 
 ### **3. Chart no se crea:**
 - **Problema:** Div visible pero chart no se inicializa
 - **Causa:** useEffect de creación no se ejecuta correctamente
 - **Solución:** Agregar logging extensivo y botón debug
-- **Estado:** 🔄 DEBUGGING - Investigando logs
+- **Estado:** ✅ RESUELTO - Chart funcionando correctamente
+
+### **4. Loop infinito de logs:**
+- **Problema:** 2000+ logs infinitos saturando consola
+- **Causa:** Error al establecer datos iniciales del chart
+- **Solución:** parseFloat() + dataSet flag + dependencias corregidas
+- **Estado:** ✅ RESUELTO - Logs controlados, chart renderizando
 
 ---
 

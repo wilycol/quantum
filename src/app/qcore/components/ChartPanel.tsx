@@ -35,6 +35,14 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   const divRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ReturnType<IChartApi['addCandlestickSeries']> | null>(null);
+  
+  // Pan state for click and drag functionality
+  const panStateRef = useRef({
+    isPanning: false,
+    startX: 0,
+    startTime: 0,
+    startVisibleRange: null as { from: number; to: number } | null
+  });
 
   // State from store
   const broker = useBroker();
@@ -250,8 +258,70 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       const onResize = () => chart.applyOptions({ width: divRef.current!.clientWidth });
       onResize();
       window.addEventListener('resize', onResize);
+      
+      // Pan functionality - click and drag
+      const handleMouseDown = (event: MouseEvent) => {
+        // Solo responder al clic izquierdo
+        if (event.button !== 0) return;
+        
+        const timeScale = chart.timeScale();
+        const visibleRange = timeScale.getVisibleRange();
+        if (!visibleRange) return;
+        
+        panStateRef.current = {
+          isPanning: true,
+          startX: event.clientX,
+          startTime: Date.now(),
+          startVisibleRange: {
+            from: Number(visibleRange.from),
+            to: Number(visibleRange.to)
+          }
+        };
+        
+        // Cambiar cursor para indicar que se puede arrastrar
+        divRef.current!.style.cursor = 'grabbing';
+      };
+      
+      const handleMouseMove = (event: MouseEvent) => {
+        if (!panStateRef.current.isPanning || !panStateRef.current.startVisibleRange) return;
+        
+        const timeScale = chart.timeScale();
+        const deltaX = event.clientX - panStateRef.current.startX;
+        const rect = divRef.current!.getBoundingClientRect();
+        const chartWidth = rect.width;
+        
+        // Convertir movimiento de píxeles a tiempo
+        const timeRange = panStateRef.current.startVisibleRange.to - panStateRef.current.startVisibleRange.from;
+        const timePerPixel = timeRange / chartWidth;
+        const timeDelta = -deltaX * timePerPixel; // Negativo para que el movimiento sea natural
+        
+        const newFrom = panStateRef.current.startVisibleRange.from + timeDelta;
+        const newTo = panStateRef.current.startVisibleRange.to + timeDelta;
+        
+        if (newFrom && newTo && newFrom < newTo && isFinite(newFrom) && isFinite(newTo)) {
+          timeScale.setVisibleRange({ from: newFrom as UTCTimestamp, to: newTo as UTCTimestamp });
+        }
+      };
+      
+      const handleMouseUp = () => {
+        panStateRef.current.isPanning = false;
+        panStateRef.current.startVisibleRange = null;
+        divRef.current!.style.cursor = 'grab';
+      };
+      
+      // Agregar event listeners
+      divRef.current!.addEventListener('mousedown', handleMouseDown);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      // Establecer cursor inicial
+      divRef.current!.style.cursor = 'grab';
+      
       return () => { 
-        window.removeEventListener('resize', onResize); 
+        window.removeEventListener('resize', onResize);
+        divRef.current?.removeEventListener('mousedown', handleMouseDown);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
         chart.remove(); 
       };
     } catch (error) {
@@ -426,7 +496,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
         {!followRight && (
           <button onClick={followRightNow} className="px-2 py-1 rounded bg-zinc-800">Follow Right</button>
         )}
-        <span className="ml-auto text-zinc-400">Zoom: CTRL + rueda · Pan: arrastrar</span>
+        <span className="ml-auto text-zinc-400">Zoom: CTRL + rueda · Pan: clic izquierdo + arrastrar</span>
       </div>
 
       {/* Main Chart */}
