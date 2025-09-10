@@ -36,8 +36,13 @@ export const useMarket = create<State>((set, get) => ({
       set({ loading: false, error: `klines ${res.status}` }); 
       return;
     }
-    const rows = await res.json(); // Binance格式
-    console.log('[MARKET STORE] JSON response:', { isArray: Array.isArray(rows), length: rows?.length });
+    const response = await res.json(); // Puede ser {ok: true, data: [...]} o [...]
+    console.log('[MARKET STORE] JSON response:', { isArray: Array.isArray(response), length: response?.length, hasData: !!response?.data });
+    
+    // Manejar ambos formatos: {ok: true, data: [...]} o [...]
+    const rows = response?.data || response;
+    console.log('[MARKET STORE] Processed rows:', { isArray: Array.isArray(rows), length: rows?.length });
+    
     if (!Array.isArray(rows)) {
       set({ loading: false, error: 'Invalid response format' });
       return;
