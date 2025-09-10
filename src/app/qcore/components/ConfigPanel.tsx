@@ -6,7 +6,6 @@ import {
   useBroker,
   useStrategy,
   useMode,
-  useAssets,
   useVolumeOn,
   useRisk,
   useGrid,
@@ -15,7 +14,6 @@ import {
   useConnected,
   useKillSwitchActive,
   useQcoreActions,
-  useAvailableAssets,
   useCanStart
 } from '../hooks/useQcoreState';
 import { formatTime, formatCurrency, formatPercentage, formatPnL, formatWinRate } from '../lib/formatters';
@@ -30,7 +28,6 @@ export default function ConfigPanel({ className = '' }: ConfigPanelProps) {
   const broker = useBroker();
   const strategy = useStrategy();
   const mode = useMode();
-  const assets = useAssets();
   const volumeOn = useVolumeOn();
   const risk = useRisk();
   const grid = useGrid();
@@ -38,12 +35,10 @@ export default function ConfigPanel({ className = '' }: ConfigPanelProps) {
   const kpis = useKPIs();
   const connected = useConnected();
   const killSwitchActive = useKillSwitchActive();
-  const availableAssets = useAvailableAssets();
   const canStart = useCanStart();
   
   // Actions from store
   const { 
-    setAssets, 
     setVolumeOn, 
     setRisk, 
     setGrid, 
@@ -88,16 +83,7 @@ export default function ConfigPanel({ className = '' }: ConfigPanelProps) {
     return errors.length === 0;
   };
 
-  // Handle asset toggle
-  const handleAssetToggle = (assetSymbol: string) => {
-    const newAssets = assets.includes(assetSymbol)
-      ? assets.filter(a => a !== assetSymbol)
-      : [...assets, assetSymbol];
-    
-    if (newAssets.length > 0) { // Keep at least one asset
-      setAssets(newAssets);
-    }
-  };
+  // Asset management moved to Risk Manager
 
   // Handle risk change
   const handleRiskChange = (field: keyof typeof risk, value: number) => {
@@ -204,23 +190,15 @@ export default function ConfigPanel({ className = '' }: ConfigPanelProps) {
             </div>
           </div>
 
-          {/* Assets */}
+          {/* Assets - Moved to Risk Manager */}
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">
-              Assets (whitelist)
+              Assets
             </label>
-            <div className="max-h-32 overflow-y-auto bg-gray-700 border border-gray-600 rounded-lg p-2 space-y-1">
-              {availableAssets.map((asset) => (
-                <label key={asset.symbol} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={assets.includes(asset.symbol)}
-                    onChange={() => handleAssetToggle(asset.symbol)}
-                    className="form-checkbox h-4 w-4 bg-gray-600 border-gray-500 rounded text-blue-500 focus:ring-blue-500"
-                  />
-                  <span className="text-gray-300">{asset.symbol}</span>
-                </label>
-              ))}
+            <div className="bg-gray-700 border border-gray-600 rounded-lg p-3 text-center">
+              <span className="text-gray-400 text-sm">
+                Asset whitelist management moved to Risk Manager panel
+              </span>
             </div>
           </div>
 
