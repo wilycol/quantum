@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRisk } from '@/lib/riskStore';
-import { useWS } from '@/app/providers/WSProvider';
+import { useWS } from '../app/providers/WSProvider';
 import { useMarket } from '@/lib/marketStore';
 import { send } from '@/lib/wsClient';
 import { useUILayout } from '@/lib/uiLayoutStore';
