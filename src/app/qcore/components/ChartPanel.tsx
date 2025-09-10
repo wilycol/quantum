@@ -358,22 +358,38 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     }
   }, [ready, candles, dataSet]);
 
-  // tick en vivo
+  // tick en vivo - actualizar última vela o agregar nueva
   useEffect(() => {
     if (!ready || !seriesRef.current || !candles || candles.length === 0) {
       return;
     }
     
     const last = candles[candles.length - 1];
+    const secondLast = candles.length > 1 ? candles[candles.length - 2] : null;
     
     try {
-      seriesRef.current.update({
-        time: (last[0]/1000) as UTCTimestamp, 
-        open: parseFloat(last[1]), 
-        high: parseFloat(last[2]), 
-        low: parseFloat(last[3]), 
-        close: parseFloat(last[4])
-      });
+      // Si hay más de una vela y la última es diferente a la penúltima, es una nueva vela
+      if (secondLast && last[0] !== secondLast[0]) {
+        console.log('[ChartPanel] New candle detected, adding to chart');
+        // Agregar nueva vela
+        seriesRef.current.update({
+          time: (last[0]/1000) as UTCTimestamp, 
+          open: parseFloat(last[1]), 
+          high: parseFloat(last[2]), 
+          low: parseFloat(last[3]), 
+          close: parseFloat(last[4])
+        });
+      } else {
+        // Actualizar vela existente
+        seriesRef.current.update({
+          time: (last[0]/1000) as UTCTimestamp, 
+          open: parseFloat(last[1]), 
+          high: parseFloat(last[2]), 
+          low: parseFloat(last[3]), 
+          close: parseFloat(last[4])
+        });
+      }
+      
       if (!followRight) reapplyRange();
     } catch (error) {
       console.error('[ChartPanel] Error updating live tick:', error);
