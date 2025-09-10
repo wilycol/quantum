@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { subscribeKline, Unsub } from './binanceFeed';
+import { useEventBus } from '../src/lib/eventBus';
 
 type Candle = [number, number, number, number, number, number]; // ts, open, high, low, close, vol
 
@@ -76,6 +77,17 @@ export const useMarket = create<State>((set, get) => ({
         else next = [...next, updated];
         return { candles: next, lastPrice: +k.c, binanceConnected: true };
       });
+      
+      // Emit to EventBus
+      const emit = useEventBus.getState().emit;
+      emit({ 
+        type: 'market/kline', 
+        symbol: symbol.toUpperCase(), 
+        interval, 
+        k: msg.k, 
+        t: msg.E || Date.now() 
+      });
+      
       if (isClose) {
         console.log('[MARKET STORE] Candle closed, price:', +k.c);
         // aquí podrías emitir evento a IA Coach si quieres
