@@ -140,10 +140,31 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
         console.log('[ChartPanel] Chart creation timeout, triggering error state');
         setChartState('error');
       }
-    }, 10000); // 10 segundos de timeout para creación del chart
+    }, 5000); // 5 segundos de timeout para creación del chart
     
     return () => clearTimeout(timeout);
   }, [chartState]);
+
+  // Timeout para detectar si el divRef no está disponible
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (chartState === 'loading' && !divRef.current) {
+        console.log('[ChartPanel] DivRef not available after timeout, triggering error state');
+        setChartState('error');
+      }
+    }, 3000); // 3 segundos de timeout para divRef
+    
+    return () => clearTimeout(timeout);
+  }, [chartState]);
+
+  // Effect para detectar cuando el divRef esté disponible
+  useEffect(() => {
+    if (divRef.current && chartState === 'loading' && !chartRef.current) {
+      console.log('[ChartPanel] DivRef now available, triggering chart creation');
+      // Forzar re-ejecución del useEffect de creación
+      setChartState('loading');
+    }
+  }, [divRef.current, chartState]);
 
   // Auto-Recovery: Reintentar si hay errores
   useEffect(() => {
@@ -196,7 +217,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     console.log('[ChartPanel] Create chart effect triggered:', { hasDiv: !!divRef.current, hasChart: !!chartRef.current });
     
     if (!divRef.current) {
-      console.log('[ChartPanel] No div ref, skipping chart creation');
+      console.log('[ChartPanel] No div ref, will retry in next render');
       return;
     }
     
@@ -331,7 +352,8 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
     // Set current price to the last candle's close
     if (candles.length > 0) {
-      setCurrentPrice(candles[candles.length - 1].close);
+      // Note: setCurrentPrice is not defined, this is mock data generation
+      console.log('[ChartPanel] Mock candles generated, last price:', candles[candles.length - 1].close);
     }
 
     return candles;
