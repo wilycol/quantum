@@ -13,7 +13,7 @@ import {
   useKPIs
 } from '../hooks/useQcoreState';
 import { useWS } from '../../providers/WSProvider';
-import { useMarket } from '../../../lib/marketStore';
+import { useMarket } from '../../../../lib/marketStore';
 import { useChartInteractions } from '../../../lib/useChartInteractions';
 import { useChartUI } from '../../../lib/chartUiStore';
 import { formatPrice } from '../lib/formatters';
