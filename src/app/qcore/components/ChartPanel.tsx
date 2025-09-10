@@ -58,6 +58,13 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
   // Auto-Recovery functions
   const healthCheck = (): boolean => {
+    console.log('[ChartPanel] Health check running:', { 
+      hasChart: !!chartRef.current, 
+      hasSeries: !!seriesRef.current,
+      hasDiv: !!divRef.current,
+      divChildren: divRef.current?.children.length || 0
+    });
+    
     if (!chartRef.current || !seriesRef.current) {
       console.log('[ChartPanel] Health check failed: chart not ready');
       return false;
@@ -157,6 +164,21 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     }
   }, [chartState]);
 
+  // Timeout para detectar si el chart no se renderiza después de tener datos
+  useEffect(() => {
+    if (candles && candles.length > 0 && chartState === 'ready') {
+      const timeout = setTimeout(() => {
+        // Verificar si el chart realmente se renderizó
+        if (divRef.current && divRef.current.children.length === 0) {
+          console.log('[ChartPanel] Chart not rendered after timeout, triggering recovery');
+          setChartState('error');
+        }
+      }, 5000); // 5 segundos de timeout
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [candles, chartState]);
+
   // Create chart
   useEffect(() => {
     if (!divRef.current) return;
@@ -194,28 +216,57 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
   // snapshot inicial
   useEffect(() => {
-    if (!ready || !seriesRef.current) return;
-    if (candles && candles.length > 0) {
-      seriesRef.current.setData(
-        candles.map(c => ({ time: (c[0]/1000) as UTCTimestamp, open: c[1], high: c[2], low: c[3], close: c[4] }))
-      );
-      // promover precio desde snapshot (mejora de UX)
-      const last = candles.at(-1);
-      if (last) useMarket.setState({ lastPrice: last[4] });
-      if (!followRight) reapplyRange();
-      else chartRef.current?.timeScale().scrollToRealTime();
+    console.log('[ChartPanel] Snapshot effect triggered:', { ready, hasSeries: !!seriesRef.current, candlesLength: candles?.length, chartState });
+    
+    if (!ready || !seriesRef.current) {
+      console.log('[ChartPanel] Not ready for snapshot:', { ready, hasSeries: !!seriesRef.current });
+      return;
     }
-  }, [ready, candles, followRight, reapplyRange]);
+    
+    if (candles && candles.length > 0) {
+      console.log('[ChartPanel] Setting initial data:', { candlesCount: candles.length });
+      try {
+        seriesRef.current.setData(
+          candles.map(c => ({ time: (c[0]/1000) as UTCTimestamp, open: c[1], high: c[2], low: c[3], close: c[4] }))
+        );
+        console.log('[ChartPanel] Initial data set successfully');
+        
+        // promover precio desde snapshot (mejora de UX)
+        const last = candles.at(-1);
+        if (last) useMarket.setState({ lastPrice: last[4] });
+        if (!followRight) reapplyRange();
+        else chartRef.current?.timeScale().scrollToRealTime();
+      } catch (error) {
+        console.error('[ChartPanel] Error setting initial data:', error);
+        setChartState('error');
+      }
+    } else {
+      console.log('[ChartPanel] No candles available for snapshot');
+    }
+  }, [ready, candles, followRight, reapplyRange, chartState]);
 
   // tick en vivo
   useEffect(() => {
-    if (!ready || !seriesRef.current || !candles || candles.length === 0) return;
+    console.log('[ChartPanel] Live tick effect triggered:', { ready, hasSeries: !!seriesRef.current, candlesLength: candles?.length, chartState });
+    
+    if (!ready || !seriesRef.current || !candles || candles.length === 0) {
+      console.log('[ChartPanel] Not ready for live tick:', { ready, hasSeries: !!seriesRef.current, candlesLength: candles?.length });
+      return;
+    }
+    
     const last = candles[candles.length - 1];
-    seriesRef.current.update({
-      time: (last[0]/1000) as UTCTimestamp, open: last[1], high: last[2], low: last[3], close: last[4]
-    });
-    if (!followRight) reapplyRange();
-  }, [candles, ready, followRight, reapplyRange]);
+    console.log('[ChartPanel] Updating live tick:', { time: last[0], close: last[4] });
+    
+    try {
+      seriesRef.current.update({
+        time: (last[0]/1000) as UTCTimestamp, open: last[1], high: last[2], low: last[3], close: last[4]
+      });
+      if (!followRight) reapplyRange();
+    } catch (error) {
+      console.error('[ChartPanel] Error updating live tick:', error);
+      setChartState('error');
+    }
+  }, [candles, ready, followRight, reapplyRange, chartState]);
 
   // Mock data generators
   function generateMockCandles() {
