@@ -69,7 +69,7 @@ export function useEventBus(config?: {
   // Check if WS URL is valid for current environment
   const wsUrl = import.meta.env.VITE_WS_URL as string | undefined;
   const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-  const canConnect = wsUrl || isLocal; // Allow connection if we have URL OR we're local
+  const canConnect = true; // Always allow connection - let EventBus handle URL logic
   
   console.log('[useEventBus] Connection check:', { 
     wsUrl, 
