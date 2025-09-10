@@ -1,7 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRisk } from '@/lib/riskStore';
 import { usePortfolio } from '@/lib/portfolioStore';
+import { useEventBus } from '@/lib/eventBus';
+import { useMarket } from '@/lib/marketStore';
 
 interface RiskManagerProps {
   className?: string;
@@ -18,14 +20,19 @@ export default function RiskManager({ className = '' }: RiskManagerProps) {
     whitelist,
     setLevel,
     setLimits,
+    updateDailyStats,
+    setOpenPositions,
     toggleKillSwitch,
     addToWhitelist,
     removeFromWhitelist,
     canTrade,
   } = useRisk();
 
-  const { balance, calculateTotalPnL } = usePortfolio();
+  const { balance, calculateTotalPnL, positions, addPosition, closePosition } = usePortfolio();
+  const { trades, wsConnected } = useEventBus();
+  const { lastPrice } = useMarket();
   const [newSymbol, setNewSymbol] = useState('');
+  const [riskAlerts, setRiskAlerts] = useState<string[]>([]);
 
   const riskLevels: { value: RiskLevel; label: string; color: string }[] = [
     { value: 'low', label: 'Low Risk', color: 'bg-green-500' },
@@ -41,6 +48,85 @@ export default function RiskManager({ className = '' }: RiskManagerProps) {
     }
   };
 
+  // Procesar eventos del EventBus en tiempo real
+  useEffect(() => {
+    if (!trades || trades.length === 0) return;
+
+    const latestTrade = trades[trades.length - 1];
+    
+    // Actualizar posiciones abiertas
+    const openPositionsCount = positions.filter(p => p.status === 'open').length;
+    setOpenPositions(openPositionsCount);
+
+    // Procesar trade ejecutado
+    if (latestTrade.status === 'filled') {
+      console.log('[RiskManager] Processing filled trade:', latestTrade);
+      
+      // Agregar posición al portfolio
+      if (latestTrade.price && latestTrade.qty) {
+        addPosition({
+          symbol: latestTrade.symbol,
+          side: latestTrade.side === 'BUY' ? 'long' : 'short',
+          amount: latestTrade.qty,
+          entryPrice: latestTrade.price,
+          currentPrice: lastPrice || latestTrade.price,
+        });
+      }
+
+      // Actualizar estadísticas diarias
+      const tradePnL = latestTrade.pnl || 0;
+      const tradeVolume = (latestTrade.price || 0) * (latestTrade.qty || 0);
+      updateDailyStats(dailyPnL + tradePnL, dailyVolume + tradeVolume);
+    }
+  }, [trades, positions, lastPrice, dailyPnL, dailyVolume, addPosition, setOpenPositions, updateDailyStats]);
+
+  // Actualizar precios de posiciones en tiempo real
+  useEffect(() => {
+    if (!lastPrice) return;
+
+    positions.forEach(position => {
+      if (position.status === 'open') {
+        const newPnL = position.side === 'long' 
+          ? (lastPrice - position.entryPrice) * position.amount
+          : (position.entryPrice - lastPrice) * position.amount;
+        
+        const newPnLPercent = (newPnL / (position.entryPrice * position.amount)) * 100;
+        
+        // Actualizar posición con nuevo precio y PnL
+        // Note: Esto requeriría una función updatePosition en el portfolioStore
+      }
+    });
+  }, [lastPrice, positions]);
+
+  // Verificar alertas de riesgo
+  useEffect(() => {
+    const alerts: string[] = [];
+    
+    // Verificar límites de riesgo
+    if (Math.abs(dailyPnL) > (balance * limits.maxDailyPercent / 100)) {
+      alerts.push(`Daily P&L limit exceeded: ${dailyPnL.toFixed(2)}`);
+    }
+    
+    if (openPositions >= limits.maxOpenPositions) {
+      alerts.push(`Maximum positions limit reached: ${openPositions}/${limits.maxOpenPositions}`);
+    }
+    
+    // Verificar stop loss en posiciones
+    positions.forEach(position => {
+      if (position.status === 'open' && position.stopLoss) {
+        const shouldStop = position.side === 'long' 
+          ? lastPrice <= position.stopLoss
+          : lastPrice >= position.stopLoss;
+        
+        if (shouldStop) {
+          alerts.push(`Stop loss triggered for ${position.symbol}`);
+        }
+      }
+    });
+    
+    setRiskAlerts(alerts);
+  }, [dailyPnL, balance, limits, openPositions, positions, lastPrice]);
+
   const testTrade = (symbol: string, amount: number) => {
     const result = canTrade(symbol, amount);
     return result;
@@ -51,6 +137,12 @@ export default function RiskManager({ className = '' }: RiskManagerProps) {
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-white">Risk Manager</h3>
         <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
+            <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-xs text-gray-400">
+              {wsConnected ? 'Live' : 'Offline'}
+            </span>
+          </div>
           <span className="text-sm text-gray-400">Kill Switch:</span>
           <button
             onClick={toggleKillSwitch}
@@ -64,6 +156,20 @@ export default function RiskManager({ className = '' }: RiskManagerProps) {
           </button>
         </div>
       </div>
+
+      {/* Risk Alerts */}
+      {riskAlerts.length > 0 && (
+        <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg">
+          <h4 className="text-sm font-semibold text-red-400 mb-2">⚠️ Risk Alerts</h4>
+          <div className="space-y-1">
+            {riskAlerts.map((alert, index) => (
+              <div key={index} className="text-xs text-red-300">
+                • {alert}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Risk Level Selector */}
       <div className="mb-4">
@@ -136,6 +242,34 @@ export default function RiskManager({ className = '' }: RiskManagerProps) {
           </div>
         </div>
       </div>
+
+      {/* Active Positions */}
+      {positions.filter(p => p.status === 'open').length > 0 && (
+        <div className="mb-4">
+          <h4 className="text-sm font-medium text-gray-300 mb-2">Active Positions</h4>
+          <div className="space-y-2">
+            {positions.filter(p => p.status === 'open').map(position => (
+              <div key={position.id} className="bg-gray-700 rounded p-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-medium">{position.symbol}</span>
+                  <span className={`${position.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    ${position.pnl.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-gray-400 mt-1">
+                  <span>{position.side.toUpperCase()} {position.amount}</span>
+                  <span>@ ${position.entryPrice.toFixed(2)}</span>
+                </div>
+                {position.stopLoss && (
+                  <div className="text-gray-500 mt-1">
+                    SL: ${position.stopLoss.toFixed(2)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Whitelist Management */}
       <div className="mb-4">
