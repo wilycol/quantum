@@ -8,6 +8,7 @@ import { withBoundary } from './components/withBoundary';
 import { useSettings } from './contexts/SettingsContext';
 import { MainView, AppNotification } from './types';
 import { bindOrderEvents } from './stores/account';
+import { WSProvider } from './app/providers/WSProvider';
 
 // Carga perezosa de vistas pesadas
 const TradingManualView = lazy(() => import('./components/TradingManualView'));
@@ -225,11 +226,13 @@ const App: React.FC = () => {
 
 
   return (
-    <div className={fontClass}>
-        {renderContent()}
-        <NotificationToaster notification={lastNotification} />
-        <LegalGuard onNavigateToLegal={() => setCurrentView('legal')} />
-    </div>
+    <WSProvider>
+      <div className={fontClass}>
+          {renderContent()}
+          <NotificationToaster notification={lastNotification} />
+          <LegalGuard onNavigateToLegal={() => setCurrentView('legal')} />
+      </div>
+    </WSProvider>
   );
 };
 

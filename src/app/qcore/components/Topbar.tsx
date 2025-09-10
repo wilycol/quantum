@@ -10,6 +10,7 @@ import {
   Broker,
   Mode
 } from '../hooks/useQcoreState';
+import { useRisk } from '@/lib/riskStore';
 
 type Strategy = 'grid' | 'binary';
 import { formatStatus } from '../lib/formatters';
@@ -26,6 +27,9 @@ export default function Topbar({ className = '' }: TopbarProps) {
   const wsStatus = useQcoreState(s => s.wsStatus);
   const killSwitchActive = useKillSwitchActive();
   const canSwitchToLive = useCanSwitchToLive();
+  
+  // Risk store
+  const { killSwitch, toggleKillSwitch } = useRisk();
   
   // Actions from store
   const { 
@@ -76,7 +80,8 @@ export default function Topbar({ className = '' }: TopbarProps) {
 
   // Handle kill switch
   const handleKillSwitch = () => {
-    setKillSwitchActive(!killSwitchActive);
+    toggleKillSwitch(); // Use Risk Store
+    setKillSwitchActive(!killSwitchActive); // Keep legacy store in sync
   };
 
   // Get current broker option
