@@ -157,6 +157,18 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     return () => clearTimeout(timeout);
   }, [chartState]);
 
+  // Timeout para detectar si la serie no se crea
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (ready && !seriesRef.current) {
+        console.log('[ChartPanel] Series not created after timeout, triggering error state');
+        setChartState('error');
+      }
+    }, 2000); // 2 segundos de timeout para la serie
+    
+    return () => clearTimeout(timeout);
+  }, [ready]);
+
   // Effect para detectar cuando el divRef esté disponible
   useEffect(() => {
     if (divRef.current && chartState === 'loading' && !chartRef.current) {
@@ -165,6 +177,14 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       setChartState('loading');
     }
   }, [divRef.current, chartState]);
+
+  // Effect para detectar cuando la serie esté disponible
+  useEffect(() => {
+    if (ready && seriesRef.current && chartState === 'loading') {
+      console.log('[ChartPanel] Series now available, setting ready state');
+      setChartState('ready');
+    }
+  }, [ready, seriesRef.current, chartState]);
 
   // Auto-Recovery: Reintentar si hay errores
   useEffect(() => {
@@ -245,6 +265,8 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       const series = chart.addCandlestickSeries();
       chartRef.current = chart;
       seriesRef.current = series;
+      
+      console.log('[ChartPanel] Series added:', { hasChart: !!chartRef.current, hasSeries: !!seriesRef.current });
       
       console.log('[ChartPanel] Setting ready state...');
       setReady(true);
