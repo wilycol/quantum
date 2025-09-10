@@ -255,9 +255,23 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       setChartState('ready');
       console.log('[ChartPanel] Chart created successfully');
 
-      const onResize = () => chart.applyOptions({ width: divRef.current!.clientWidth });
+      const onResize = () => {
+        if (divRef.current && chart) {
+          const { clientWidth, clientHeight } = divRef.current;
+          chart.applyOptions({ 
+            width: clientWidth,
+            height: clientHeight 
+          });
+        }
+      };
       onResize();
       window.addEventListener('resize', onResize);
+      
+      // ResizeObserver para detectar cambios en el contenedor
+      const resizeObserver = new ResizeObserver(() => {
+        onResize();
+      });
+      resizeObserver.observe(divRef.current);
       
       // Pan functionality - click and drag
       const handleMouseDown = (event: MouseEvent) => {
@@ -322,6 +336,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
         divRef.current?.removeEventListener('mousedown', handleMouseDown);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        resizeObserver.disconnect();
         chart.remove(); 
       };
     } catch (error) {
@@ -517,7 +532,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
       {/* Main Chart */}
       <div className="mb-4 relative">
-        <div ref={divRef} className="h-[420px] w-full rounded border border-zinc-800" />
+        <div ref={divRef} className="h-[420px] w-full rounded border border-zinc-800 overflow-hidden relative" />
         
         {/* Loading/Error Overlay */}
         {(loading || !ready || !candles || candles.length < 2 || chartState === 'error') && (
