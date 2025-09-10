@@ -1,8 +1,8 @@
 'use client';
 import { useUILayout } from '@/lib/uiLayoutStore';
 import CoachPanel from '../app/qcore/components/CoachPanel';
-import LogsPanel from '@/components/LogsPanel';
-import ExecutedTimeline from '@/components/ExecutedTimeline';
+import LogsPanel from './LogsPanel';
+import ExecutedTimeline from './ExecutedTimeline';
 
 export default function RightRail() {
   const { activeRightTab, setRightTab } = useUILayout();
