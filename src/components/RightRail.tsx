@@ -1,6 +1,6 @@
 'use client';
 import { useUILayout } from '@/lib/uiLayoutStore';
-import CoachPanel from '@/app/qcore/components/CoachPanel';
+import CoachPanel from '../app/qcore/components/CoachPanel';
 import LogsPanel from '@/components/LogsPanel';
 import ExecutedTimeline from '@/components/ExecutedTimeline';
 
