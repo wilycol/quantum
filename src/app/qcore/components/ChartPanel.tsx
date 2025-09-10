@@ -169,40 +169,8 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     return () => clearTimeout(timeout);
   }, [ready]);
 
-  // Effect para detectar cuando el divRef esté disponible
-  useEffect(() => {
-    if (divRef.current && chartState === 'loading' && !chartRef.current) {
-      console.log('[ChartPanel] DivRef now available, triggering chart creation');
-      // Forzar re-ejecución del useEffect de creación
-      setChartState('retrying');
-    }
-  }, [chartState]);
 
-  // Force chart creation when div is available
-  useEffect(() => {
-    const checkAndCreateChart = () => {
-      if (divRef.current && !chartRef.current && (chartState === 'loading' || chartState === 'retrying')) {
-        console.log('[ChartPanel] Force creating chart - div available and no chart exists');
-        setChartState('retrying');
-      }
-    };
-    
-    // Check immediately
-    checkAndCreateChart();
-    
-    // Check after a short delay to ensure DOM is ready
-    const timer = setTimeout(checkAndCreateChart, 100);
-    
-    return () => clearTimeout(timer);
-  }, [divRef.current, chartState]);
 
-  // Effect para detectar cuando la serie esté disponible
-  useEffect(() => {
-    if (ready && seriesRef.current && chartState === 'loading') {
-      console.log('[ChartPanel] Series now available, setting ready state');
-      setChartState('ready');
-    }
-  }, [ready, chartState]);
 
   // Auto-Recovery: Reintentar si hay errores
   useEffect(() => {
@@ -252,61 +220,28 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
   // Create chart
   useEffect(() => {
-    console.log('[ChartPanel] Create chart effect triggered:', { 
-      hasDiv: !!divRef.current, 
-      hasChart: !!chartRef.current,
-      chartState,
-      ready,
-      divElement: divRef.current,
-      divChildren: divRef.current?.children.length || 0
-    });
-    
-    if (!divRef.current) {
-      console.log('[ChartPanel] No div ref, will retry in next render');
-      return;
-    }
-    
-    if (chartRef.current) {
-      console.log('[ChartPanel] Chart already exists, skipping creation');
-      return;
-    }
-    
-    if (chartState !== 'loading' && chartState !== 'retrying') {
-      console.log('[ChartPanel] Not in loading/retrying state, skipping creation. Current state:', chartState);
+    if (!divRef.current || chartRef.current) {
       return;
     }
     
     try {
       console.log('[ChartPanel] Creating chart...');
-      console.log('[ChartPanel] Div element:', divRef.current);
-      console.log('[ChartPanel] Div dimensions:', {
-        width: divRef.current?.clientWidth,
-        height: divRef.current?.clientHeight,
-        offsetWidth: divRef.current?.offsetWidth,
-        offsetHeight: divRef.current?.offsetHeight
-      });
-      
       const chart = createChart(divRef.current, {
         layout: { background: { color: 'transparent' }, textColor: '#ccc' },
         grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
         rightPriceScale: { borderVisible: false },
         timeScale: { borderVisible: false, rightOffset: 8, barSpacing: 6 },
         handleScale: {
-          mouseWheel: false,                 // ⬅️ desactivamos zoom con rueda nativo
+          mouseWheel: false,
           pinch: true,
           axisPressedMouseMove: { time: true, price: true },
         },
         handleScroll: { pressedMouseMove: true, mouseWheel: false, horzTouchDrag: true, vertTouchDrag: false },
       });
 
-      console.log('[ChartPanel] Chart created, adding series...');
       const series = chart.addCandlestickSeries();
       chartRef.current = chart;
       seriesRef.current = series;
-      
-      console.log('[ChartPanel] Series added:', { hasChart: !!chartRef.current, hasSeries: !!seriesRef.current });
-      
-      console.log('[ChartPanel] Setting ready state...');
       setReady(true);
       setChartState('ready');
       console.log('[ChartPanel] Chart created successfully');
@@ -315,7 +250,6 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       onResize();
       window.addEventListener('resize', onResize);
       return () => { 
-        console.log('[ChartPanel] Cleaning up chart...');
         window.removeEventListener('resize', onResize); 
         chart.remove(); 
       };
@@ -323,50 +257,36 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       console.error('[ChartPanel] Error creating chart:', error);
       setChartState('error');
     }
-  }, [chartState]);
+  }, []);
 
   // snapshot inicial
   useEffect(() => {
-    console.log('[ChartPanel] Snapshot effect triggered:', { ready, hasSeries: !!seriesRef.current, candlesLength: candles?.length, chartState });
-    
-    if (!ready || !seriesRef.current) {
-      console.log('[ChartPanel] Not ready for snapshot:', { ready, hasSeries: !!seriesRef.current });
+    if (!ready || !seriesRef.current || !candles || candles.length === 0) {
       return;
     }
     
-    if (candles && candles.length > 0) {
-      console.log('[ChartPanel] Setting initial data:', { candlesCount: candles.length });
-      try {
-        seriesRef.current.setData(
-          candles.map(c => ({ time: (c[0]/1000) as UTCTimestamp, open: c[1], high: c[2], low: c[3], close: c[4] }))
-        );
-        console.log('[ChartPanel] Initial data set successfully');
-        
-        // promover precio desde snapshot (mejora de UX)
-        const last = candles.at(-1);
-        if (last) useMarket.setState({ lastPrice: last[4] });
-        if (!followRight) reapplyRange();
-        else chartRef.current?.timeScale().scrollToRealTime();
-      } catch (error) {
-        console.error('[ChartPanel] Error setting initial data:', error);
-        setChartState('error');
-      }
-    } else {
-      console.log('[ChartPanel] No candles available for snapshot');
+    try {
+      seriesRef.current.setData(
+        candles.map(c => ({ time: (c[0]/1000) as UTCTimestamp, open: c[1], high: c[2], low: c[3], close: c[4] }))
+      );
+      
+      const last = candles.at(-1);
+      if (last) useMarket.setState({ lastPrice: last[4] });
+      if (!followRight) reapplyRange();
+      else chartRef.current?.timeScale().scrollToRealTime();
+    } catch (error) {
+      console.error('[ChartPanel] Error setting initial data:', error);
+      setChartState('error');
     }
-  }, [ready, candles, followRight, reapplyRange, chartState]);
+  }, [ready, candles, followRight, reapplyRange]);
 
   // tick en vivo
   useEffect(() => {
-    console.log('[ChartPanel] Live tick effect triggered:', { ready, hasSeries: !!seriesRef.current, candlesLength: candles?.length, chartState });
-    
     if (!ready || !seriesRef.current || !candles || candles.length === 0) {
-      console.log('[ChartPanel] Not ready for live tick:', { ready, hasSeries: !!seriesRef.current, candlesLength: candles?.length });
       return;
     }
     
     const last = candles[candles.length - 1];
-    console.log('[ChartPanel] Updating live tick:', { time: last[0], close: last[4] });
     
     try {
       seriesRef.current.update({
@@ -377,7 +297,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       console.error('[ChartPanel] Error updating live tick:', error);
       setChartState('error');
     }
-  }, [candles, ready, followRight, reapplyRange, chartState]);
+  }, [candles, ready, followRight, reapplyRange]);
 
   // Mock data generators
   function generateMockCandles() {
@@ -512,7 +432,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
                 onClick={() => {
                   console.log('[ChartPanel] Manual reload triggered - resetting auto-recovery');
                   setReady(false);
-                  setRetryCount(0); // Reset auto-recovery counter
+                  setRetryCount(0);
                   setChartState('loading');
                   if (chartRef.current) {
                     chartRef.current.remove();
@@ -526,24 +446,6 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
                 🔄 Recargar Chart
-              </button>
-              <button 
-                onClick={() => {
-                  console.log('[ChartPanel] Debug: Force chart creation');
-                  console.log('[ChartPanel] Debug state:', {
-                    hasDiv: !!divRef.current,
-                    hasChart: !!chartRef.current,
-                    chartState,
-                    ready,
-                    candlesLength: candles?.length
-                  });
-                  if (divRef.current && !chartRef.current) {
-                    setChartState('retrying');
-                  }
-                }}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors ml-2"
-              >
-                🐛 Debug Chart
               </button>
               <div className="text-xs text-gray-500 mt-2">
                 Si el chart no carga, haz clic aquí
