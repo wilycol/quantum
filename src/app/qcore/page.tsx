@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import Topbar from './components/Topbar';
 import ConfigPanel from './components/ConfigPanel';
 import ChartPanel from './components/ChartPanel';
-import RiskManager from './components/RiskManager';
+import RiskManagerHorizontal from '../../components/RiskManagerHorizontal';
 import PortfolioPanel from './components/PortfolioPanel';
 import ModeConfirmModal from './components/ModeConfirmModal';
 import KillSwitchModal from './components/KillSwitchModal';
@@ -38,20 +38,21 @@ export default function QuantumCorePage() {
       {/* Main Content */}
       <div className="p-4">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 h-full">
-          {/* Left Column - Collapsible Panels */}
-          <div className="lg:col-span-1 space-y-4">
+          {/* Left Column - Simulation Config */}
+          <div className="lg:col-span-1">
             <CollapsiblePanel id="sim-config" title="Simulation Config">
               <ConfigPanel />
-            </CollapsiblePanel>
-            
-            <CollapsiblePanel id="risk-manager" title="Risk Manager">
-              <RiskManager />
             </CollapsiblePanel>
           </div>
 
           {/* Center Column - Chart Panel */}
           <div className="lg:col-span-3">
             <ChartPanel />
+            
+            {/* Horizontal Risk Manager below chart */}
+            <div className="mt-4">
+              <RiskManagerHorizontal />
+            </div>
           </div>
 
           {/* Right Column - Portfolio + Right Rail */}
