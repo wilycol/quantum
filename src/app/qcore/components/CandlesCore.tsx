@@ -227,6 +227,9 @@ export function CandlesCore({
       .map(c => ({ ...c, time: normalizeTime(c.time) as Time }));
 
     if (data.length >= 2) {
+      // Guardar el estado actual del zoom antes de actualizar datos
+      const currentZoomState = userZoomStateRef.current;
+      
       priceSeriesRef.current.setData(data);
 
       if (showVolume && volSeriesRef.current && Array.isArray(volume)) {
@@ -243,10 +246,21 @@ export function CandlesCore({
         }
       }
 
-      const left = data[0].time;
-      const right = data[data.length - 1].time;
-      if (left != null && right != null && Number.isFinite(left as number) && Number.isFinite(right as number)) {
-        chartRef.current.timeScale().setVisibleRange({ from: left, to: right });
+      // Si el usuario tenía un zoom personalizado, restaurarlo
+      if (currentZoomState.isUserZoomed && currentZoomState.visibleRange) {
+        // Pequeño delay para asegurar que los datos se hayan procesado
+        setTimeout(() => {
+          if (chartRef.current) {
+            chartRef.current.timeScale().setVisibleRange(currentZoomState.visibleRange);
+          }
+        }, 50);
+      } else {
+        // Solo hacer fitContent si el usuario no tenía zoom personalizado
+        const left = data[0].time;
+        const right = data[data.length - 1].time;
+        if (left != null && right != null && Number.isFinite(left as number) && Number.isFinite(right as number)) {
+          chartRef.current.timeScale().setVisibleRange({ from: left, to: right });
+        }
       }
     }
   }, [candles, volume, showVolume]);
