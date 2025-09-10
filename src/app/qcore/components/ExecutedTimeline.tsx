@@ -43,6 +43,8 @@ export default function ExecutedTimeline({ className = '' }: ExecutedTimelinePro
     autoConnect: true,
     debug: true
   });
+  
+  console.log('[ExecutedTimeline] useEventBus result:', { wsConnected });
 
   // Set up event listeners
   useEffect(() => {

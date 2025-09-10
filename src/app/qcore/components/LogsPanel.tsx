@@ -31,6 +31,8 @@ export default function LogsPanel({ className = '' }: LogsPanelProps) {
     autoConnect: true,
     debug: true
   });
+  
+  console.log('[LogsPanel] useEventBus result:', { wsConnected });
 
   // Set up event listeners
   useEffect(() => {
