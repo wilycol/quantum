@@ -1,8 +1,8 @@
 # 🧠 MEMORIA DE SESIÓN - QUANTUM CORE
 
 ## 📅 **Fecha:** 2025-01-09
-## 🎯 **Estado Actual:** QuantumCore funcionando, chart renderizando, auto-recovery implementado
-## 🔧 **ÚLTIMA ACTUALIZACIÓN:** Arreglado problema de renderizado del chart
+## 🎯 **Estado Actual:** QuantumCore funcionando, EventBus implementado, chart con velas en tiempo real
+## 🔧 **ÚLTIMA ACTUALIZACIÓN:** Sistema EventBus completo, chart mostrando nuevas velas cada minuto
 
 ---
 
@@ -32,6 +32,18 @@
 - **Solución:** parseFloat() + dataSet flag + dependencias corregidas
 - **Estado:** ✅ RESUELTO - Logs controlados, chart renderizando
 
+### **5. Paneles desconectados:**
+- **Problema:** LogsPanel y ExecutedTimeline mostrando "Disconnected/Offline"
+- **Causa:** EventBus deshabilitado y useEventBus con lógica restrictiva
+- **Solución:** Implementar EventBus tipado con Zustand + WebSocket bridge real
+- **Estado:** ✅ RESUELTO - Paneles conectados y funcionando
+
+### **6. Chart no mostraba nuevas velas:**
+- **Problema:** Chart mostraba "Market: Live" pero no nuevas velas cada minuto
+- **Causa:** useEffect solo actualizaba velas existentes, no detectaba nuevas
+- **Solución:** Lógica para detectar nuevas velas vs actualizaciones
+- **Estado:** ✅ RESUELTO - Chart mostrando nuevas velas cada minuto
+
 ---
 
 ## ✅ **LO QUE YA ESTÁ FUNCIONANDO:**
@@ -60,42 +72,53 @@
 - **Store:** `src/lib/marketStore.ts`
 - **Estado:** ✅ LIVE
 
-### **4. Componentes Funcionando:**
-- **ChartPanel:** Renderizando correctamente
-- **MarketStore:** Procesando datos
+### **4. Sistema EventBus Completo:**
+- **EventBus tipado:** Zustand store con tipos TypeScript
+- **WebSocket Bridge:** Conectado al WebSocket real
+- **LogsPanel:** Con altura fija, scroll, botones Copy/Clear
+- **ExecutedTimeline:** Mostrando trades en tiempo real
+- **Market Feed:** Emitiendo eventos al EventBus
+
+### **5. Componentes Funcionando:**
+- **ChartPanel:** Renderizando correctamente con nuevas velas
+- **MarketStore:** Procesando datos y emitiendo eventos
 - **BinanceFeed:** Conectado y recibiendo datos
 - **Auto-Recovery:** Detectando y recuperando errores
+- **Paneles:** LogsPanel y ExecutedTimeline conectados
 
 ---
 
-## 🎯 **PRÓXIMOS PASOS (PUNTO 3 - ANÁLISIS DE RIESGO):**
+## 🎯 **PRÓXIMOS PASOS (PUNTO 3 - RISK MANAGER):**
 
 ### **3.1 Risk Manager Integration:**
 - **Archivo:** `src/app/qcore/components/RiskManager.tsx`
-- **Estado:** Componente existe pero necesita integración
+- **Estado:** Componente existe pero necesita integración completa
 - **Tareas:**
-  - Conectar con marketStore
+  - Conectar con EventBus para recibir eventos de trading
   - Implementar cálculos de riesgo en tiempo real
-  - Mostrar alertas de riesgo
+  - Mostrar alertas de riesgo visuales
   - Integrar con PortfolioPanel
+  - Conectar con marketStore para datos de precio
 
 ### **3.2 Portfolio Integration:**
 - **Archivo:** `src/app/qcore/components/PortfolioPanel.tsx`
 - **Estado:** Componente existe pero necesita datos reales
 - **Tareas:**
-  - Conectar con accountStore
-  - Mostrar posiciones abiertas
+  - Conectar con EventBus para trades ejecutados
+  - Mostrar posiciones abiertas en tiempo real
   - Calcular P&L en tiempo real
   - Integrar con RiskManager
+  - Mostrar balance y equity
 
 ### **3.3 Risk Calculations:**
 - **Implementar:**
-  - Stop Loss automático
+  - Stop Loss automático basado en volatilidad
   - Take Profit automático
-  - Position sizing
-  - Risk per trade
-  - Maximum drawdown
-  - VaR (Value at Risk)
+  - Position sizing dinámico
+  - Risk per trade (1-2% del capital)
+  - Maximum drawdown tracking
+  - VaR (Value at Risk) en tiempo real
+  - Correlación entre posiciones
 
 ---
 

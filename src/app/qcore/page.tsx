@@ -1,19 +1,21 @@
 // src/app/qcore/page.tsx
-// Main QuantumCore v2 page
+// Main QuantumCore v2 page - New UX Layout
 
 import React, { useEffect } from 'react';
 import Topbar from './components/Topbar';
 import ConfigPanel from './components/ConfigPanel';
 import ChartPanel from './components/ChartPanel';
-import CoachPanel from './components/CoachPanel';
-import LogsPanel from '../../components/LogsPanel';
-import ExecutedTimeline from '../../components/ExecutedTimeline';
-import ModeConfirmModal from './components/ModeConfirmModal';
-import KillSwitchModal from './components/KillSwitchModal';
-import WebSocketTest from '../../components/WebSocketTest';
 import RiskManager from './components/RiskManager';
 import PortfolioPanel from './components/PortfolioPanel';
+import ModeConfirmModal from './components/ModeConfirmModal';
+import KillSwitchModal from './components/KillSwitchModal';
 import { wireWSBridge } from '../../../lib/wsBridge';
+
+// New UX Components
+import ControlDock from '../../components/ControlDock';
+import RightRail from '../../components/RightRail';
+import EmergencyFab from '../../components/EmergencyFab';
+import CollapsiblePanel from '../../components/ui/CollapsiblePanel';
 
 export default function QuantumCorePage() {
   // Initialize WebSocket bridge once
@@ -27,19 +29,24 @@ export default function QuantumCorePage() {
       {/* Topbar */}
       <Topbar />
       
+      {/* New Control Dock */}
+      <ControlDock />
+      
       {/* Kill Switch Banner */}
       <KillSwitchModal />
-
-      {/* WebSocket Test - Temporal - DISABLED */}
-      {/* <WebSocketTest /> */}
 
       {/* Main Content */}
       <div className="p-4">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 h-full">
-          {/* Left Column - Config Panel + Risk Manager */}
-          <div className="lg:col-span-1 space-y-6">
-            <ConfigPanel />
-            <RiskManager />
+          {/* Left Column - Collapsible Panels */}
+          <div className="lg:col-span-1 space-y-4">
+            <CollapsiblePanel id="sim-config" title="Simulation Config">
+              <ConfigPanel />
+            </CollapsiblePanel>
+            
+            <CollapsiblePanel id="risk-manager" title="Risk Manager">
+              <RiskManager />
+            </CollapsiblePanel>
           </div>
 
           {/* Center Column - Chart Panel */}
@@ -47,15 +54,19 @@ export default function QuantumCorePage() {
             <ChartPanel />
           </div>
 
-          {/* Right Column - Portfolio, IA Coach, Logs, Timeline */}
-          <div className="lg:col-span-2 space-y-6">
-            <PortfolioPanel />
-            <CoachPanel />
-            <LogsPanel />
-            <ExecutedTimeline />
+          {/* Right Column - Portfolio + Right Rail */}
+          <div className="lg:col-span-2 space-y-4">
+            <CollapsiblePanel id="portfolio" title="Portfolio" defaultCollapsed={false}>
+              <PortfolioPanel />
+            </CollapsiblePanel>
+            
+            <RightRail />
           </div>
         </div>
       </div>
+
+      {/* Emergency FAB */}
+      <EmergencyFab />
 
       {/* Modals */}
       <ModeConfirmModal />
