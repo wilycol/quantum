@@ -78,18 +78,19 @@ export const useMarket = create<State>((set, get) => ({
         return { candles: next, lastPrice: +k.c, binanceConnected: true };
       });
       
-      // Emit to EventBus
-      const emit = useEventBus.getState().emit;
-      emit({ 
-        type: 'market/kline', 
-        symbol: symbol.toUpperCase(), 
-        interval, 
-        k: msg.k, 
-        t: msg.E || Date.now() 
-      });
-      
       if (isClose) {
         console.log('[MARKET STORE] Candle closed, price:', +k.c);
+        
+        // Emit to EventBus only when candle closes
+        const emit = useEventBus.getState().emit;
+        emit({ 
+          type: 'market/kline', 
+          symbol: symbol.toUpperCase(), 
+          interval, 
+          k: msg.k, 
+          t: msg.E || Date.now() 
+        });
+        
         // aquí podrías emitir evento a IA Coach si quieres
       }
     });
