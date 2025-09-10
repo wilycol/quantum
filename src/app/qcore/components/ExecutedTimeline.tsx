@@ -41,8 +41,10 @@ export default function ExecutedTimeline({ className = '' }: ExecutedTimelinePro
   // WebSocket connection
   const { connected: wsConnected, onPreview, onExecuted } = useEventBus({
     autoConnect: true,
-    debug: false
+    debug: true
   });
+  
+  console.log('[ExecutedTimeline] useEventBus result:', { wsConnected });
 
   // Set up event listeners
   useEffect(() => {

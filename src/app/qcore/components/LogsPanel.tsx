@@ -29,8 +29,10 @@ export default function LogsPanel({ className = '' }: LogsPanelProps) {
   // WebSocket connection
   const { connected: wsConnected, onPreview, onExecuted, onState } = useEventBus({
     autoConnect: true,
-    debug: false
+    debug: true
   });
+  
+  console.log('[LogsPanel] useEventBus result:', { wsConnected });
 
   // Set up event listeners
   useEffect(() => {

@@ -57,6 +57,8 @@ export function useEventBus(config?: {
   autoConnect?: boolean;
   debug?: boolean;
 }): UseEventBusReturn {
+  console.log('[useEventBus] Hook initialized with config:', config);
+  
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +69,14 @@ export function useEventBus(config?: {
   // Check if WS URL is valid for current environment
   const wsUrl = import.meta.env.VITE_WS_URL as string | undefined;
   const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-  const canConnect = wsUrl && (!wsUrl.includes('localhost') || isLocal);
+  const canConnect = true; // Always allow connection - let EventBus handle URL logic
+  
+  console.log('[useEventBus] Connection check:', { 
+    wsUrl, 
+    isLocal, 
+    canConnect, 
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR' 
+  });
 
   // Initialize Event Bus
   useEffect(() => {
