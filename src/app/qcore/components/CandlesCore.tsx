@@ -125,35 +125,35 @@ export function CandlesCore({
     startVisibleRange: null
   });
 
-  // Auto-Recovery: Reintentar si hay errores
-  useEffect(() => {
-    if (chartState === 'error' && retryCount < maxRetries) {
-      const delay = 2000 * (retryCount + 1); // Backoff exponencial: 2s, 4s, 6s
-      console.log(`[CandlesCore] Auto-recovery attempt ${retryCount + 1}/${maxRetries} in ${delay}ms`);
+  // Auto-Recovery: DESACTIVADO temporalmente para evitar loop infinito
+  // useEffect(() => {
+  //   if (chartState === 'error' && retryCount < maxRetries) {
+  //     const delay = 2000 * (retryCount + 1); // Backoff exponencial: 2s, 4s, 6s
+  //     console.log(`[CandlesCore] Auto-recovery attempt ${retryCount + 1}/${maxRetries} in ${delay}ms`);
       
-      const timer = setTimeout(() => {
-        setChartState('retrying');
-        setRetryCount(prev => prev + 1);
-        reinitializeChart();
-      }, delay);
+  //     const timer = setTimeout(() => {
+  //       setChartState('retrying');
+  //       setRetryCount(prev => prev + 1);
+  //       reinitializeChart();
+  //     }, delay);
       
-      return () => clearTimeout(timer);
-    }
-  }, [chartState, retryCount]);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [chartState, retryCount]);
 
-  // Health check periódico
-  useEffect(() => {
-    if (chartState === 'ready') {
-      const interval = setInterval(() => {
-        if (!healthCheck()) {
-          console.log('[CandlesCore] Health check failed, triggering recovery');
-          setChartState('error');
-        }
-      }, 10000); // Health check cada 10 segundos
+  // Health check periódico: DESACTIVADO temporalmente
+  // useEffect(() => {
+  //   if (chartState === 'ready') {
+  //     const interval = setInterval(() => {
+  //       if (!healthCheck()) {
+  //         console.log('[CandlesCore] Health check failed, triggering recovery');
+  //         setChartState('error');
+  //       }
+  //     }, 10000); // Health check cada 10 segundos
       
-      return () => clearInterval(interval);
-    }
-  }, [chartState]);
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [chartState]);
 
   // 1) Crear chart UNA sola vez (sin hooks condicionales)
   useEffect(() => {

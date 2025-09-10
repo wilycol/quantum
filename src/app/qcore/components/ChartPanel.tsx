@@ -245,8 +245,30 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       {/* Main Chart */}
       <div className="mb-4">
         {loading || !ready || !candles || candles.length < 2 ? (
-          <div className="flex items-center justify-center h-[420px] bg-gray-800 rounded-lg">
-            <div className="text-gray-400">Cargando velas...</div>
+          <div className="flex items-center justify-center h-[420px] bg-gray-800 rounded-lg relative">
+            <div className="text-center">
+              <div className="text-gray-400 mb-4">Cargando velas...</div>
+              <button 
+                onClick={() => {
+                  console.log('[ChartPanel] Manual reload triggered');
+                  setReady(false);
+                  if (chartRef.current) {
+                    chartRef.current.remove();
+                    chartRef.current = null;
+                    seriesRef.current = null;
+                  }
+                  setTimeout(() => {
+                    setReady(true);
+                  }, 100);
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                🔄 Recargar Chart
+              </button>
+              <div className="text-xs text-gray-500 mt-2">
+                Si el chart no carga, haz clic aquí
+              </div>
+            </div>
           </div>
         ) : (
           <div ref={divRef} className="h-[420px] w-full rounded border border-zinc-800" />
