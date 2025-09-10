@@ -1,7 +1,8 @@
 // src/app/qcore/components/ChartPanel.tsx
 // Chart panel with overlays and markers for QuantumCore v2
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createChart, IChartApi, UTCTimestamp } from 'lightweight-charts';
 import { 
   useBroker,
   useStrategy,
@@ -13,7 +14,8 @@ import {
 } from '../hooks/useQcoreState';
 import { useWS } from '../../providers/WSProvider';
 import { useMarket } from '../../../../lib/marketStore';
-import { CandlesCore } from './CandlesCore';
+import { useChartInteractions } from '../../../../lib/useChartInteractions';
+import { useChartUI } from '../../../../lib/chartUiStore';
 import { formatPrice } from '../lib/formatters';
 
 interface ChartPanelProps {
@@ -24,6 +26,9 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   // ALL HOOKS AT THE TOP - NO CONDITIONAL HOOKS
   const [ready, setReady] = useState(false);
   const [markers, setMarkers] = useState<any[]>([]);
+  const divRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ReturnType<IChartApi['addCandlestickSeries']> | null>(null);
 
   // State from store
   const broker = useBroker();
@@ -39,6 +44,12 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   
   // Market data integration
   const { candles, lastPrice, binanceConnected, loading, init } = useMarket();
+  
+  // Chart interactions
+  const symbol = 'BTCUSDT';
+  const interval = '1m';
+  const key = `${symbol}:${interval}`;
+  const { reapplyRange, followRight, followRightNow } = useChartInteractions(chartRef.current, divRef.current, key);
 
   // Handle WebSocket events - MOVED AFTER HOOKS
   function handleWebSocketEvent(event: any) {
@@ -62,17 +73,57 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     init();
   }, [init]);
 
-  // Convert candles to chart format when they change
+  // Create chart
   useEffect(() => {
-    console.log('[ChartPanel] Candles changed:', { 
-      length: candles?.length, 
-      first: candles?.[0], 
-      last: candles?.[candles?.length - 1] 
+    if (!divRef.current) return;
+    const chart = createChart(divRef.current, {
+      layout: { background: { color: 'transparent' }, textColor: '#ccc' },
+      grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
+      rightPriceScale: { borderVisible: false },
+      timeScale: { borderVisible: false, rightOffset: 8, barSpacing: 6 },
+      handleScale: {
+        mouseWheel: false,                 // ⬅️ desactivamos zoom con rueda nativo
+        pinch: true,
+        axisPressedMouseMove: { time: true, price: true },
+      },
+      handleScroll: { pressedMouseMove: true, mouseWheel: false, horzTouchDrag: true, vertTouchDrag: false },
     });
+
+    const series = chart.addCandlestickSeries();
+    chartRef.current = chart;
+    seriesRef.current = series;
+    setReady(true);
+
+    const onResize = () => chart.applyOptions({ width: divRef.current!.clientWidth });
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('resize', onResize); chart.remove(); };
+  }, []);
+
+  // snapshot inicial
+  useEffect(() => {
+    if (!ready || !seriesRef.current) return;
     if (candles && candles.length > 0) {
-      setReady(true);
+      seriesRef.current.setData(
+        candles.map(c => ({ time: (c[0]/1000) as UTCTimestamp, open: c[1], high: c[2], low: c[3], close: c[4] }))
+      );
+      // promover precio desde snapshot (mejora de UX)
+      const last = candles.at(-1);
+      if (last) useMarket.setState({ lastPrice: last[4] });
+      if (!followRight) reapplyRange();
+      else chartRef.current?.timeScale().scrollToRealTime();
     }
-  }, [candles]);
+  }, [ready, candles, followRight, reapplyRange]);
+
+  // tick en vivo
+  useEffect(() => {
+    if (!ready || !seriesRef.current || !candles || candles.length === 0) return;
+    const last = candles[candles.length - 1];
+    seriesRef.current.update({
+      time: (last[0]/1000) as UTCTimestamp, open: last[1], high: last[2], low: last[3], close: last[4]
+    });
+    if (!followRight) reapplyRange();
+  }, [candles, ready, followRight, reapplyRange]);
 
   // Mock data generators
   function generateMockCandles() {
@@ -176,46 +227,29 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
         </div>
       </div>
 
+      {/* Chart Controls */}
+      <div className="flex items-center gap-3 text-xs mb-2">
+        <span>Current Price: <b>{lastPrice?.toFixed(2) ?? '—'}</b></span>
+        <span>· Market: <b className={binanceConnected ? 'text-green-400' : 'text-yellow-400'}>
+          {binanceConnected ? 'Live' : 'Backfill'}
+        </b></span>
+        <span>· View: <b className={followRight ? 'text-green-400' : 'text-sky-400'}>
+          {followRight ? 'Following' : 'Custom'}
+        </b></span>
+        {!followRight && (
+          <button onClick={followRightNow} className="px-2 py-1 rounded bg-zinc-800">Follow Right</button>
+        )}
+        <span className="ml-auto text-zinc-400">Zoom: CTRL + rueda · Pan: arrastrar</span>
+      </div>
+
       {/* Main Chart */}
       <div className="mb-4">
-        {(() => {
-          console.log('[ChartPanel] Render condition:', { 
-            loading, 
-            ready, 
-            candlesLength: candles?.length, 
-            hasCandles: !!candles,
-            condition: loading || !ready || !candles || candles.length < 2
-          });
-          return loading || !ready || !candles || candles.length < 2;
-        })() ? (
+        {loading || !ready || !candles || candles.length < 2 ? (
           <div className="flex items-center justify-center h-[420px] bg-gray-800 rounded-lg">
             <div className="text-gray-400">Cargando velas...</div>
           </div>
         ) : (
-          <CandlesCore
-            candles={(candles || []).map(c => {
-              console.log('[ChartPanel] Processing candle:', c);
-              return {
-                time: c[0] / 1000, // Convert ms to seconds
-                open: c[1],
-                high: c[2],
-                low: c[3],
-                close: c[4]
-              };
-            })}
-            volume={(candles || []).map(c => ({
-              time: c[0] / 1000,
-              value: c[5]
-            }))}
-            showVolume={volumeOn}
-            mode={strategy === 'grid' ? 'grid' : 'binary'}
-            gridCfg={strategy === 'grid' ? grid : null}
-            binaryCfg={strategy === 'binary' ? { 
-              strike: lastPrice || 0, 
-              expiry: binary.expiry 
-            } : null}
-            onReady={() => setReady(true)}
-          />
+          <div ref={divRef} className="h-[420px] w-full rounded border border-zinc-800" />
         )}
       </div>
 

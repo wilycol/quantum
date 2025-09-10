@@ -1,0 +1,3 @@
+/* src/styles/safe-icons.css */
+svg { max-width: none; max-height: none; }
+.icon svg, svg[data-icon] { width: 1em; height: 1em; }
