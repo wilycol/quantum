@@ -57,6 +57,8 @@ export function useEventBus(config?: {
   autoConnect?: boolean;
   debug?: boolean;
 }): UseEventBusReturn {
+  console.log('[useEventBus] Hook initialized with config:', config);
+  
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
