@@ -4,7 +4,7 @@ import { useRisk } from '@/lib/riskStore';
 import { useWS } from '@/app/providers/WSProvider';
 import { useMarket } from '@/lib/marketStore';
 import { send } from '@/lib/wsClient';
-import { useUILayout } from '@/lib/uiLayoutStore';
+import { useUILayout } from '../lib/uiLayoutStore';
 
 export default function ControlDock() {
   const { connected } = useWS();
