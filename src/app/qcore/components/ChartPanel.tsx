@@ -26,6 +26,11 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   // ALL HOOKS AT THE TOP - NO CONDITIONAL HOOKS
   const [ready, setReady] = useState(false);
   const [markers, setMarkers] = useState<any[]>([]);
+  const [chartState, setChartState] = useState<'loading' | 'ready' | 'error' | 'retrying'>('loading');
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 7;
+  const retryDelay = 30000; // 30 segundos
+  
   const divRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ReturnType<IChartApi['addCandlestickSeries']> | null>(null);
@@ -51,6 +56,54 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   const key = `${symbol}:${interval}`;
   const { reapplyRange, followRight, followRightNow } = useChartInteractions(chartRef.current, divRef.current, key);
 
+  // Auto-Recovery functions
+  const healthCheck = (): boolean => {
+    if (!chartRef.current || !seriesRef.current) {
+      console.log('[ChartPanel] Health check failed: chart not ready');
+      return false;
+    }
+    
+    try {
+      const timeScale = chartRef.current.timeScale();
+      if (!timeScale) {
+        console.log('[ChartPanel] Health check failed: timeScale not available');
+        return false;
+      }
+      
+      const visibleRange = timeScale.getVisibleRange();
+      if (!visibleRange) {
+        console.log('[ChartPanel] Health check failed: no visible range');
+        return false;
+      }
+      
+      console.log('[ChartPanel] Health check passed');
+      return true;
+    } catch (error) {
+      console.log('[ChartPanel] Health check failed:', error);
+      return false;
+    }
+  };
+
+  const reinitializeChart = () => {
+    console.log('[ChartPanel] Reinitializing chart...');
+    
+    // Limpiar referencias existentes
+    if (chartRef.current) {
+      chartRef.current.remove();
+      chartRef.current = null;
+    }
+    seriesRef.current = null;
+    
+    // Resetear estado
+    setReady(false);
+    setChartState('loading');
+    
+    // Forzar re-render del useEffect de creación
+    setTimeout(() => {
+      setChartState('retrying');
+    }, 100);
+  };
+
   // Handle WebSocket events - MOVED AFTER HOOKS
   function handleWebSocketEvent(event: any) {
     console.log('[ChartPanel] WebSocket event received:', event);
@@ -73,10 +126,43 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     init();
   }, [init]);
 
+  // Auto-Recovery: Reintentar si hay errores
+  useEffect(() => {
+    if (chartState === 'error' && retryCount < maxRetries) {
+      console.log(`[ChartPanel] Auto-recovery attempt ${retryCount + 1}/${maxRetries} in ${retryDelay/1000}s`);
+      
+      const timer = setTimeout(() => {
+        setChartState('retrying');
+        setRetryCount(prev => prev + 1);
+        reinitializeChart();
+      }, retryDelay);
+      
+      return () => clearTimeout(timer);
+    } else if (chartState === 'error' && retryCount >= maxRetries) {
+      console.log(`[ChartPanel] Auto-recovery exhausted after ${maxRetries} attempts. Manual reload required.`);
+    }
+  }, [chartState, retryCount, retryDelay, maxRetries]);
+
+  // Health check periódico
+  useEffect(() => {
+    if (chartState === 'ready') {
+      const interval = setInterval(() => {
+        if (!healthCheck()) {
+          console.log('[ChartPanel] Health check failed, triggering recovery');
+          setChartState('error');
+        }
+      }, 15000); // Health check cada 15 segundos
+      
+      return () => clearInterval(interval);
+    }
+  }, [chartState]);
+
   // Create chart
   useEffect(() => {
     if (!divRef.current) return;
-    const chart = createChart(divRef.current, {
+    
+    try {
+      const chart = createChart(divRef.current, {
       layout: { background: { color: 'transparent' }, textColor: '#ccc' },
       grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
       rightPriceScale: { borderVisible: false },
@@ -93,11 +179,17 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     chartRef.current = chart;
     seriesRef.current = series;
     setReady(true);
+    setChartState('ready');
+    console.log('[ChartPanel] Chart created successfully');
 
-    const onResize = () => chart.applyOptions({ width: divRef.current!.clientWidth });
-    onResize();
-    window.addEventListener('resize', onResize);
-    return () => { window.removeEventListener('resize', onResize); chart.remove(); };
+      const onResize = () => chart.applyOptions({ width: divRef.current!.clientWidth });
+      onResize();
+      window.addEventListener('resize', onResize);
+      return () => { window.removeEventListener('resize', onResize); chart.remove(); };
+    } catch (error) {
+      console.error('[ChartPanel] Error creating chart:', error);
+      setChartState('error');
+    }
   }, []);
 
   // snapshot inicial
@@ -244,7 +336,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
       {/* Main Chart */}
       <div className="mb-4">
-        {loading || !ready || !candles || candles.length < 2 ? (
+        {loading || !ready || !candles || candles.length < 2 || chartState === 'error' ? (
           <div className="flex items-center justify-center h-[420px] bg-gray-800 rounded-lg relative">
             <div className="text-center">
               <div className="text-gray-400 mb-4">Cargando velas...</div>
@@ -252,12 +344,13 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
                 onClick={() => {
                   console.log('[ChartPanel] Manual reload triggered - resetting auto-recovery');
                   setReady(false);
+                  setRetryCount(0); // Reset auto-recovery counter
+                  setChartState('loading');
                   if (chartRef.current) {
                     chartRef.current.remove();
                     chartRef.current = null;
                     seriesRef.current = null;
                   }
-                  // Reset auto-recovery counter
                   setTimeout(() => {
                     setReady(true);
                   }, 100);
@@ -269,6 +362,16 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
               <div className="text-xs text-gray-500 mt-2">
                 Si el chart no carga, haz clic aquí
               </div>
+              {chartState === 'error' && retryCount < maxRetries && (
+                <div className="text-xs text-yellow-400 mt-2">
+                  ⏳ Próximo intento automático en {retryDelay/1000}s... ({retryCount}/{maxRetries})
+                </div>
+              )}
+              {chartState === 'error' && retryCount >= maxRetries && (
+                <div className="text-xs text-red-400 mt-2">
+                  ⚠️ Auto-recovery agotado. Usar botón manual.
+                </div>
+              )}
             </div>
           </div>
         ) : (
