@@ -165,7 +165,7 @@ export default function RiskManagerHorizontal({ className = '' }: RiskManagerHor
       </div>
 
       {/* Main Content - Horizontal Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         
         {/* Asset Selection */}
         <div className="space-y-2">
@@ -240,6 +240,44 @@ export default function RiskManagerHorizontal({ className = '' }: RiskManagerHor
             </div>
           </div>
         </div>
+
+        {/* Market Data */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-400">Market Data</label>
+          <div className="text-xs space-y-1">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Price:</span>
+              <span className="text-white">${lastPrice?.toFixed(2) || '0.00'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">24h Change:</span>
+              <span className="text-green-400">+2.5%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Volume:</span>
+              <span className="text-white">1.2M</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Trading Performance */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-400">Performance</label>
+          <div className="text-xs space-y-1">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Total Trades:</span>
+              <span className="text-white">{trades.length}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Win Rate:</span>
+              <span className="text-green-400">75%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Balance:</span>
+              <span className="text-white">${balance.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Risk Alerts */}
@@ -254,24 +292,49 @@ export default function RiskManagerHorizontal({ className = '' }: RiskManagerHor
         </div>
       )}
 
-      {/* Whitelist Management */}
+      {/* Whitelist Management - Full Width */}
       <div className="mt-4 pt-4 border-t border-gray-700">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-medium text-gray-300">Asset Whitelist</h4>
-          <span className="text-xs text-gray-400">{whitelist.length} assets</span>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-gray-400">{whitelist.length} assets selected</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Quick Add:</span>
+              <div className="flex gap-1">
+                {['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT'].map(symbol => (
+                  <button
+                    key={symbol}
+                    onClick={() => {
+                      if (!whitelist.includes(symbol)) {
+                        addToWhitelist(symbol);
+                      }
+                    }}
+                    disabled={whitelist.includes(symbol)}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      whitelist.includes(symbol)
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {symbol}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
         
         {whitelist.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-2">
             {whitelist.map(symbol => (
               <span
                 key={symbol}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded"
+                className="inline-flex items-center gap-2 px-3 py-1 bg-gray-700 text-gray-300 text-sm rounded-lg border border-gray-600"
               >
-                {symbol}
+                <span className="font-medium">{symbol}</span>
                 <button
                   onClick={() => removeFromWhitelist(symbol)}
-                  className="text-gray-400 hover:text-red-400"
+                  className="text-gray-400 hover:text-red-400 transition-colors"
                 >
                   ×
                 </button>
@@ -279,7 +342,9 @@ export default function RiskManagerHorizontal({ className = '' }: RiskManagerHor
             ))}
           </div>
         ) : (
-          <div className="text-xs text-gray-500">No assets in whitelist</div>
+          <div className="text-center py-4 text-gray-500 text-sm">
+            No assets in whitelist. Use the quick add buttons above or the asset selector to add assets.
+          </div>
         )}
       </div>
     </div>

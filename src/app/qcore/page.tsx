@@ -48,11 +48,6 @@ export default function QuantumCorePage() {
           {/* Center Column - Chart Panel */}
           <div className="lg:col-span-3">
             <ChartPanel />
-            
-            {/* Horizontal Risk Manager below chart */}
-            <div className="mt-4">
-              <RiskManagerHorizontal />
-            </div>
           </div>
 
           {/* Right Column - Portfolio + Right Rail */}
@@ -63,6 +58,11 @@ export default function QuantumCorePage() {
             
             <RightRail />
           </div>
+        </div>
+        
+        {/* Full Width Risk Manager below all columns */}
+        <div className="mt-6 -mx-4 px-4">
+          <RiskManagerHorizontal />
         </div>
       </div>
 
