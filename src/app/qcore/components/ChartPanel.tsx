@@ -133,6 +133,18 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     init();
   }, [init]);
 
+  // Timeout para detectar si el chart no se crea
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (chartState === 'loading' && !chartRef.current) {
+        console.log('[ChartPanel] Chart creation timeout, triggering error state');
+        setChartState('error');
+      }
+    }, 10000); // 10 segundos de timeout para creación del chart
+    
+    return () => clearTimeout(timeout);
+  }, [chartState]);
+
   // Auto-Recovery: Reintentar si hay errores
   useEffect(() => {
     if (chartState === 'error' && retryCount < maxRetries) {
@@ -181,33 +193,51 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
   // Create chart
   useEffect(() => {
-    if (!divRef.current) return;
+    console.log('[ChartPanel] Create chart effect triggered:', { hasDiv: !!divRef.current, hasChart: !!chartRef.current });
+    
+    if (!divRef.current) {
+      console.log('[ChartPanel] No div ref, skipping chart creation');
+      return;
+    }
+    
+    if (chartRef.current) {
+      console.log('[ChartPanel] Chart already exists, skipping creation');
+      return;
+    }
     
     try {
+      console.log('[ChartPanel] Creating chart...');
       const chart = createChart(divRef.current, {
-      layout: { background: { color: 'transparent' }, textColor: '#ccc' },
-      grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
-      rightPriceScale: { borderVisible: false },
-      timeScale: { borderVisible: false, rightOffset: 8, barSpacing: 6 },
-      handleScale: {
-        mouseWheel: false,                 // ⬅️ desactivamos zoom con rueda nativo
-        pinch: true,
-        axisPressedMouseMove: { time: true, price: true },
-      },
-      handleScroll: { pressedMouseMove: true, mouseWheel: false, horzTouchDrag: true, vertTouchDrag: false },
-    });
+        layout: { background: { color: 'transparent' }, textColor: '#ccc' },
+        grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
+        rightPriceScale: { borderVisible: false },
+        timeScale: { borderVisible: false, rightOffset: 8, barSpacing: 6 },
+        handleScale: {
+          mouseWheel: false,                 // ⬅️ desactivamos zoom con rueda nativo
+          pinch: true,
+          axisPressedMouseMove: { time: true, price: true },
+        },
+        handleScroll: { pressedMouseMove: true, mouseWheel: false, horzTouchDrag: true, vertTouchDrag: false },
+      });
 
-    const series = chart.addCandlestickSeries();
-    chartRef.current = chart;
-    seriesRef.current = series;
-    setReady(true);
-    setChartState('ready');
-    console.log('[ChartPanel] Chart created successfully');
+      console.log('[ChartPanel] Chart created, adding series...');
+      const series = chart.addCandlestickSeries();
+      chartRef.current = chart;
+      seriesRef.current = series;
+      
+      console.log('[ChartPanel] Setting ready state...');
+      setReady(true);
+      setChartState('ready');
+      console.log('[ChartPanel] Chart created successfully');
 
       const onResize = () => chart.applyOptions({ width: divRef.current!.clientWidth });
       onResize();
       window.addEventListener('resize', onResize);
-      return () => { window.removeEventListener('resize', onResize); chart.remove(); };
+      return () => { 
+        console.log('[ChartPanel] Cleaning up chart...');
+        window.removeEventListener('resize', onResize); 
+        chart.remove(); 
+      };
     } catch (error) {
       console.error('[ChartPanel] Error creating chart:', error);
       setChartState('error');
