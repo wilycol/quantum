@@ -1,5 +1,5 @@
 'use client';
-import { useUILayout } from '../../../lib/uiLayoutStore';
+import { useUILayout } from '@/lib/uiLayoutStore';
 
 interface CollapsiblePanelProps {
   id: string;
