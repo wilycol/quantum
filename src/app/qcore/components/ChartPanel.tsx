@@ -174,8 +174,26 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     if (divRef.current && chartState === 'loading' && !chartRef.current) {
       console.log('[ChartPanel] DivRef now available, triggering chart creation');
       // Forzar re-ejecución del useEffect de creación
-      setChartState('loading');
+      setChartState('retrying');
     }
+  }, [chartState]);
+
+  // Force chart creation when div is available
+  useEffect(() => {
+    const checkAndCreateChart = () => {
+      if (divRef.current && !chartRef.current && (chartState === 'loading' || chartState === 'retrying')) {
+        console.log('[ChartPanel] Force creating chart - div available and no chart exists');
+        setChartState('retrying');
+      }
+    };
+    
+    // Check immediately
+    checkAndCreateChart();
+    
+    // Check after a short delay to ensure DOM is ready
+    const timer = setTimeout(checkAndCreateChart, 100);
+    
+    return () => clearTimeout(timer);
   }, [divRef.current, chartState]);
 
   // Effect para detectar cuando la serie esté disponible
@@ -184,7 +202,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       console.log('[ChartPanel] Series now available, setting ready state');
       setChartState('ready');
     }
-  }, [ready, seriesRef.current, chartState]);
+  }, [ready, chartState]);
 
   // Auto-Recovery: Reintentar si hay errores
   useEffect(() => {
@@ -234,7 +252,14 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
   // Create chart
   useEffect(() => {
-    console.log('[ChartPanel] Create chart effect triggered:', { hasDiv: !!divRef.current, hasChart: !!chartRef.current });
+    console.log('[ChartPanel] Create chart effect triggered:', { 
+      hasDiv: !!divRef.current, 
+      hasChart: !!chartRef.current,
+      chartState,
+      ready,
+      divElement: divRef.current,
+      divChildren: divRef.current?.children.length || 0
+    });
     
     if (!divRef.current) {
       console.log('[ChartPanel] No div ref, will retry in next render');
@@ -246,8 +271,21 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       return;
     }
     
+    if (chartState !== 'loading' && chartState !== 'retrying') {
+      console.log('[ChartPanel] Not in loading/retrying state, skipping creation. Current state:', chartState);
+      return;
+    }
+    
     try {
       console.log('[ChartPanel] Creating chart...');
+      console.log('[ChartPanel] Div element:', divRef.current);
+      console.log('[ChartPanel] Div dimensions:', {
+        width: divRef.current?.clientWidth,
+        height: divRef.current?.clientHeight,
+        offsetWidth: divRef.current?.offsetWidth,
+        offsetHeight: divRef.current?.offsetHeight
+      });
+      
       const chart = createChart(divRef.current, {
         layout: { background: { color: 'transparent' }, textColor: '#ccc' },
         grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } },
@@ -285,7 +323,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       console.error('[ChartPanel] Error creating chart:', error);
       setChartState('error');
     }
-  }, []);
+  }, [chartState]);
 
   // snapshot inicial
   useEffect(() => {
@@ -460,11 +498,16 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       </div>
 
       {/* Main Chart */}
-      <div className="mb-4">
-        {loading || !ready || !candles || candles.length < 2 || chartState === 'error' ? (
-          <div className="flex items-center justify-center h-[420px] bg-gray-800 rounded-lg relative">
+      <div className="mb-4 relative">
+        <div ref={divRef} className="h-[420px] w-full rounded border border-zinc-800" />
+        
+        {/* Loading/Error Overlay */}
+        {(loading || !ready || !candles || candles.length < 2 || chartState === 'error') && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-800/90 rounded-lg">
             <div className="text-center">
-              <div className="text-gray-400 mb-4">Cargando velas...</div>
+              <div className="text-gray-400 mb-4">
+                {chartState === 'error' ? 'Error cargando chart...' : 'Cargando velas...'}
+              </div>
               <button 
                 onClick={() => {
                   console.log('[ChartPanel] Manual reload triggered - resetting auto-recovery');
@@ -484,6 +527,24 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
               >
                 🔄 Recargar Chart
               </button>
+              <button 
+                onClick={() => {
+                  console.log('[ChartPanel] Debug: Force chart creation');
+                  console.log('[ChartPanel] Debug state:', {
+                    hasDiv: !!divRef.current,
+                    hasChart: !!chartRef.current,
+                    chartState,
+                    ready,
+                    candlesLength: candles?.length
+                  });
+                  if (divRef.current && !chartRef.current) {
+                    setChartState('retrying');
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors ml-2"
+              >
+                🐛 Debug Chart
+              </button>
               <div className="text-xs text-gray-500 mt-2">
                 Si el chart no carga, haz clic aquí
               </div>
@@ -499,8 +560,6 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
               )}
             </div>
           </div>
-        ) : (
-          <div ref={divRef} className="h-[420px] w-full rounded border border-zinc-800" />
         )}
       </div>
 
