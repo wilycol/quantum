@@ -31,10 +31,30 @@ export function CandlesCore({
   const priceSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const volSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
 
+  // Estado para zoom y pan personalizados
+  const userZoomStateRef = useRef<{
+    visibleRange: { from: number; to: number } | null;
+    isUserZoomed: boolean;
+  }>({ visibleRange: null, isUserZoomed: false });
+  
+  const panStateRef = useRef<{
+    isPanning: boolean;
+    startX: number;
+    startTime: number;
+    startVisibleRange: { from: number; to: number } | null;
+  }>({
+    isPanning: false,
+    startX: 0,
+    startTime: 0,
+    startVisibleRange: null
+  });
+
   // 1) Crear chart UNA sola vez (sin hooks condicionales)
   useEffect(() => {
     const el = containerRef.current;
     if (!el || chartRef.current) return;
+    
+    let cleanup: (() => void) | null = null;
     
     try {
       chartRef.current = createChart(el, { 
@@ -80,12 +100,110 @@ export function CandlesCore({
       });
       
       onReady?.();
+
+      // Agregar event handlers para zoom y pan
+      const chart = chartRef.current;
+      
+      // Control de zoom personalizado con Ctrl + scroll
+      const handleWheel = (event: WheelEvent) => {
+        if (!event.ctrlKey) return;
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const timeScale = chart.timeScale();
+        const visibleRange = timeScale.getVisibleRange();
+        if (!visibleRange) return;
+        
+        const delta = event.deltaY > 0 ? 1.1 : 0.9;
+        const range = Number(visibleRange.to) - Number(visibleRange.from);
+        const center = Number(visibleRange.from) + range / 2;
+        const newRange = range * delta;
+        const newFrom = center - newRange / 2;
+        const newTo = center + newRange / 2;
+        
+        if (newFrom && newTo && newFrom < newTo && isFinite(newFrom) && isFinite(newTo)) {
+          timeScale.setVisibleRange({ from: newFrom as Time, to: newTo as Time });
+          userZoomStateRef.current = { visibleRange: { from: newFrom, to: newTo }, isUserZoomed: true };
+        }
+      };
+
+      // Control de pan con clic izquierdo y arrastrar
+      const handleMouseDown = (event: MouseEvent) => {
+        if (event.button !== 0) return; // Solo responder al clic izquierdo
+        const timeScale = chart.timeScale();
+        const visibleRange = timeScale.getVisibleRange();
+        if (!visibleRange) return;
+        panStateRef.current = {
+          isPanning: true,
+          startX: event.clientX,
+          startTime: Date.now(),
+          startVisibleRange: { from: Number(visibleRange.from), to: Number(visibleRange.to) }
+        };
+        el.style.cursor = 'grabbing';
+      };
+      
+      const handleMouseMove = (event: MouseEvent) => {
+        if (!panStateRef.current.isPanning) return;
+        
+        const deltaX = event.clientX - panStateRef.current.startX;
+        const timeScale = chart.timeScale();
+        const startRange = panStateRef.current.startVisibleRange;
+        
+        if (!startRange) return;
+        
+        // Calcular el desplazamiento en tiempo basado en el movimiento del mouse
+        const range = startRange.to - startRange.from;
+        const pixelsPerTime = el.clientWidth / range;
+        const timeDelta = deltaX / pixelsPerTime;
+        
+        const newFrom = startRange.from - timeDelta;
+        const newTo = startRange.to - timeDelta;
+        
+        timeScale.setVisibleRange({
+          from: newFrom as Time,
+          to: newTo as Time
+        });
+        
+        // Actualizar el estado del zoom del usuario
+        userZoomStateRef.current = {
+          visibleRange: { from: newFrom, to: newTo },
+          isUserZoomed: true
+        };
+      };
+      
+      const handleMouseUp = (event: MouseEvent) => {
+        if (!panStateRef.current.isPanning) return;
+        
+        panStateRef.current.isPanning = false;
+        el.style.cursor = 'crosshair';
+      };
+
+      // Agregar event listeners
+      el.addEventListener('wheel', handleWheel, { passive: false });
+      el.addEventListener('mousedown', handleMouseDown);
+      el.addEventListener('mousemove', handleMouseMove);
+      el.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      // Guardar referencias para cleanup
+      cleanup = () => {
+        el.removeEventListener('wheel', handleWheel);
+        el.removeEventListener('mousedown', handleMouseDown);
+        el.removeEventListener('mousemove', handleMouseMove);
+        el.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
     } catch (error) {
       console.error('[CandlesCore] Error creating chart:', error);
     }
     
     return () => { 
       if (chartRef.current) {
+        // Limpiar event listeners si existen
+        if (cleanup) {
+          cleanup();
+        }
         chartRef.current.remove(); 
         chartRef.current = null;
         priceSeriesRef.current = null;
