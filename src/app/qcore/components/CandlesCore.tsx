@@ -34,7 +34,8 @@ export function CandlesCore({
   // Estados de Auto-Recovery
   const [chartState, setChartState] = useState<'loading' | 'ready' | 'error' | 'retrying'>('loading');
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 3;
+  const maxRetries = 7; // Aumentado a 7 intentos
+  const retryDelay = 30000; // 30 segundos entre intentos
 
   // Función para generar datos mock como fallback
   const generateMockCandles = (): Candle[] => {
@@ -125,35 +126,36 @@ export function CandlesCore({
     startVisibleRange: null
   });
 
-  // Auto-Recovery: DESACTIVADO temporalmente para evitar loop infinito
-  // useEffect(() => {
-  //   if (chartState === 'error' && retryCount < maxRetries) {
-  //     const delay = 2000 * (retryCount + 1); // Backoff exponencial: 2s, 4s, 6s
-  //     console.log(`[CandlesCore] Auto-recovery attempt ${retryCount + 1}/${maxRetries} in ${delay}ms`);
+  // Auto-Recovery: Reactivado con límites inteligentes
+  useEffect(() => {
+    if (chartState === 'error' && retryCount < maxRetries) {
+      console.log(`[CandlesCore] Auto-recovery attempt ${retryCount + 1}/${maxRetries} in ${retryDelay/1000}s`);
       
-  //     const timer = setTimeout(() => {
-  //       setChartState('retrying');
-  //       setRetryCount(prev => prev + 1);
-  //       reinitializeChart();
-  //     }, delay);
+      const timer = setTimeout(() => {
+        setChartState('retrying');
+        setRetryCount(prev => prev + 1);
+        reinitializeChart();
+      }, retryDelay);
       
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [chartState, retryCount]);
+      return () => clearTimeout(timer);
+    } else if (chartState === 'error' && retryCount >= maxRetries) {
+      console.log(`[CandlesCore] Auto-recovery exhausted after ${maxRetries} attempts. Manual reload required.`);
+    }
+  }, [chartState, retryCount, retryDelay, maxRetries]);
 
-  // Health check periódico: DESACTIVADO temporalmente
-  // useEffect(() => {
-  //   if (chartState === 'ready') {
-  //     const interval = setInterval(() => {
-  //       if (!healthCheck()) {
-  //         console.log('[CandlesCore] Health check failed, triggering recovery');
-  //         setChartState('error');
-  //       }
-  //     }, 10000); // Health check cada 10 segundos
+  // Health check periódico: Reactivado con delay más largo
+  useEffect(() => {
+    if (chartState === 'ready') {
+      const interval = setInterval(() => {
+        if (!healthCheck()) {
+          console.log('[CandlesCore] Health check failed, triggering recovery');
+          setChartState('error');
+        }
+      }, 15000); // Health check cada 15 segundos (aumentado de 10s)
       
-  //     return () => clearInterval(interval);
-  //   }
-  // }, [chartState]);
+      return () => clearInterval(interval);
+    }
+  }, [chartState]);
 
   // 1) Crear chart UNA sola vez (sin hooks condicionales)
   useEffect(() => {
@@ -413,7 +415,8 @@ export function CandlesCore({
         }}>
           {chartState === 'loading' && '🔄 Cargando...'}
           {chartState === 'retrying' && `🔄 Reintentando... (${retryCount}/${maxRetries})`}
-          {chartState === 'error' && retryCount >= maxRetries && '⚠️ Usando datos demo'}
+          {chartState === 'error' && retryCount < maxRetries && `⏳ Próximo intento en ${retryDelay/1000}s...`}
+          {chartState === 'error' && retryCount >= maxRetries && '⚠️ Auto-recovery agotado. Usar botón manual.'}
         </div>
       )}
     </div>

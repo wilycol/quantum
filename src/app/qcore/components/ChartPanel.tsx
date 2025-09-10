@@ -250,13 +250,14 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
               <div className="text-gray-400 mb-4">Cargando velas...</div>
               <button 
                 onClick={() => {
-                  console.log('[ChartPanel] Manual reload triggered');
+                  console.log('[ChartPanel] Manual reload triggered - resetting auto-recovery');
                   setReady(false);
                   if (chartRef.current) {
                     chartRef.current.remove();
                     chartRef.current = null;
                     seriesRef.current = null;
                   }
+                  // Reset auto-recovery counter
                   setTimeout(() => {
                     setReady(true);
                   }, 100);
