@@ -35,13 +35,14 @@ export class EventBus {
         
         const WS_URL = import.meta.env.VITE_WS_URL;
         
-        // If no WS_URL defined, disable in production
+        // If no WS_URL defined, use appropriate endpoint
         if (!WS_URL) {
           if (window.location.hostname !== 'localhost') {
-            console.warn('WS: No VITE_WS_URL defined, disabling WebSocket in production');
-            return null;
+            // In production, use the Vercel WebSocket endpoint
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            return `${protocol}//${window.location.host}/api/ws`;
           }
-          return null; // Disable EventBus in localhost too for now
+          return 'ws://localhost:8080/ws'; // Enable EventBus in localhost
         }
         
         // If WS_URL contains localhost but we're not on localhost, disable
