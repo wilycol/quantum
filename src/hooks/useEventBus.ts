@@ -67,7 +67,14 @@ export function useEventBus(config?: {
   // Check if WS URL is valid for current environment
   const wsUrl = import.meta.env.VITE_WS_URL as string | undefined;
   const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-  const canConnect = wsUrl && (!wsUrl.includes('localhost') || isLocal);
+  const canConnect = wsUrl || isLocal; // Allow connection if we have URL OR we're local
+  
+  console.log('[useEventBus] Connection check:', { 
+    wsUrl, 
+    isLocal, 
+    canConnect, 
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR' 
+  });
 
   // Initialize Event Bus
   useEffect(() => {

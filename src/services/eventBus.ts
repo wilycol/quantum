@@ -71,10 +71,12 @@ export class EventBus {
     return new Promise((resolve, reject) => {
       // If no URL configured, reject connection
       if (!this.config.url) {
+        console.log('[EventBus] No WebSocket URL configured');
         reject(new Error('WebSocket URL not configured'));
         return;
       }
 
+      console.log('[EventBus] Attempting to connect to:', this.config.url);
       try {
         this.ws = new WebSocket(this.config.url);
         
