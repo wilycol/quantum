@@ -28,6 +28,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   const [markers, setMarkers] = useState<any[]>([]);
   const [chartState, setChartState] = useState<'loading' | 'ready' | 'error' | 'retrying'>('loading');
   const [retryCount, setRetryCount] = useState(0);
+  const [dataSet, setDataSet] = useState(false);
   const maxRetries = 7;
   const retryDelay = 30000; // 30 segundos
   
@@ -261,24 +262,31 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
 
   // snapshot inicial
   useEffect(() => {
-    if (!ready || !seriesRef.current || !candles || candles.length === 0) {
+    if (!ready || !seriesRef.current || !candles || candles.length === 0 || dataSet) {
       return;
     }
     
     try {
-      seriesRef.current.setData(
-        candles.map(c => ({ time: (c[0]/1000) as UTCTimestamp, open: c[1], high: c[2], low: c[3], close: c[4] }))
-      );
+      const formattedData = candles.map(c => ({ 
+        time: (c[0]/1000) as UTCTimestamp, 
+        open: parseFloat(c[1]), 
+        high: parseFloat(c[2]), 
+        low: parseFloat(c[3]), 
+        close: parseFloat(c[4]) 
+      }));
+      
+      seriesRef.current.setData(formattedData);
+      setDataSet(true);
       
       const last = candles.at(-1);
-      if (last) useMarket.setState({ lastPrice: last[4] });
+      if (last) useMarket.setState({ lastPrice: parseFloat(last[4]) });
       if (!followRight) reapplyRange();
       else chartRef.current?.timeScale().scrollToRealTime();
     } catch (error) {
       console.error('[ChartPanel] Error setting initial data:', error);
       setChartState('error');
     }
-  }, [ready, candles, followRight, reapplyRange]);
+  }, [ready, candles, dataSet]);
 
   // tick en vivo
   useEffect(() => {
@@ -290,14 +298,18 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     
     try {
       seriesRef.current.update({
-        time: (last[0]/1000) as UTCTimestamp, open: last[1], high: last[2], low: last[3], close: last[4]
+        time: (last[0]/1000) as UTCTimestamp, 
+        open: parseFloat(last[1]), 
+        high: parseFloat(last[2]), 
+        low: parseFloat(last[3]), 
+        close: parseFloat(last[4])
       });
       if (!followRight) reapplyRange();
     } catch (error) {
       console.error('[ChartPanel] Error updating live tick:', error);
       setChartState('error');
     }
-  }, [candles, ready, followRight, reapplyRange]);
+  }, [candles, ready]);
 
   // Mock data generators
   function generateMockCandles() {
@@ -433,6 +445,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
                   console.log('[ChartPanel] Manual reload triggered - resetting auto-recovery');
                   setReady(false);
                   setRetryCount(0);
+                  setDataSet(false);
                   setChartState('loading');
                   if (chartRef.current) {
                     chartRef.current.remove();
