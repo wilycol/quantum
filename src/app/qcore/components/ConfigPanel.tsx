@@ -134,12 +134,12 @@ export default function ConfigPanel({ className = '' }: ConfigPanelProps) {
   const winRateFormatted = formatWinRate(kpis.winRate);
 
   return (
-    <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 ${className}`}>
+    <div className={`bg-gray-800 border border-gray-700 rounded-lg p-3 ${className}`}>
       {/* Core Config */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Core Config</h3>
+      <div className="mb-4">
+        <h3 className="text-base font-semibold text-white mb-3">Core Config</h3>
         
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Initial Amount */}
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">

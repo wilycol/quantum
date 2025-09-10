@@ -25,35 +25,35 @@ export default function PortfolioPanel({ className = '' }: PortfolioPanelProps) 
   const totalPnLValue = calculateTotalPnL();
 
   return (
-    <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 ${className}`}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">Portfolio</h3>
-        <div className="text-sm text-gray-400">
-          Positions: {openPositions}/{limits.maxOpenPositions}
+    <div className={`bg-gray-800 border border-gray-700 rounded-lg p-3 ${className}`}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-semibold text-white">Portfolio</h3>
+        <div className="text-xs text-gray-400">
+          {openPositions}/{limits.maxOpenPositions}
         </div>
       </div>
 
       {/* Portfolio Summary */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-gray-700 rounded-lg p-3">
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="bg-gray-700 rounded-lg p-2">
           <div className="text-xs text-gray-400 mb-1">Total Balance</div>
           <div className="text-lg font-semibold text-white">
             ${balance.toFixed(2)}
           </div>
         </div>
-        <div className="bg-gray-700 rounded-lg p-3">
+        <div className="bg-gray-700 rounded-lg p-2">
           <div className="text-xs text-gray-400 mb-1">Total P&L</div>
           <div className={`text-lg font-semibold ${totalPnLValue >= 0 ? 'text-green-400' : 'text-red-400'}`}>
             ${totalPnLValue.toFixed(2)}
           </div>
         </div>
-        <div className="bg-gray-700 rounded-lg p-3">
+        <div className="bg-gray-700 rounded-lg p-2">
           <div className="text-xs text-gray-400 mb-1">Daily P&L</div>
           <div className={`text-lg font-semibold ${dailyPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
             ${dailyPnL.toFixed(2)}
           </div>
         </div>
-        <div className="bg-gray-700 rounded-lg p-3">
+        <div className="bg-gray-700 rounded-lg p-2">
           <div className="text-xs text-gray-400 mb-1">Daily Volume</div>
           <div className="text-lg font-semibold text-white">
             ${dailyVolume.toFixed(0)}

@@ -39,19 +39,19 @@ export default function QuantumCorePage() {
       <div className="p-4">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 h-full">
           {/* Left Column - Core Config */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-1">
             <CollapsiblePanel id="core-config" title="Core Config">
               <ConfigPanel />
             </CollapsiblePanel>
           </div>
 
           {/* Center Column - Chart Panel */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-4">
             <ChartPanel />
           </div>
 
           {/* Right Column - Portfolio + Right Rail */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-1 space-y-4">
             <CollapsiblePanel id="portfolio" title="Portfolio" defaultCollapsed={false}>
               <PortfolioPanel />
             </CollapsiblePanel>
