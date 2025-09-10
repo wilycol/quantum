@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { subscribeKline, Unsub } from './binanceFeed';
-import { useEventBus } from '../src/lib/eventBus';
+import { useEventBus } from './eventBus';
 
 type Candle = [number, number, number, number, number, number]; // ts, open, high, low, close, vol
 
