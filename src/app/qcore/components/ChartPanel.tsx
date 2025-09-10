@@ -16,6 +16,7 @@ import { useWS } from '../../providers/WSProvider';
 import { useMarket } from '../../../../lib/marketStore';
 import { useChartInteractions } from '../../../lib/useChartInteractions';
 import { useChartUI } from '../../../lib/chartUiStore';
+import { useChartRecovery } from '../../../lib/useChartRecovery';
 import { formatPrice } from '../lib/formatters';
 
 interface ChartPanelProps {
@@ -26,11 +27,7 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   // ALL HOOKS AT THE TOP - NO CONDITIONAL HOOKS
   const [ready, setReady] = useState(false);
   const [markers, setMarkers] = useState<any[]>([]);
-  const [chartState, setChartState] = useState<'loading' | 'ready' | 'error' | 'retrying'>('loading');
-  const [retryCount, setRetryCount] = useState(0);
-  const [dataSet, setDataSet] = useState(false);
-  const maxRetries = 7;
-  const retryDelay = 30000; // 30 segundos
+  const [lastKlineTs, setLastKlineTs] = useState<number | undefined>(undefined);
   
   const divRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -65,60 +62,55 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
   const key = `${symbol}:${interval}`;
   const { reapplyRange, followRight, followRightNow } = useChartInteractions(chartRef.current, divRef.current, key);
 
-  // Auto-Recovery functions
-  const healthCheck = (): boolean => {
-    console.log('[ChartPanel] Health check running:', { 
-      hasChart: !!chartRef.current, 
-      hasSeries: !!seriesRef.current,
-      hasDiv: !!divRef.current,
-      divChildren: divRef.current?.children.length || 0
+  // Series setup/teardown functions for recovery
+  const setUpSeries = () => {
+    if (!chartRef.current) return;
+    console.log('[ChartPanel] Setting up series');
+    seriesRef.current = chartRef.current.addCandlestickSeries({
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      borderVisible: false,
+      wickUpColor: '#26a69a',
+      wickDownColor: '#ef5350',
     });
     
-    if (!chartRef.current || !seriesRef.current) {
-      console.log('[ChartPanel] Health check failed: chart not ready');
-      return false;
-    }
-    
-    try {
-      const timeScale = chartRef.current.timeScale();
-      if (!timeScale) {
-        console.log('[ChartPanel] Health check failed: timeScale not available');
-        return false;
-      }
-      
-      const visibleRange = timeScale.getVisibleRange();
-      if (!visibleRange) {
-        console.log('[ChartPanel] Health check failed: no visible range');
-        return false;
-      }
-      
-      console.log('[ChartPanel] Health check passed');
-      return true;
-    } catch (error) {
-      console.log('[ChartPanel] Health check failed:', error);
-      return false;
+    if (candles && candles.length > 0) {
+      const formattedData = candles.map(candle => ({
+        time: (candle[0]/1000) as UTCTimestamp,
+        open: parseFloat(candle[1]),
+        high: parseFloat(candle[2]),
+        low: parseFloat(candle[3]),
+        close: parseFloat(candle[4]),
+      }));
+      seriesRef.current.setData(formattedData);
     }
   };
 
-  const reinitializeChart = () => {
-    console.log('[ChartPanel] Reinitializing chart...');
-    
-    // Limpiar referencias existentes
-    if (chartRef.current) {
-      chartRef.current.remove();
-      chartRef.current = null;
+  const teardownSeries = () => {
+    if (seriesRef.current) {
+      console.log('[ChartPanel] Tearing down series');
+      try {
+        seriesRef.current.remove();
+      } catch (error) {
+        console.log('[ChartPanel] Error removing series:', error);
+      }
+      seriesRef.current = null;
     }
-    seriesRef.current = null;
-    
-    // Resetear estado
-    setReady(false);
-    setChartState('loading');
-    
-    // Forzar re-render del useEffect de creación
-    setTimeout(() => {
-      setChartState('retrying');
-    }, 100);
   };
+
+  // New recovery system
+  const recovery = useChartRecovery({
+    chart: chartRef.current,
+    container: divRef.current,
+    hasSeries: !!seriesRef.current,
+    setUpSeries,
+    teardownSeries,
+    reapplyRange,
+    followRight,
+    lastKlineTs,
+    wsConnected,
+    marketLive: binanceConnected,
+  });
 
   // Handle WebSocket events - MOVED AFTER HOOKS
   function handleWebSocketEvent(event: any) {
@@ -142,90 +134,11 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     init();
   }, [init]);
 
-  // Timeout para detectar si el chart no se crea
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (chartState === 'loading' && !chartRef.current) {
-        console.log('[ChartPanel] Chart creation timeout, triggering error state');
-        setChartState('error');
-      }
-    }, 5000); // 5 segundos de timeout para creación del chart
-    
-    return () => clearTimeout(timeout);
-  }, [chartState]);
-
-  // Timeout para detectar si el divRef no está disponible
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (chartState === 'loading' && !divRef.current) {
-        console.log('[ChartPanel] DivRef not available after timeout, triggering error state');
-        setChartState('error');
-      }
-    }, 3000); // 3 segundos de timeout para divRef
-    
-    return () => clearTimeout(timeout);
-  }, [chartState]);
-
-  // Timeout para detectar si la serie no se crea
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (ready && !seriesRef.current) {
-        console.log('[ChartPanel] Series not created after timeout, triggering error state');
-        setChartState('error');
-      }
-    }, 2000); // 2 segundos de timeout para la serie
-    
-    return () => clearTimeout(timeout);
-  }, [ready]);
 
 
 
 
-  // Auto-Recovery: Reintentar si hay errores
-  useEffect(() => {
-    if (chartState === 'error' && retryCount < maxRetries) {
-      console.log(`[ChartPanel] Auto-recovery attempt ${retryCount + 1}/${maxRetries} in ${retryDelay/1000}s`);
-      
-      const timer = setTimeout(() => {
-        setChartState('retrying');
-        setRetryCount(prev => prev + 1);
-        reinitializeChart();
-      }, retryDelay);
-      
-      return () => clearTimeout(timer);
-    } else if (chartState === 'error' && retryCount >= maxRetries) {
-      console.log(`[ChartPanel] Auto-recovery exhausted after ${maxRetries} attempts. Manual reload required.`);
-    }
-  }, [chartState, retryCount, retryDelay, maxRetries]);
 
-  // Health check periódico
-  useEffect(() => {
-    if (chartState === 'ready') {
-      const interval = setInterval(() => {
-        if (!healthCheck()) {
-          console.log('[ChartPanel] Health check failed, triggering recovery');
-          setChartState('error');
-        }
-      }, 15000); // Health check cada 15 segundos
-      
-      return () => clearInterval(interval);
-    }
-  }, [chartState]);
-
-  // Timeout para detectar si el chart no se renderiza después de tener datos
-  useEffect(() => {
-    if (candles && candles.length > 0 && chartState === 'ready') {
-      const timeout = setTimeout(() => {
-        // Verificar si el chart realmente se renderizó
-        if (divRef.current && divRef.current.children.length === 0) {
-          console.log('[ChartPanel] Chart not rendered after timeout, triggering recovery');
-          setChartState('error');
-        }
-      }, 5000); // 5 segundos de timeout
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [candles, chartState]);
 
   // Create chart
   useEffect(() => {
@@ -248,11 +161,8 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
         handleScroll: { pressedMouseMove: true, mouseWheel: false, horzTouchDrag: true, vertTouchDrag: false },
       });
 
-      const series = chart.addCandlestickSeries();
       chartRef.current = chart;
-      seriesRef.current = series;
       setReady(true);
-      setChartState('ready');
       console.log('[ChartPanel] Chart created successfully');
 
       const onResize = () => {
@@ -341,13 +251,12 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       };
     } catch (error) {
       console.error('[ChartPanel] Error creating chart:', error);
-      setChartState('error');
     }
   }, []);
 
   // snapshot inicial
   useEffect(() => {
-    if (!ready || !seriesRef.current || !candles || candles.length === 0 || dataSet) {
+    if (!ready || !seriesRef.current || !candles || candles.length === 0) {
       return;
     }
     
@@ -361,7 +270,6 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       }));
       
       seriesRef.current.setData(formattedData);
-      setDataSet(true);
       
       const last = candles.at(-1);
       if (last) useMarket.setState({ lastPrice: parseFloat(last[4]) });
@@ -369,9 +277,8 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       else chartRef.current?.timeScale().scrollToRealTime();
     } catch (error) {
       console.error('[ChartPanel] Error setting initial data:', error);
-      setChartState('error');
     }
-  }, [ready, candles, dataSet]);
+  }, [ready, candles]);
 
   // tick en vivo - actualizar última vela o agregar nueva
   useEffect(() => {
@@ -383,6 +290,9 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
     const secondLast = candles.length > 1 ? candles[candles.length - 2] : null;
     
     try {
+      // Update lastKlineTs for recovery system
+      setLastKlineTs(Date.now());
+      
       // Si hay más de una vela y la última es diferente a la penúltima, es una nueva vela
       if (secondLast && last[0] !== secondLast[0]) {
         console.log('[ChartPanel] New candle detected, adding to chart');
@@ -408,7 +318,6 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
       if (!followRight) reapplyRange();
     } catch (error) {
       console.error('[ChartPanel] Error updating live tick:', error);
-      setChartState('error');
     }
   }, [candles, ready]);
 
@@ -511,6 +420,22 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
                 Market: {binanceConnected ? 'Live' : 'Backfill'}
               </span>
             </div>
+            <div className="flex items-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${
+                recovery.state === 'ready' ? 'bg-green-500' :
+                recovery.state === 'degraded' ? 'bg-yellow-500' :
+                recovery.state === 'recovering' ? 'bg-blue-500 animate-pulse' :
+                recovery.state === 'failed' ? 'bg-red-500' : 'bg-gray-500'
+              }`} />
+              <span className="text-gray-400">
+                Chart: {
+                  recovery.state === 'ready' ? 'Ready' :
+                  recovery.state === 'degraded' ? 'Degraded' :
+                  recovery.state === 'recovering' ? 'Recovering...' :
+                  recovery.state === 'failed' ? 'Failed' : 'Loading'
+                }
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -535,45 +460,26 @@ export default function ChartPanel({ className = '' }: ChartPanelProps) {
         <div ref={divRef} className="h-[420px] w-full rounded border border-zinc-800 overflow-hidden relative" />
         
         {/* Loading/Error Overlay */}
-        {(loading || !ready || !candles || candles.length < 2 || chartState === 'error') && (
+        {(loading || !ready || !candles || candles.length < 2 || recovery.state === 'failed') && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-800/90 rounded-lg">
             <div className="text-center">
               <div className="text-gray-400 mb-4">
-                {chartState === 'error' ? 'Error cargando chart...' : 'Cargando velas...'}
+                {recovery.state === 'failed' ? 'Chart recovery failed' : 'Loading candles...'}
               </div>
-              <button 
-                onClick={() => {
-                  console.log('[ChartPanel] Manual reload triggered - resetting auto-recovery');
-                  setReady(false);
-                  setRetryCount(0);
-                  setDataSet(false);
-                  setChartState('loading');
-                  if (chartRef.current) {
-                    chartRef.current.remove();
-                    chartRef.current = null;
-                    seriesRef.current = null;
-                  }
-                  setTimeout(() => {
-                    setReady(true);
-                  }, 100);
-                }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                🔄 Recargar Chart
-              </button>
+              {recovery.state === 'failed' && (
+                <button 
+                  onClick={() => {
+                    console.log('[ChartPanel] Manual reload triggered');
+                    window.location.reload();
+                  }}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  🔄 Reload Page
+                </button>
+              )}
               <div className="text-xs text-gray-500 mt-2">
-                Si el chart no carga, haz clic aquí
+                {recovery.state === 'failed' ? 'Chart recovery exhausted. Reload page.' : 'Loading market data...'}
               </div>
-              {chartState === 'error' && retryCount < maxRetries && (
-                <div className="text-xs text-yellow-400 mt-2">
-                  ⏳ Próximo intento automático en {retryDelay/1000}s... ({retryCount}/{maxRetries})
-                </div>
-              )}
-              {chartState === 'error' && retryCount >= maxRetries && (
-                <div className="text-xs text-red-400 mt-2">
-                  ⚠️ Auto-recovery agotado. Usar botón manual.
-                </div>
-              )}
             </div>
           </div>
         )}
