@@ -6,9 +6,10 @@ const redis = Redis.fromEnv();
 
 const ALLOWED = new Set([
   'ws/connected','ws/disconnected',
-  'market/kline','signal/preview','risk/decision',
+  'signal/preview','risk/decision',
   'order/accepted','order/filled',
-  'health/degraded','health/recovered','system/info','system/warn','system/error'
+  'health/degraded','health/recovered','system/error'
+  // Removed: market/kline (too frequent), system/info/warn (too verbose)
 ]);
 
 function validEvent(e:any){
@@ -23,8 +24,19 @@ export default async function handler(req: Request) {
 
     const dt = new Date(e.t).toISOString().slice(0,10); // YYYY-MM-DD
     const key = `events:${dt}`;
-    await redis.rpush(key, JSON.stringify(e));
-    await redis.expire(key, 60*60*24*90); // 90 días
+    
+    // Compress event data to save space
+    const compressedEvent = {
+      t: e.t,
+      type: e.type,
+      ...(e.symbol && { s: e.symbol }),
+      ...(e.payload && { p: e.payload }),
+      ...(e.session_id && { sid: e.session_id.slice(-8) }), // Short session ID
+      ...(e.mode && { m: e.mode })
+    };
+    
+    await redis.rpush(key, JSON.stringify(compressedEvent));
+    await redis.expire(key, 60*60*24*7); // 7 días (plan free limit)
 
     return new Response(null, { status: 202 });
   } catch (err:any) {
