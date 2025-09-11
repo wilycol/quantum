@@ -17,23 +17,26 @@ export default function RightRail() {
     { id: 'dataset' as const, label: 'Dataset' }
   ];
 
+  const activeTab = tabs.find(tab => tab.id === activeRightTab);
+
   return (
     <div className="rounded-md border border-zinc-800 overflow-hidden">
-      {/* Tab Headers */}
-      <div className="flex text-sm bg-zinc-900">
-        {tabs.map(tab => (
-          <button 
-            key={tab.id}
-            onClick={() => setRightTab(tab.id)}
-            className={`flex-1 px-3 py-2 font-medium transition-colors ${
-              activeRightTab === tab.id 
-                ? 'bg-zinc-800 text-white border-b-2 border-blue-500' 
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
+      {/* Compact Header with Dropdown */}
+      <div className="bg-zinc-900 px-4 py-2 border-b border-zinc-800">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-white">Right Panel</h3>
+          <select 
+            value={activeRightTab}
+            onChange={(e) => setRightTab(e.target.value as any)}
+            className="bg-zinc-800 text-white text-sm px-3 py-1 rounded border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            {tab.label}
-          </button>
-        ))}
+            {tabs.map(tab => (
+              <option key={tab.id} value={tab.id}>
+                {tab.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       
       {/* Tab Content */}
