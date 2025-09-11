@@ -46,8 +46,8 @@ export default async function handler(req: Request) {
       const targetDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const dateStr = targetDate.toISOString().slice(0, 10);
       
-      // Llamar al endpoint de archivo
-      const archiveResponse = await fetch(`${req.url.replace('/schedule-archive', '/archive-monthly')}`, {
+      // Llamar al endpoint de archivo directamente
+      const archiveResponse = await fetch(`${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/api/archive-monthly`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetDate: dateStr })
