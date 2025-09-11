@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { IChartApi } from 'lightweight-charts';
-import { useEventBus } from './eventBus';
+import { useEventBus } from '../../lib/eventBus';
 
 type Args = {
   chart: IChartApi | null;
