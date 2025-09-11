@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 type UIState = {
   collapsed: Record<string, boolean>;
-  activeRightTab: 'coach' | 'logs' | 'timeline';
+  activeRightTab: 'coach' | 'logs' | 'timeline' | 'qa' | 'dataset';
   setCollapsed: (id: string, v: boolean) => void;
   setRightTab: (t: UIState['activeRightTab']) => void;
   load: () => void;

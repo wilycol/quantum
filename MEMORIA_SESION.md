@@ -1,8 +1,8 @@
 # 🧠 MEMORIA DE SESIÓN - QUANTUM CORE
 
 ## 📅 **Fecha:** 2025-01-09
-## 🎯 **Estado Actual:** QuantumCore funcionando, EventBus implementado, chart con velas en tiempo real
-## 🔧 **ÚLTIMA ACTUALIZACIÓN:** Sistema EventBus completo, chart mostrando nuevas velas cada minuto
+## 🎯 **Estado Actual:** QuantumCore funcionando, EventBus implementado, chart con velas en tiempo real, QA Risk Matrices implementadas
+## 🔧 **ÚLTIMA ACTUALIZACIÓN:** Sistema QA Risk Matrices completo, Dataset Collection implementado, RightRail con 5 pestañas
 
 ---
 
@@ -201,13 +201,49 @@ npm run lint
 
 ---
 
+## 🧪 **QA RISK MATRICES IMPLEMENTADAS:**
+
+### **Sistema de Testing Automatizado:**
+- **Archivo:** `src/lib/qaRiskMatrices.ts`
+- **Componente:** `src/components/QAPanel.tsx`
+- **Hook:** `src/hooks/useQATesting.ts`
+- **Estado:** ✅ COMPLETADO
+
+### **Escenarios de Prueba (16 total):**
+- **A. Estado/Conexión:** A1, A2, A3 (WS Edge, REST falla, feed desincronizado)
+- **B. Límites y Whitelist:** B1, B2, B3, B4 (símbolo fuera WL, tamaño > máx, límite diario, max trades)
+- **C. Kill-Switch & modos:** C1, C2 (KM ON manual, Shadow→Live)
+- **D. Broker / Órdenes:** D1, D2, D3 (broker 5xx, fill parcial, rate limit)
+- **E. Estrategia/Señales:** E1, E2, E3 (preview válida, señal tardía, símbolo no visible)
+- **F. Seguridad/Integridad:** F1, F2 (payload inválido, cambio presets)
+
+### **Dataset Collection System:**
+- **Archivo:** `src/lib/datasetCollector.ts`
+- **Componente:** `src/components/DatasetPanel.tsx`
+- **Hook:** `src/hooks/useDatasetCollection.ts`
+- **Estado:** ✅ COMPLETADO
+
+### **Tipos de Datos Capturados:**
+- **Events:** Eventos en tiempo real (señales, decisiones, órdenes)
+- **Klines:** Datos OHLCV del mercado
+- **Orders:** Registros de ejecución de trades
+- **Risk Checks:** Decisiones de validación de riesgo
+- **Samples:** Ventanas de entrenamiento de 5m con features técnicas
+
+### **RightRail Actualizado:**
+- **5 Pestañas:** IA Coach, Logs, Timeline, QA Tests, Dataset
+- **QA Tests:** Ejecución de escenarios, filtros por categoría, resultados detallados
+- **Dataset:** Colección de datos, exportación, estadísticas en tiempo real
+
 ## 💡 **NOTAS IMPORTANTES:**
 
 - **Vercel deployment:** En progreso, debería estar listo mañana
 - **Chart:** Funcionando con zoom, pan y persistencia
 - **Datos:** Llegando correctamente desde Binance
 - **Auto-recovery:** Implementado y funcionando
-- **Próximo:** Risk Manager y Portfolio Integration
+- **QA System:** Completamente implementado y funcional
+- **Dataset Collection:** Sistema de captura de datos para entrenamiento IA
+- **Próximo:** Implementar lógica real de los escenarios QA
 
 ---
 

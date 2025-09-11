@@ -1,8 +1,10 @@
 'use client';
-import { useUILayout } from '@/lib/uiLayoutStore';
+import { useUILayout } from '../lib/uiLayoutStore';
 import CoachPanel from '../app/qcore/components/CoachPanel';
 import LogsPanel from './LogsPanel';
 import ExecutedTimeline from './ExecutedTimeline';
+import QAPanel from './QAPanel';
+import DatasetPanel from './DatasetPanel';
 
 export default function RightRail() {
   const { activeRightTab, setRightTab } = useUILayout();
@@ -10,7 +12,9 @@ export default function RightRail() {
   const tabs = [
     { id: 'coach' as const, label: 'IA Coach' },
     { id: 'logs' as const, label: 'Logs' },
-    { id: 'timeline' as const, label: 'Timeline' }
+    { id: 'timeline' as const, label: 'Timeline' },
+    { id: 'qa' as const, label: 'QA Tests' },
+    { id: 'dataset' as const, label: 'Dataset' }
   ];
 
   return (
@@ -47,6 +51,16 @@ export default function RightRail() {
         {activeRightTab === 'timeline' && (
           <div className="p-4">
             <ExecutedTimeline />
+          </div>
+        )}
+        {activeRightTab === 'qa' && (
+          <div className="h-full">
+            <QAPanel />
+          </div>
+        )}
+        {activeRightTab === 'dataset' && (
+          <div className="h-full">
+            <DatasetPanel />
           </div>
         )}
       </div>
