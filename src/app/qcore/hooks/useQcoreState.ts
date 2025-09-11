@@ -72,7 +72,10 @@ export const useCanStart = () => useQcoreState(s => {
   const valid = s.strategy === 'grid' 
     ? (s.grid.upper > s.grid.lower && s.grid.size > 0 && s.grid.stepPct > 0)
     : (s.binary.amount > 0 && !!s.binary.expiry && !!s.binary.direction);
-  const wsOk = s.wsStatus === 'connected';
+  
+  // Permitir inicio en modo SHADOW sin WebSocket, requerir WebSocket solo en modo LIVE
+  const wsOk = s.mode === 'shadow' ? true : s.wsStatus === 'connected';
+  
   return hasAssets && valid && wsOk && !s.killSwitchActive;
 });
 

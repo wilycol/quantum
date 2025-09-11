@@ -10,6 +10,8 @@ import PortfolioPanel from './components/PortfolioPanel';
 import ModeConfirmModal from './components/ModeConfirmModal';
 import KillSwitchModal from './components/KillSwitchModal';
 import { wireWSBridge } from '../../../lib/wsBridge';
+import { initializeWebSocketManager } from '../../lib/websocketManager';
+import WebSocketStatusPanel from '../../components/WebSocketStatusPanel';
 
 // New UX Components
 import ControlDock from '../../components/ControlDock';
@@ -18,10 +20,15 @@ import EmergencyFab from '../../components/EmergencyFab';
 import CollapsiblePanel from '../../components/ui/CollapsiblePanel';
 
 export default function QuantumCorePage() {
-  // Initialize WebSocket bridge once
+  // Initialize WebSocket bridge and redundancy system
   useEffect(() => {
-    console.log('[QuantumCore] Initializing WebSocket bridge');
+    console.log('[QuantumCore] Initializing WebSocket bridge and redundancy system');
     wireWSBridge();
+    
+    // Initialize WebSocket Manager with redundancy
+    initializeWebSocketManager().catch(error => {
+      console.error('[QuantumCore] Failed to initialize WebSocket Manager:', error);
+    });
   }, []);
 
   return (
@@ -60,6 +67,9 @@ export default function QuantumCorePage() {
             <CollapsiblePanel id="portfolio" title="Portfolio" defaultCollapsed={false}>
               <PortfolioPanel />
             </CollapsiblePanel>
+            
+            {/* WebSocket Status Panel */}
+            <WebSocketStatusPanel showDetails={true} />
             
             <RightRail />
           </div>
