@@ -138,10 +138,10 @@ async function getCurrentStats() {
       last7Days.push({ date: dateStr, count });
     }
 
-    // Obtener información de memoria usando Redis INFO command
-    const info = await redis.sendCommand(['INFO', 'memory']);
-    const memoryMatch = info.match(/used_memory:(\d+)/);
-    const usedMemoryBytes = memoryMatch ? parseInt(memoryMatch[1]) : 0;
+    // Obtener información de memoria - enfoque simplificado
+    // Estimamos el uso de memoria basado en el conteo de eventos
+    const estimatedBytesPerEvent = 200; // Promedio de bytes por evento
+    const usedMemoryBytes = last7Days.reduce((sum, day) => sum + (day.count * estimatedBytesPerEvent), 0);
     const maxMemoryBytes = 256 * 1024 * 1024; // 256 MB
     const usagePercentage = (usedMemoryBytes / maxMemoryBytes * 100).toFixed(2);
 

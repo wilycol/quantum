@@ -6,15 +6,14 @@ const redis = Redis.fromEnv();
 
 export default async function handler(req: Request) {
   try {
-    // Get memory info using Redis INFO command
-    const info = await redis.sendCommand(['INFO', 'memory']);
-    const memoryMatch = info.match(/used_memory:(\d+)/);
-    const memoryInfo = memoryMatch ? parseInt(memoryMatch[1]) : 0;
-    
     // Get today's event count
     const today = new Date().toISOString().slice(0, 10);
     const todayKey = `events:${today}`;
     const todayCount = await redis.llen(todayKey);
+    
+    // Estimate memory usage based on event count (rough calculation)
+    const estimatedBytesPerEvent = 200; // Average bytes per event
+    const memoryInfo = todayCount * estimatedBytesPerEvent;
     
     // Get last 7 days event counts
     const last7Days = [];
