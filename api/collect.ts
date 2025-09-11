@@ -36,7 +36,7 @@ export default async function handler(req: Request) {
     };
     
     await redis.rpush(key, JSON.stringify(compressedEvent));
-    await redis.expire(key, 60*60*24*30); // 30 días para dataset más rico
+    await redis.expire(key, 60*60*24*90); // 90 días para 3 meses de datos activos
 
     return new Response(null, { status: 202 });
   } catch (err:any) {

@@ -102,6 +102,50 @@ export default function DatasetPanel({ className = '' }: DatasetPanelProps) {
         >
           Redis Status
         </button>
+        
+        <button
+          onClick={async () => {
+            try {
+              const response = await fetch('/api/schedule-archive', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'status' })
+              });
+              const result = await response.json();
+              alert(`Archive Status: ${result.message}\nNext Archive: ${result.nextArchive}\nDays Until Next: ${result.daysUntilNext}`);
+            } catch (error) {
+              alert('Error checking archive status: ' + error);
+            }
+          }}
+          className="px-4 py-2 bg-cyan-600 text-white rounded hover:bg-cyan-700 text-sm"
+        >
+          Archive Status
+        </button>
+        
+        <button
+          onClick={async () => {
+            if (confirm('Execute monthly archive? This will compress the last 30 days of data.')) {
+              try {
+                const response = await fetch('/api/schedule-archive', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'archive' })
+                });
+                const result = await response.json();
+                if (result.success) {
+                  alert(`Archive completed!\nEvents: ${result.archived.events}\nSize: ${result.archived.sizeMB} MB\nDeleted: ${result.archived.deleted ? 'Yes' : 'No'}`);
+                } else {
+                  alert('Archive failed: ' + result.error);
+                }
+              } catch (error) {
+                alert('Error executing archive: ' + error);
+              }
+            }
+          }}
+          className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm"
+        >
+          Execute Archive
+        </button>
       </div>
 
       {/* Statistics */}
