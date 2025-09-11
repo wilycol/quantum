@@ -1,7 +1,7 @@
 // src/lib/eventBusForward.ts
 // Event forwarding from EventBus to telemetry system
 
-import { useEventBus } from './eventBus';
+import { useEventBus } from '../../lib/eventBus';
 import { emitTelemetry } from './telemetry';
 
 let wired = false;
