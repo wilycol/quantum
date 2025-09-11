@@ -1,8 +1,15 @@
 export const config = { runtime: 'edge' };
 
 import { Redis } from '@upstash/redis';
+import { createClient } from '@supabase/supabase-js';
 
 const redis = Redis.fromEnv();
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 // Función para comprimir datos (simulada - en producción usarías gzip)
 function compressData(data: any[]): string {
@@ -56,13 +63,30 @@ export default async function handler(req: Request) {
     
     console.log(`[Archive] Compressed ${monthData.length} events to ${sizeMB.toFixed(2)} MB`);
 
-    // 3. Simular subida a S3 (en producción usarías AWS SDK)
-    const s3Key = `quantum-events/${archiveDate.getFullYear()}/${String(archiveDate.getMonth() + 1).padStart(2, '0')}/${dateStr}.json.gz`;
+    // 3. Subir a Supabase Storage
+    const year = archiveDate.getFullYear();
+    const month = String(archiveDate.getMonth() + 1).padStart(2, '0');
+    const fileName = `${dateStr}.json.gz`;
+    const filePath = `${year}/${month}/${fileName}`;
     
-    // En producción, aquí harías:
-    // await s3.upload({ Bucket: 'quantum-dataset', Key: s3Key, Body: compressedData }).promise();
-    
-    console.log(`[Archive] Would upload to S3: ${s3Key}`);
+    try {
+      const { data, error } = await supabase.storage
+        .from('quantum-archives')
+        .upload(filePath, compressedData, {
+          contentType: 'application/gzip',
+          upsert: false // No sobrescribir si ya existe
+        });
+      
+      if (error) {
+        console.error(`[Archive] Supabase upload error:`, error);
+        throw new Error(`Failed to upload to Supabase: ${error.message}`);
+      }
+      
+      console.log(`[Archive] Successfully uploaded to Supabase: ${filePath}`);
+    } catch (uploadError) {
+      console.error(`[Archive] Upload failed:`, uploadError);
+      throw uploadError;
+    }
 
     // 4. Verificar si debemos eliminar datos antiguos (después de 120 días)
     const shouldDelete = forceArchive || (Date.now() - archiveDate.getTime()) > (120 * 24 * 60 * 60 * 1000);
@@ -85,7 +109,7 @@ export default async function handler(req: Request) {
         date: dateStr,
         events: monthData.length,
         sizeMB: sizeMB.toFixed(2),
-        s3Key: s3Key,
+        supabasePath: filePath,
         deleted: shouldDelete
       },
       currentStats

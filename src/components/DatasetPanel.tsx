@@ -133,7 +133,7 @@ export default function DatasetPanel({ className = '' }: DatasetPanelProps) {
                 });
                 const result = await response.json();
                 if (result.success) {
-                  alert(`Archive completed!\nEvents: ${result.archived.events}\nSize: ${result.archived.sizeMB} MB\nDeleted: ${result.archived.deleted ? 'Yes' : 'No'}`);
+                  alert(`Archive completed!\nEvents: ${result.archived.events}\nSize: ${result.archived.sizeMB} MB\nSupabase Path: ${result.archived.supabasePath}\nDeleted: ${result.archived.deleted ? 'Yes' : 'No'}`);
                 } else {
                   alert('Archive failed: ' + result.error);
                 }
@@ -145,6 +145,28 @@ export default function DatasetPanel({ className = '' }: DatasetPanelProps) {
           className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm"
         >
           Execute Archive
+        </button>
+        
+        <button
+          onClick={async () => {
+            try {
+              const response = await fetch('/api/list-archives?limit=20');
+              const result = await response.json();
+              if (result.success) {
+                const archivesList = result.archives.map((arch: any) => 
+                  `${arch.date}: ${arch.sizeMB} MB (${arch.fileName})`
+                ).join('\n');
+                alert(`Archived Files (${result.stats.totalFiles} total):\n\n${archivesList}`);
+              } else {
+                alert('Failed to list archives: ' + result.error);
+              }
+            } catch (error) {
+              alert('Error listing archives: ' + error);
+            }
+          }}
+          className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-sm"
+        >
+          List Archives
         </button>
       </div>
 
