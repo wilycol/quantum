@@ -28,7 +28,7 @@ export default async function handler(req: Request) {
         });
       }
 
-      const lastArchiveDate = new Date(lastArchive);
+      const lastArchiveDate = new Date(lastArchive as string);
       const daysSinceLastArchive = Math.floor((now.getTime() - lastArchiveDate.getTime()) / (24 * 60 * 60 * 1000));
       
       const shouldArchive = daysSinceLastArchive >= 30;
@@ -72,7 +72,7 @@ export default async function handler(req: Request) {
       let daysUntilNext = null;
       
       if (lastArchive) {
-        const lastArchiveDate = new Date(lastArchive);
+        const lastArchiveDate = new Date(lastArchive as string);
         const daysSinceLastArchive = Math.floor((now.getTime() - lastArchiveDate.getTime()) / (24 * 60 * 60 * 1000));
         
         if (daysSinceLastArchive >= 30) {

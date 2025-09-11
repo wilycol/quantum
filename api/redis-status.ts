@@ -6,8 +6,8 @@ const redis = Redis.fromEnv();
 
 export default async function handler(req: Request) {
   try {
-    // Get memory info
-    const info = await redis.info('memory');
+    // Get memory info (using memory command instead of info)
+    const memoryInfo = await redis.memory('usage');
     
     // Get today's event count
     const today = new Date().toISOString().slice(0, 10);
@@ -26,13 +26,13 @@ export default async function handler(req: Request) {
     }
     
     // Calculate usage
-    const usedMemoryBytes = parseInt(info.used_memory);
+    const usedMemoryBytes = memoryInfo || 0;
     const maxMemoryBytes = 256 * 1024 * 1024; // 256 MB
     const usagePercentage = (usedMemoryBytes / maxMemoryBytes * 100).toFixed(2);
     
     return Response.json({
       memory: {
-        used: info.used_memory_human,
+        used: `${(usedMemoryBytes / (1024 * 1024)).toFixed(2)}MB`,
         max: '256MB',
         percentage: `${usagePercentage}%`,
         bytes: usedMemoryBytes,

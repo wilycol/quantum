@@ -139,14 +139,14 @@ async function getCurrentStats() {
     }
 
     // Obtener información de memoria
-    const info = await redis.info('memory');
-    const usedMemoryBytes = parseInt(info.used_memory);
+    const memoryInfo = await redis.memory('usage');
+    const usedMemoryBytes = memoryInfo || 0;
     const maxMemoryBytes = 256 * 1024 * 1024; // 256 MB
     const usagePercentage = (usedMemoryBytes / maxMemoryBytes * 100).toFixed(2);
 
     return {
       memory: {
-        used: info.used_memory_human,
+        used: `${(usedMemoryBytes / (1024 * 1024)).toFixed(2)}MB`,
         max: '256MB',
         percentage: `${usagePercentage}%`,
         bytes: usedMemoryBytes,
