@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { IChartApi } from 'lightweight-charts';
+import { useEventBus } from './eventBus';
 
 type Args = {
   chart: IChartApi | null;
@@ -22,6 +23,7 @@ export function useChartRecovery(a: Args) {
   const token   = useRef(0);       // invalida timers viejos
   const sizes   = useRef({w:0,h:0});
   const stableSince = useRef<number | null>(null);
+  const emit = useEventBus.getState().emit;
 
   // --------- ResizeObserver: evita falsos negativos por width/height 0
   useEffect(() => {
@@ -49,7 +51,12 @@ export function useChartRecovery(a: Args) {
         return;
       }
       stableSince.current = null;
-      setState(s => (s === 'loading' ? 'loading' : 'degraded'));
+      setState(s => {
+        if (s === 'loading') return 'loading';
+        // Emit telemetry when entering degraded state
+        emit({ type: 'health/degraded', t: Date.now(), reason: 'chart_degraded' });
+        return 'degraded';
+      });
       scheduleRecovery(a, { setState, retries, token });
     }, 8000);
     return () => clearInterval(id);
@@ -103,6 +110,10 @@ function scheduleRecovery(
   console.log(`[ChartRecovery] Scheduling recovery attempt ${retries.current + 1}/7 in ${backoff/1000}s`);
   setState('recovering');
   
+  // Emit telemetry for recovery start
+  const emit = useEventBus.getState().emit;
+  emit({ type: 'health/recovering', t: Date.now(), attempt: retries.current + 1 });
+  
   window.setTimeout(() => {
     if (t !== token.current) return; // invalidado
     
@@ -144,7 +155,9 @@ function scheduleRecovery(
     if (ok) { 
       console.log('[ChartRecovery] Soft fix successful, chart healthy');
       setState('ready'); 
-      retries.current = 0; 
+      retries.current = 0;
+      // Emit telemetry for successful recovery
+      emit({ type: 'health/recovered', t: Date.now(), took_ms: backoff });
       return; 
     }
 
@@ -157,6 +170,8 @@ function scheduleRecovery(
     } catch (error) {
       console.log('[ChartRecovery] Hard reinit failed:', error);
       setState('failed');
+      // Emit telemetry for recovery failure
+      emit({ type: 'system/error', t: Date.now(), msg: 'chart_recovery_exhausted' });
     }
   }, backoff);
 }

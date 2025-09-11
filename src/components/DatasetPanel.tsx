@@ -1,6 +1,7 @@
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDatasetCollection } from '../hooks/useDatasetCollection';
+import { wireEventForwarder } from '../lib/eventBusForward';
 
 interface DatasetPanelProps {
   className?: string;
@@ -17,6 +18,12 @@ export default function DatasetPanel({ className = '' }: DatasetPanelProps) {
     clearData,
     generateSample
   } = useDatasetCollection();
+
+  // Wire telemetry forwarding when component mounts
+  useEffect(() => {
+    const cleanup = wireEventForwarder();
+    return cleanup;
+  }, []);
 
   const handleGenerateSample = () => {
     const sample = generateSample('BTCUSDT', '5m');
@@ -60,7 +67,17 @@ export default function DatasetPanel({ className = '' }: DatasetPanelProps) {
           onClick={exportData}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
         >
-          Export Data
+          Export Local Data
+        </button>
+        
+        <button
+          onClick={() => {
+            const today = new Date().toISOString().slice(0, 10);
+            window.open(`/api/export/events.csv?date=${today}`, '_blank');
+          }}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+        >
+          Export CSV (Redis)
         </button>
         
         <button
