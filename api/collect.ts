@@ -6,10 +6,10 @@ const redis = Redis.fromEnv();
 
 const ALLOWED = new Set([
   'ws/connected','ws/disconnected',
-  'signal/preview','risk/decision',
+  'market/kline','signal/preview','risk/decision',
   'order/accepted','order/filled',
-  'health/degraded','health/recovered','system/error'
-  // Removed: market/kline (too frequent), system/info/warn (too verbose)
+  'health/degraded','health/recovered','system/info','system/warn','system/error'
+  // Restored: all events for complete dataset
 ]);
 
 function validEvent(e:any){
@@ -36,7 +36,7 @@ export default async function handler(req: Request) {
     };
     
     await redis.rpush(key, JSON.stringify(compressedEvent));
-    await redis.expire(key, 60*60*24*7); // 7 días (plan free limit)
+    await redis.expire(key, 60*60*24*30); // 30 días para dataset más rico
 
     return new Response(null, { status: 202 });
   } catch (err:any) {

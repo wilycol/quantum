@@ -93,6 +93,15 @@ export default function DatasetPanel({ className = '' }: DatasetPanelProps) {
         >
           Clear Data
         </button>
+        
+        <button
+          onClick={() => {
+            window.open('/api/redis-status', '_blank');
+          }}
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm"
+        >
+          Redis Status
+        </button>
       </div>
 
       {/* Statistics */}

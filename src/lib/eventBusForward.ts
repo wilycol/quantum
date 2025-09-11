@@ -21,11 +21,12 @@ export function wireEventForwarder() {
       const last = (useEventBus.getState() as any)._lastEvent as any;
       if (!last) return;
 
-      // Skip market/kline events entirely to save space
-      if (last.type.startsWith('market/kline')) return;
-      
-      // Skip verbose system events
-      if (last.type === 'system/info' || last.type === 'system/warn') return;
+      // Throttle market/kline events to 1 every 30 seconds to balance data richness with storage
+      if (last.type.startsWith('market/kline')) {
+        const now = Date.now();
+        if (now - lastKlineSent < 30_000) return;
+        lastKlineSent = now;
+      }
       emitTelemetry(last);
     }
   );
