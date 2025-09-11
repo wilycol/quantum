@@ -1,7 +1,7 @@
 // src/lib/websocketBackupServices.ts
 // Servicios de Respaldo Paralelos para WebSocket del Quantum CORE
 
-import { useEventBus } from './eventBus';
+import { useEventBus } from '../hooks/useEventBus';
 
 export interface BackupService {
   id: string;

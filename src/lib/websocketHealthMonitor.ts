@@ -1,7 +1,7 @@
 // src/lib/websocketHealthMonitor.ts
 // Sistema de Monitoreo de Salud para WebSocket del Quantum CORE
 
-import { useEventBus } from './eventBus';
+import { useEventBus } from '../hooks/useEventBus';
 
 export interface HealthMetrics {
   connectionId: string;

@@ -1,7 +1,7 @@
 // src/lib/websocketRedundancy.ts
 // Sistema de Redundancia y Respaldo para WebSocket del Quantum CORE
 
-import { useEventBus } from './eventBus';
+import { useEventBus } from '../hooks/useEventBus';
 
 export interface WebSocketConnection {
   id: string;

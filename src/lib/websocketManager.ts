@@ -4,7 +4,7 @@
 import { WebSocketRedundancyManager, getRedundancyManager, initializeWebSocketRedundancy } from './websocketRedundancy';
 import { WebSocketHealthMonitor, getHealthMonitor, initializeHealthMonitoring } from './websocketHealthMonitor';
 import { WebSocketBackupServices, getBackupServices, initializeBackupServices } from './websocketBackupServices';
-import { useEventBus } from './eventBus';
+import { useEventBus } from '../hooks/useEventBus';
 
 export interface WebSocketManagerConfig {
   enableRedundancy: boolean;
