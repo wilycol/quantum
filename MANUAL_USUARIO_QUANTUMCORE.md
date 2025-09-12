@@ -1,4 +1,4 @@
-# 📖 MANUAL DE USUARIO - QUANTUMCORE
+mas IA# 📖 MANUAL DE USUARIO - QUANTUMCORE
 
 ## 🎯 **Descripción General**
 
